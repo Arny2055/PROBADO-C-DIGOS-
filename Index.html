@@ -86,34 +86,18 @@
       width: 100%;
       border-collapse: collapse;
       margin-top: 10px;
+      display: block;
+      overflow-x: auto;
     }
     th, td {
       border: 1px solid #ccc;
       padding: 6px;
       text-align: center;
+      min-width: 60px;
     }
     th {
       background-color: var(--azul);
       color: white;
-    }
-    @media (max-width: 600px) {
-      .container {
-        padding: 20px;
-      }
-      h2, h3 {
-        font-size: 20px;
-      }
-      input, button, select {
-        font-size: 15px;
-        padding: 8px;
-      }
-      .resultados-extra {
-        font-size: 16px;
-      }
-      th, td {
-        font-size: 13px;
-        padding: 4px;
-      }
     }
     .btn-group {
       display: flex;
@@ -137,43 +121,33 @@
   <div class="container">
     <h2>Calculadora Poisson + EV</h2>
 
-    <!-- 1️⃣ Média Universal -->
     <div class="section">
       <h3>1️⃣ Calcular Média Universal</h3>
       <label>Tipo de Evento:</label>
       <select id="tipo_evento">
         <option value="Gols">Gols</option>
         <option value="Escanteios">Escanteios</option>
-        <option value="Cartões">Cartões</option>
-        <option value="Outros">Outros</option>
       </select>
       <label>Total de Ocorrências:</label>
-      <input type="number" id="gols" placeholder="Ex: 9" />
+      <input type="number" id="gols" placeholder="Ex: 9" step="any" />
       <label>Total de Partidas:</label>
-      <input type="number" id="partidas" placeholder="Ex: 5" />
+      <input type="number" id="partidas" placeholder="Ex: 5" step="any" />
       <button onclick="calcularMedia()">Calcular Média</button>
       <label>Média Calculada:</label>
       <input type="text" id="media_resultado" readonly />
 
       <div class="btn-group" style="display:none;" id="btnsAdicionarMedia">
-        <button onclick="adicionarMedia('timeA')">Adicionar média para Time A</button>
-        <button onclick="adicionarMedia('timeB')">Adicionar média para Time B</button>
+        <button onclick="adicionarMedia('timeA')">Usar no Time A</button>
+        <button onclick="adicionarMedia('timeB')">Usar no Time B</button>
       </div>
     </div>
 
-    <!-- 2️⃣ Poisson Time Único -->
     <div class="section">
-      <h3>2️⃣ Aplicar Poisson (Time Único)</h3>
-      <label>Período:</label>
-      <select id="periodo_poisson">
-        <option value="inteiro">Jogo Inteiro</option>
-        <option value="primeiro">1º Tempo</option>
-        <option value="segundo">2º Tempo</option>
-      </select>
-      <label>Média de gols marcados (Time A):</label>
-      <input type="number" id="gols_marcados" placeholder="Ex: 1.8" />
-      <label>Média de gols sofridos (Time B):</label>
-      <input type="number" id="gols_sofridos" placeholder="Ex: 1.4" />
+      <h3>2️⃣ Aplicar Poisson (Probabilidades do Jogo)</h3>
+      <label>Média de gols Marcados (Time A):</label>
+      <input type="number" id="gols_marcados" placeholder="Ex: 1.8" step="0.01" />
+      <label>Média de gols Sofridos (Time B):</label>
+      <input type="number" id="gols_sofridos" placeholder="Ex: 1.4" step="0.01" />
       <label>Máximo de gols para análise:</label>
       <input type="number" id="limite" value="5" min="1" max="10" />
       <button onclick="calcularPoisson()">Calcular Probabilidades</button>
@@ -181,170 +155,134 @@
       <div class="resultados-extra" id="resumo_extra"></div>
     </div>
 
-    <!-- 3️⃣ Placar Exato -->
     <div class="section">
-      <h3>3️⃣ Placar Exato entre dois times</h3>
-      <label>Média de gols esperada - Time A:</label>
-      <input type="number" id="media_a" placeholder="Ex: 1.6" />
-      <label>Média de gols esperada - Time B:</label>
-      <input type="number" id="media_b" placeholder="Ex: 1.2" />
-      <button onclick="placarExato()">Calcular Placares Exatos</button>
-      <div class="resultados-extra" id="placares_tabela"></div>
+      <h3>3️⃣ Placar Exato</h3>
+      <label>Média esperada - Time A:</label>
+      <input type="number" id="media_a" placeholder="Ex: 1.6" step="0.01" />
+      <label>Média esperada - Time B:</label>
+      <input type="number" id="media_b" placeholder="Ex: 1.2" step="0.01" />
+      <button onclick="placarExato()">Gerar Matriz de Placares</button>
+      <div id="placares_tabela"></div>
     </div>
 
-    <!-- 4️⃣ Calculadora EV -->
     <div class="section">
       <h3>4️⃣ Calculadora de Valor Esperado (EV)</h3>
-      <label>Probabilidade (%) do Evento:</label>
-      <input type="number" id="prob_ev" placeholder="Ex: 12.7" />
+      <label>Probabilidade Calculada (%):</label>
+      <input type="number" id="prob_ev" placeholder="Ex: 65" step="0.1" />
       <label>Odd da Casa:</label>
-      <input type="number" id="odd_ev" placeholder="Ex: 9.00" />
+      <input type="number" id="odd_ev" placeholder="Ex: 1.90" step="0.01" />
       <button onclick="calcularEV()">Calcular EV</button>
       <div class="resultados-extra" id="resultado_ev"></div>
     </div>
 
-    <!-- 5️⃣ Previsão de Escanteios (Poisson) -->
     <div class="section">
-      <h3>5️⃣ Previsão de Escanteios (Poisson)</h3>
-      <label>Período:</label>
-      <select id="periodo_escanteios">
-        <option value="inteiro">Jogo Inteiro</option>
-        <option value="primeiro">1º Tempo</option>
-        <option value="segundo">2º Tempo</option>
-      </select>
-      <label>Média de escanteios a favor (Time A):</label>
-      <input type="number" id="escanteios_favor" placeholder="Ex: 6.2" />
-      <label>Média de escanteios contra (Time B):</label>
-      <input type="number" id="escanteios_contra" placeholder="Ex: 5.8" />
-      <label>Máximo de escanteios para análise:</label>
-      <input type="number" id="escanteios_limite" value="10" min="1" max="20" />
-      <button onclick="calcularEscanteios()">Calcular Probabilidades</button>
+      <h3>5️⃣ Previsão de Escanteios</h3>
+      <label>Média escanteios Pro (Time A):</label>
+      <input type="number" id="escanteios_favor" placeholder="Ex: 6.2" step="0.1" />
+      <label>Média escanteios Contra (Time B):</label>
+      <input type="number" id="escanteios_contra" placeholder="Ex: 5.8" step="0.1" />
+      <label>Máximo de escanteios:</label>
+      <input type="number" id="escanteios_limite" value="12" min="1" max="20" />
+      <button onclick="calcularEscanteios()">Calcular Escanteios</button>
       <ul id="resultado_escanteios"></ul>
       <div class="resultados-extra" id="resumo_escanteios"></div>
     </div>
   </div>
 
   <script>
+    // Função fatorial otimizada
     function fatorial(n) {
-      return n <= 1 ? 1 : n * fatorial(n - 1);
+      let res = 1;
+      for (let i = 2; i <= n; i++) res *= i;
+      return res;
+    }
+
+    // Fórmula de Poisson: (e^-λ * λ^x) / x!
+    function poisson(lambda, x) {
+      return (Math.exp(-lambda) * Math.pow(lambda, x)) / fatorial(x);
     }
 
     function calcularMedia() {
       const tipo = document.getElementById("tipo_evento").value;
       const gols = parseFloat(document.getElementById("gols").value);
       const partidas = parseFloat(document.getElementById("partidas").value);
-      if (isNaN(gols) || isNaN(partidas) || partidas === 0) {
-        alert("Preencha os dois campos corretamente.");
+      
+      if (!gols || !partidas) {
+        alert("Preencha os campos.");
         return;
       }
+      
       const media = (gols / partidas).toFixed(2);
-      document.getElementById("media_resultado").value = `${media} média de ${tipo.toLowerCase()}`;
-      // Mostrar os botões para adicionar
+      document.getElementById("media_resultado").value = media;
       document.getElementById("btnsAdicionarMedia").style.display = "flex";
-      // Guardar média para usar nos botões
       window.mediaCalculada = media;
       window.tipoEvento = tipo;
     }
 
     function adicionarMedia(time) {
-      if (!window.mediaCalculada) {
-        alert("Calcule a média primeiro.");
-        return;
-      }
-      const media = parseFloat(window.mediaCalculada);
-      const tipo = window.tipoEvento;
-
-      // Para gols
-      if (tipo === "Gols") {
-        if (time === "timeA") {
+      const media = window.mediaCalculada;
+      if (window.tipoEvento === "Gols") {
+        if (time === 'timeA') {
           document.getElementById("gols_marcados").value = media;
           document.getElementById("media_a").value = media;
-          document.getElementById("escanteios_favor").value = "";
-          document.getElementById("escanteios_contra").value = "";
         } else {
           document.getElementById("gols_sofridos").value = media;
           document.getElementById("media_b").value = media;
-          document.getElementById("escanteios_favor").value = "";
-          document.getElementById("escanteios_contra").value = "";
         }
-      }
-      // Para escanteios
-      else if (tipo === "Escanteios") {
-        if (time === "timeA") {
-          document.getElementById("escanteios_favor").value = media;
-        } else {
-          document.getElementById("escanteios_contra").value = media;
-        }
-        // Zera campos de gols para evitar confusão
-        document.getElementById("gols_marcados").value = "";
-        document.getElementById("gols_sofridos").value = "";
-        document.getElementById("media_a").value = "";
-        document.getElementById("media_b").value = "";
       } else {
-        alert("Adição automática só disponível para Gols e Escanteios.");
-        return;
+        if (time === 'timeA') document.getElementById("escanteios_favor").value = media;
+        else document.getElementById("escanteios_contra").value = media;
       }
-
-      alert(`Média ${media} adicionada para ${time === "timeA" ? "Time A" : "Time B"} (${tipo}) nas calculadoras.`);
     }
 
     function calcularPoisson() {
       const marcados = parseFloat(document.getElementById("gols_marcados").value);
       const sofridos = parseFloat(document.getElementById("gols_sofridos").value);
       const limite = parseInt(document.getElementById("limite").value);
-      const periodo = document.getElementById("periodo_poisson").value;
-      if (isNaN(marcados) || isNaN(sofridos)) {
-        alert("Preencha os campos corretamente.");
-        return;
-      }
+      
+      if (isNaN(marcados) || isNaN(sofridos)) return;
 
-      // Nota: Use médias correspondentes ao período escolhido (dados já devem estar filtrados)
-      const lambda = (marcados + sofridos) / 2;
-      const e = Math.E;
-      let html = "", over25 = 0, under25 = 0, somaBTTS = 0;
+      // CORREÇÃO: A média combinada para o total do jogo é a SOMA das médias
+      const lambdaTotal = marcados + sofridos;
+      
+      let html = "", over25 = 0, under25 = 0;
 
       for (let x = 0; x <= limite; x++) {
-        const p = (Math.pow(lambda, x) * Math.pow(e, -lambda)) / fatorial(x);
-        html += `<li>${x} gol(s): ${(p * 100).toFixed(2)}%</li>`;
+        const p = poisson(lambdaTotal, x);
+        html += `<li>${x} gol(s) no total: ${(p * 100).toFixed(2)}%</li>`;
         if (x <= 2) under25 += p;
-        if (x >= 3) over25 += p;
-        if (x >= 1) somaBTTS += p;
+        else over25 += p;
       }
 
+      // Probabilidade de BTTS (Ambos Marcam) simplificada para este contexto
+      // Prob de pelo menos 1 gol cada: (1-P(0,mediaA)) * (1-P(0,mediaB))
+      const btts = (1 - poisson(marcados, 0)) * (1 - poisson(sofridos, 0));
+
       document.getElementById("resultado").innerHTML = html;
-      const extraHTML = `
-        <p><strong>🔼 Over 2.5 gols:</strong> ${(over25 * 100).toFixed(2)}%</p>
-        <p><strong>🔽 Under 2.5 gols:</strong> ${(under25 * 100).toFixed(2)}%</p>
-        <p><strong>🤝 Chances do time marcar ao menos 1 gol (BTTS):</strong> ${(somaBTTS * 100).toFixed(2)}%</p>
+      document.getElementById("resumo_extra").innerHTML = `
+        <p>🔼 Over 2.5: ${(over25 * 100).toFixed(2)}%</p>
+        <p>🔽 Under 2.5: ${(under25 * 100).toFixed(2)}%</p>
+        <p>⚽ Ambos Marcam (BTTS): ${(btts * 100).toFixed(2)}%</p>
       `;
-      document.getElementById("resumo_extra").innerHTML = extraHTML;
     }
 
     function placarExato() {
       const mediaA = parseFloat(document.getElementById("media_a").value);
       const mediaB = parseFloat(document.getElementById("media_b").value);
-      if (isNaN(mediaA) || isNaN(mediaB)) {
-        alert("Preencha as médias dos dois times.");
-        return;
-      }
+      if (isNaN(mediaA) || isNaN(mediaB)) return;
 
-      let html = "<table><tr><th>Time A \\ Time B</th>";
-      for (let b = 0; b <= 5; b++) {
-        html += `<th>${b}</th>`;
-      }
+      let html = "<table><tr><th>A \\ B</th>";
+      for (let b = 0; b <= 4; b++) html += `<th>${b}</th>`;
       html += "</tr>";
 
-      for (let a = 0; a <= 5; a++) {
+      for (let a = 0; a <= 4; a++) {
         html += `<tr><th>${a}</th>`;
-        for (let b = 0; b <= 5; b++) {
-          const pA = (Math.pow(mediaA, a) * Math.exp(-mediaA)) / fatorial(a);
-          const pB = (Math.pow(mediaB, b) * Math.exp(-mediaB)) / fatorial(b);
-          const prob = (pA * pB * 100).toFixed(2);
+        for (let b = 0; b <= 4; b++) {
+          const prob = (poisson(mediaA, a) * poisson(mediaB, b) * 100).toFixed(1);
           html += `<td>${prob}%</td>`;
         }
         html += "</tr>";
       }
-
       html += "</table>";
       document.getElementById("placares_tabela").innerHTML = html;
     }
@@ -352,51 +290,32 @@
     function calcularEV() {
       const prob = parseFloat(document.getElementById("prob_ev").value);
       const odd = parseFloat(document.getElementById("odd_ev").value);
-      if (isNaN(prob) || isNaN(odd)) {
-        alert("Preencha os campos corretamente.");
-        return;
-      }
-      const ev = (prob / 100) * odd - 1;
-      const sinal = ev >= 0 ? "+" : "";
-      document.getElementById("resultado_ev").innerHTML = `<p>EV = ${sinal}${ev.toFixed(3)}</p>`;
+      if (!prob || !odd) return;
+      
+      const ev = ((prob / 100) * odd) - 1;
+      const cor = ev > 0 ? "#27ae60" : "#c0392b";
+      document.getElementById("resultado_ev").innerHTML = `<span style="color:${cor}">EV: ${(ev * 100).toFixed(2)}%</span>`;
     }
 
     function calcularEscanteios() {
       const favor = parseFloat(document.getElementById("escanteios_favor").value);
       const contra = parseFloat(document.getElementById("escanteios_contra").value);
       const limite = parseInt(document.getElementById("escanteios_limite").value);
-      const periodo = document.getElementById("periodo_escanteios").value;
+      
+      if (isNaN(favor) || isNaN(contra)) return;
 
-      if (isNaN(favor) || isNaN(contra)) {
-        alert("Preencha as médias corretamente.");
-        return;
-      }
-
-      const lambda = (favor + contra) / 2;
-      const e = Math.E;
-      let html = "", overTotal = 0, underTotal = 0;
+      // CORREÇÃO: Soma das médias para o total
+      const lambda = favor + contra;
+      let html = "", over85 = 0;
 
       for (let x = 0; x <= limite; x++) {
-        const p = (Math.pow(lambda, x) * Math.exp(-lambda)) / fatorial(x);
+        const p = poisson(lambda, x);
         html += `<li>${x} escanteios: ${(p * 100).toFixed(2)}%</li>`;
-        if (x <= 8) underTotal += p;
-        if (x >= 9) overTotal += p;
+        if (x > 8) over85 += p;
       }
 
       document.getElementById("resultado_escanteios").innerHTML = html;
-
-      let melhorAposta = "";
-      if (overTotal > underTotal) {
-        melhorAposta = `🔼 Melhor aposta: Over 8.5 escanteios (${(overTotal * 100).toFixed(2)}%)`;
-      } else {
-        melhorAposta = `🔽 Melhor aposta: Under 8.5 escanteios (${(underTotal * 100).toFixed(2)}%)`;
-      }
-
-      document.getElementById("resumo_escanteios").innerHTML = `
-        <p><strong>🔼 Over 8.5 escanteios:</strong> ${(overTotal * 100).toFixed(2)}%</p>
-        <p><strong>🔽 Under 8.5 escanteios:</strong> ${(underTotal * 100).toFixed(2)}%</p>
-        <p style="font-weight:bold; font-size:18px; margin-top:10px;">${melhorAposta}</p>
-      `;
+      document.getElementById("resumo_escanteios").innerHTML = `Probabilidade Over 8.5: ${(over85 * 100).toFixed(2)}%`;
     }
   </script>
 </body>
