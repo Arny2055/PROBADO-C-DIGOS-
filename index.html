@@ -23,22 +23,21 @@
         }
         .container { max-width: 1500px; margin: auto; }
         
-        /* Header & Input */
         .header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid #30363d; }
         .header h1 { margin: 0; font-size: 1.5em; color: var(--verde); letter-spacing: 2px; }
+        
         textarea {
-            width: 100%; height: 80px; background: #0d1117; color: #58a6ff;
+            width: 100%; height: 100px; background: #0d1117; color: #58a6ff;
             border: 1px solid #30363d; border-radius: 8px; padding: 12px;
-            font-family: monospace; font-size: 12px; margin-top: 15px;
+            font-family: monospace; font-size: 12px; margin-top: 15px; box-sizing: border-box;
         }
         button {
-            width: 100%; padding: 12px; background: var(--accent); color: white;
+            width: 100%; padding: 15px; background: var(--accent); color: white;
             border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
-            margin: 10px 0; transition: 0.3s;
+            margin: 10px 0; transition: 0.3s; font-size: 14px;
         }
         button:hover { background: #9146ff; }
 
-        /* Metrics Grid */
         .metrics-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -46,14 +45,13 @@
         }
         .metric-card {
             background: var(--card); padding: 15px; border-radius: 10px;
-            border: 1px solid #30363d; position: relative;
+            border: 1px solid #30363d;
         }
-        .metric-card small { color: #8b949e; display: block; font-size: 11px; margin-bottom: 5px; }
+        .metric-card small { color: #8b949e; display: block; font-size: 11px; margin-bottom: 5px; text-transform: uppercase; }
         .metric-card div { font-size: 1.4em; font-weight: 800; }
         .high-risk { border-left: 4px solid var(--rojo); }
         .high-profit { border-left: 4px solid var(--verde); }
 
-        /* Charts Layout */
         .grid-layout {
             display: grid;
             grid-template-columns: 2fr 1fr;
@@ -69,12 +67,12 @@
             gap: 15px;
         }
 
-        /* Utilities */
         .val-up { color: var(--verde); }
         .val-down { color: var(--rojo); }
         table { width: 100%; border-collapse: collapse; font-size: 12px; }
         th { text-align: left; padding: 10px; border-bottom: 1px solid #30363d; color: #8b949e; }
         td { padding: 10px; border-bottom: 1px solid #21262d; }
+        h3 { margin-top: 0; font-size: 14px; color: #8b949e; }
     </style>
 </head>
 <body>
@@ -82,7 +80,7 @@
 <div class="container">
     <div class="header">
         <h1>QUANTUM BACKTEST <span>PRO</span></h1>
-        <div id="status">READY TO ANALYZE</div>
+        <div id="status" style="color: var(--gold); font-size: 12px;">READY</div>
     </div>
 
     <textarea id="rawData" placeholder="Pega tus datos aquí..."></textarea>
@@ -93,30 +91,30 @@
 
         <div class="grid-layout">
             <div class="chart-container">
-                <h3>Equity Curve & Drawdown Analysis</h3>
-                <canvas id="mainEquity" style="height: 350px;"></canvas>
+                <h3>EQUITY CURVE (PROFIT ACUMULADO)</h3>
+                <div style="height: 350px;"><canvas id="mainEquity"></canvas></div>
             </div>
             <div class="chart-container">
-                <h3>Profit Factor por Cuota</h3>
-                <canvas id="profitFactorChart"></canvas>
+                <h3>PROFIT FACTOR POR CUOTA</h3>
+                <div style="height: 350px;"><canvas id="profitFactorChart"></canvas></div>
             </div>
         </div>
 
         <div class="secondary-grid">
             <div class="chart-container">
-                <h3>Net Profit por Minuto (Filtro Crítico)</h3>
+                <h3>NET PROFIT POR MINUTO</h3>
                 <canvas id="minuteProfit"></canvas>
             </div>
             <div class="chart-container">
-                <h3>Rendimiento por Día (Volumen vs Profit)</h3>
+                <h3>PROFIT POR DÍA</h3>
                 <canvas id="dayAnalysis"></canvas>
             </div>
             <div class="chart-container">
-                <h3>Eficiencia por Hora del Evento</h3>
+                <h3>EFICIENCIA POR HORA</h3>
                 <canvas id="hourAnalysis"></canvas>
             </div>
             <div class="chart-container">
-                <h3>Top Ligas (Expectativa por Pick)</h3>
+                <h3>TOP LIGAS (EXP/PICK)</h3>
                 <div id="leagueAnalysis"></div>
             </div>
         </div>
@@ -131,13 +129,9 @@ function runProAnalysis() {
     if(!raw) return;
 
     const lines = raw.split('\n');
-    let db = [];
-    let equity = [0];
-    let maxEquity = 0;
-    let maxDD = 0;
-    let totalWinProfit = 0;
-    let totalLosses = 0;
+    let rawDataObjects = [];
 
+    // 1. Parsing y Limpieza
     lines.forEach(line => {
         const c = line.split('\t');
         if(c.length < 8 || c[0].toLowerCase().includes('fecha')) return;
@@ -145,78 +139,81 @@ function runProAnalysis() {
         const odd = parseFloat(c[5].replace(',', '.'));
         const win = c[7].toLowerCase().trim() === 'verde';
         const profit = win ? (odd - 1) : -1;
-
-        if(win) totalWinProfit += profit; else totalLosses += Math.abs(profit);
-
         const dt = new Date(c[0]);
-        db.push({
+
+        rawDataObjects.push({
+            date: dt,
             h: dt.getHours(),
             d: dt.toLocaleString('es-ES', { weekday: 'short' }),
-            m: parseInt(c[1]),
-            league: c[3],
+            m: parseInt(c[1].replace("'", "").trim()),
+            league: c[3].trim(),
             odd: odd,
             profit: profit,
             win: win
         });
+    });
 
-        const currentEquity = equity[equity.length - 1] + profit;
+    // 2. Ordenar por fecha para Equity real
+    rawDataObjects.sort((a, b) => a.date - b.date);
+
+    // 3. Cálculos Pro
+    let equity = [0];
+    let maxEquity = 0;
+    let maxDD = 0;
+    let winP = 0;
+    let lossP = 0;
+
+    rawDataObjects.forEach(x => {
+        if(x.win) winP += x.profit; else lossP += Math.abs(x.profit);
+        
+        const currentEquity = equity[equity.length - 1] + x.profit;
         equity.push(parseFloat(currentEquity.toFixed(2)));
         
-        // Calcular Drawdown
         if(currentEquity > maxEquity) maxEquity = currentEquity;
         const dd = maxEquity - currentEquity;
         if(dd > maxDD) maxDD = dd;
     });
 
-    renderPro(db, equity, maxDD, totalWinProfit, totalLosses);
+    renderPro(rawDataObjects, equity, maxDD, winP, lossP);
 }
 
 function renderPro(db, equity, maxDD, winP, lossP) {
     document.getElementById('dashboard').style.display = 'block';
-    
     const profitTotal = equity[equity.length - 1];
     const profitFactor = (winP / (lossP || 1)).toFixed(2);
-    const ev = (profitTotal / db.length).toFixed(2); // Esperanza Matemática
+    const ev = (profitTotal / db.length).toFixed(2);
 
-    // Render Métricas
     document.getElementById('proMetrics').innerHTML = `
-        <div class="metric-card high-profit"><small>NET PROFIT</small><div class="${profitTotal>=0?'val-up':'val-down'}">${profitTotal.toFixed(2)} u.</div></div>
-        <div class="metric-card"><small>PROFIT FACTOR</small><div class="${profitFactor>1.2?'val-up':'val-down'}">${profitFactor}</div></div>
-        <div class="metric-card high-risk"><small>MAX DRAWDOWN</small><div class="val-down">-${maxDD.toFixed(2)} u.</div></div>
-        <div class="metric-card"><small>EXP. MATEMÁTICA</small><div>${ev} u.</div></div>
-        <div class="metric-card"><small>YIELD %</small><div>${((profitTotal/db.length)*100).toFixed(1)}%</div></div>
-        <div class="metric-card"><small>WINRATE</small><div>${((db.filter(x=>x.win).length/db.length)*100).toFixed(0)}%</div></div>
+        <div class="metric-card high-profit"><small>Net Profit</small><div class="${profitTotal>=0?'val-up':'val-down'}">${profitTotal.toFixed(2)} u.</div></div>
+        <div class="metric-card"><small>Profit Factor</small><div class="${profitFactor>1.2?'val-up':'val-down'}">${profitFactor}</div></div>
+        <div class="metric-card high-risk"><small>Max Drawdown</small><div class="val-down">-${maxDD.toFixed(2)} u.</div></div>
+        <div class="metric-card"><small>Esperanza</small><div>${ev} u.</div></div>
+        <div class="metric-card"><small>Yield %</small><div>${((profitTotal/db.length)*100).toFixed(1)}%</div></div>
+        <div class="metric-card"><small>Winrate</small><div>${((db.filter(x=>x.win).length/db.length)*100).toFixed(0)}%</div></div>
     `;
 
-    // Gráfica Principal
     updateChart('mainEquity', 'line', equity.map((_,i)=>i), equity, 'Equity');
 
-    // Profit Factor por Rango de Cuota (Análisis de Valor)
-    const oddRanges = {'1.5-1.6':[], '1.6-1.7':[], '1.7-1.8':[], '1.8+':[]};
+    // Profit Factor por Rango (Corregido)
+    const ranges = {'<1.6':[], '1.6-1.7':[], '1.7-1.8':[], '1.8+':[]};
     db.forEach(x => {
-        let r = x.odd < 1.6 ? '1.5-1.6' : x.odd < 1.7 ? '1.6-1.7' : x.odd < 1.8 ? '1.7-1.8' : '1.8+';
-        oddRanges[r].push(x);
+        let r = x.odd < 1.6 ? '<1.6' : x.odd < 1.7 ? '1.6-1.7' : x.odd < 1.8 ? '1.7-1.8' : '1.8+';
+        ranges[r].push(x);
     });
-    const pfData = Object.keys(oddRanges).map(r => {
-        const w = oddRanges[r].filter(x=>x.win).reduce((a,b)=>a+(b.odd-1),0);
-        const l = oddRanges[r].filter(x=>!x.win).length;
+    const pfData = Object.keys(ranges).map(r => {
+        const w = ranges[r].filter(x=>x.win).reduce((a,b)=>a+b.profit,0);
+        const l = ranges[r].filter(x=>!x.win).length;
         return (w/(l||1)).toFixed(2);
     });
-    updateChart('profitFactorChart', 'bar', Object.keys(oddRanges), pfData, 'Profit Factor');
+    updateChart('profitFactorChart', 'bar', Object.keys(ranges), pfData, 'Profit Factor');
 
-    // Profit por Minuto
-    const minData = group(db, 'm');
-    updateChart('minuteProfit', 'bar', Object.keys(minData), Object.values(minData), 'Profit Real');
+    updateChart('minuteProfit', 'bar', Object.keys(group(db, 'm')), Object.values(group(db, 'm')), 'Profit');
+    updateChart('dayAnalysis', 'bar', Object.keys(group(db, 'd')), Object.values(group(db, 'd')), 'Profit');
+    
+    const hGroup = group(db, 'h');
+    updateChart('hourAnalysis', 'line', Object.keys(hGroup).sort((a,b)=>a-b), Object.values(hGroup), 'Profit');
 
-    // Análisis por Día
-    const dayData = group(db, 'd');
-    updateChart('dayAnalysis', 'bar', Object.keys(dayData), Object.values(dayData), 'Profit por Día');
-
-    // Análisis por Hora
-    const hourData = group(db, 'h');
-    updateChart('hourAnalysis', 'line', Object.keys(hourData).sort((a,b)=>a-b), Object.values(hourData), 'Profit por Hora');
-
-    // Tabla de Ligas Profesional (Profit / Pick)
+    // Tabla de Ligas
     const leagues = {};
     db.forEach(x => {
         if(!leagues[x.league]) leagues[x.league] = {p:0, n:0};
@@ -224,7 +221,7 @@ function renderPro(db, equity, maxDD, winP, lossP) {
         leagues[x.league].n += 1;
     });
     let lHtml = `<table><tr><th>Liga</th><th>Profit</th><th>Exp/Pick</th></tr>`;
-    Object.keys(leagues).sort((a,b)=>leagues[b].p - leagues[a].p).slice(0,8).forEach(l => {
+    Object.keys(leagues).sort((a,b)=>leagues[b].p - leagues[a].p).slice(0,10).forEach(l => {
         const exp = (leagues[l].p / leagues[l].n).toFixed(2);
         lHtml += `<tr><td>${l}</td><td class="val-up">${leagues[l].p.toFixed(2)}</td><td>${exp}</td></tr>`;
     });
@@ -239,7 +236,8 @@ function group(data, key) {
 
 function updateChart(id, type, labels, data, label) {
     if(charts[id]) charts[id].destroy();
-    charts[id] = new Chart(document.getElementById(id), {
+    const ctx = document.getElementById(id).getContext('2d');
+    charts[id] = new Chart(ctx, {
         type: type,
         data: {
             labels: labels,
@@ -248,16 +246,17 @@ function updateChart(id, type, labels, data, label) {
                 data: data,
                 borderColor: '#00f2fe',
                 backgroundColor: data.map(v => v >= 0 ? 'rgba(0, 242, 254, 0.4)' : 'rgba(255, 84, 112, 0.4)'),
-                tension: 0.1,
-                fill: type === 'line'
+                tension: 0.3,
+                fill: type === 'line',
+                pointRadius: type === 'line' ? 2 : 3
             }]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-                y: { grid: { color: '#21262d' } },
-                x: { grid: { display: false } }
+                y: { grid: { color: '#21262d' }, ticks: { color: '#8b949e'} },
+                x: { grid: { display: false }, ticks: { color: '#8b949e'} }
             }
         }
     });
