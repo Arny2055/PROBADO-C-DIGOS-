@@ -3,264 +3,360 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elite Quant Backtester - Institutional Grade</title>
+    <title>EL GURÚ DE LAS APUESTAS - Backtesting Lab</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --verde: #00f2fe;
-            --rojo: #ff5470;
-            --bg: #0b0e14;
-            --card: #161b22;
-            --accent: #7928ca;
-            --gold: #f1c40f;
+            --bg: #282a36;
+            --current-line: #44475a;
+            --fg: #f8f8f2;
+            --comment: #6272a4;
+            --cyan: #8be9fd;
+            --green: #50fa7b;
+            --orange: #ffb86c;
+            --pink: #ff79c6;
+            --purple: #bd93f9;
+            --red: #ff5555;
+            --yellow: #f1fa8c;
         }
-        body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            background-color: var(--bg);
-            color: #e6edf3;
-            margin: 0;
-            padding: 15px;
-        }
-        .container { max-width: 1500px; margin: auto; }
-        
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid #30363d; }
-        .header h1 { margin: 0; font-size: 1.5em; color: var(--verde); letter-spacing: 2px; }
-        
-        textarea {
-            width: 100%; height: 100px; background: #0d1117; color: #58a6ff;
-            border: 1px solid #30363d; border-radius: 8px; padding: 12px;
-            font-family: monospace; font-size: 12px; margin-top: 15px; box-sizing: border-box;
-        }
-        button {
-            width: 100%; padding: 15px; background: var(--accent); color: white;
-            border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
-            margin: 10px 0; transition: 0.3s; font-size: 14px;
-        }
-        button:hover { background: #9146ff; }
 
-        .metrics-grid {
+        body {
+            background-color: var(--bg);
+            color: var(--fg);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1, h2 { font-family: 'Fira Code', monospace; color: var(--purple); text-transform: uppercase; letter-spacing: 2px; }
+
+        .container { max-width: 1400px; margin: auto; }
+
+        .grid-config {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: var(--current-line);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid var(--comment);
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            background: var(--bg);
+            color: var(--green);
+            border: 1px solid var(--purple);
+            border-radius: 8px;
+            padding: 10px;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            resize: none;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.2);
+            border-bottom: 3px solid var(--purple);
+        }
+
+        .stat-box span { display: block; font-size: 0.8rem; color: var(--comment); }
+        .stat-box b { font-size: 1.4rem; color: var(--cyan); }
+
+        .filters {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 12px; margin-bottom: 20px;
+            gap: 10px;
+            margin-top: 15px;
         }
-        .metric-card {
-            background: var(--card); padding: 15px; border-radius: 10px;
-            border: 1px solid #30363d;
-        }
-        .metric-card small { color: #8b949e; display: block; font-size: 11px; margin-bottom: 5px; text-transform: uppercase; }
-        .metric-card div { font-size: 1.4em; font-weight: 800; }
-        .high-risk { border-left: 4px solid var(--rojo); }
-        .high-profit { border-left: 4px solid var(--verde); }
 
-        .grid-layout {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 15px; margin-bottom: 15px;
+        input, select {
+            background: var(--bg);
+            border: 1px solid var(--comment);
+            color: var(--fg);
+            padding: 8px;
+            border-radius: 5px;
+            outline: none;
         }
+
+        input:focus { border-color: var(--pink); }
+
         .chart-container {
-            background: var(--card); border: 1px solid #30363d;
-            padding: 15px; border-radius: 12px;
-        }
-        .secondary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 15px;
+            height: 400px;
+            margin-top: 20px;
         }
 
-        .val-up { color: var(--verde); }
-        .val-down { color: var(--rojo); }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        th { text-align: left; padding: 10px; border-bottom: 1px solid #30363d; color: #8b949e; }
-        td { padding: 10px; border-bottom: 1px solid #21262d; }
-        h3 { margin-top: 0; font-size: 14px; color: #8b949e; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 0.85rem;
+        }
+
+        th { background: var(--purple); color: var(--bg); padding: 10px; text-align: left; }
+        td { padding: 8px; border-bottom: 1px solid var(--current-line); }
+        tr:hover { background: rgba(255, 255, 255, 0.05); }
+
+        .status-win { color: var(--green); font-weight: bold; }
+        .status-loss { color: var(--red); font-weight: bold; }
+
+        .btn-update {
+            background: var(--pink);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .btn-update:hover { background: var(--purple); transform: scale(1.05); }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="header">
-        <h1>QUANTUM BACKTEST <span>PRO</span></h1>
-        <div id="status" style="color: var(--gold); font-size: 12px;">READY</div>
+    <h1>🚀 Backtesting Lab <span style="font-size: 12px; color: var(--comment);">supersónico</span></h1>
+
+    <div class="grid-config">
+        <div class="card">
+            <h3>⚙️ Configuración</h3>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <label>Bank inicial ($):</label>
+                <input type="number" id="bank-initial" value="1000" oninput="processData()">
+                <label>Unidades por apuesta:</label>
+                <input type="number" id="unit-size" value="1" oninput="processData()">
+                <label>Valor de 1 Unidad ($):</label>
+                <input type="number" id="unit-value" value="10" oninput="processData()">
+            </div>
+        </div>
+        <div class="card">
+            <h3>📋 Pegar Datos (Excel/Tab)</h3>
+            <textarea id="raw-data" placeholder="Pega aquí tu tabla... (Fecha, Minuto, Evento, Liga, Mercado, Odd)" oninput="processData()">
+Fecha	Minuto	Evento	Liga	Mercado	Odd
+3/17/26 16:30	18'	Richmond Kickers x Northern Virginia	USA US Open Cup	Gol	1.61
+3/17/26 16:30	14'	Academia Puerto Cabello x UCV	Venezuela Primera Division	Gol	1.8
+3/17/26 14:00	24'	KH Hlidarendi x Hvíti riddarinn	Iceland Iceland Cup	Gol	1.61
+3/17/26 14:00	14'	Barnsley x Wigan Athletic	England League One	Gol	1.6
+3/17/26 13:45	14'	Salford City x Barrow	England League Two	Gol	1.65</textarea>
+        </div>
     </div>
 
-    <textarea id="rawData" placeholder="Pega tus datos aquí..."></textarea>
-    <button onclick="runProAnalysis()">EJECUTAR ANÁLISIS PROFESIONAL</button>
+    <div class="card">
+        <h3>🔍 Filtros Avanzados</h3>
+        <div class="filters">
+            <input type="text" id="filter-liga" placeholder="Filtrar Liga..." oninput="processData()">
+            <input type="number" id="filter-min-odd" step="0.1" placeholder="Cuota Min" oninput="processData()">
+            <input type="number" id="filter-max-odd" step="0.1" placeholder="Cuota Max" oninput="processData()">
+            <select id="filter-day" onchange="processData()">
+                <option value="">Cualquier día</option>
+                <option value="1">Lunes</option>
+                <option value="2">Martes</option>
+                <option value="3">Miércoles</option>
+                <option value="4">Jueves</option>
+                <option value="5">Viernes</option>
+                <option value="6">Sábado</option>
+                <option value="0">Domingo</option>
+            </select>
+            <input type="text" id="filter-minute-pick" placeholder="Minuto exacto (ej. 14')" oninput="processData()">
+        </div>
+    </div>
 
-    <div id="dashboard" style="display:none;">
-        <div class="metrics-grid" id="proMetrics"></div>
-
-        <div class="grid-layout">
-            <div class="chart-container">
-                <h3>EQUITY CURVE (PROFIT ACUMULADO)</h3>
-                <div style="height: 350px;"><canvas id="mainEquity"></canvas></div>
-            </div>
-            <div class="chart-container">
-                <h3>PROFIT FACTOR POR CUOTA</h3>
-                <div style="height: 350px;"><canvas id="profitFactorChart"></canvas></div>
-            </div>
+    <div class="stats-grid" id="stats-output">
         </div>
 
-        <div class="secondary-grid">
-            <div class="chart-container">
-                <h3>NET PROFIT POR MINUTO</h3>
-                <canvas id="minuteProfit"></canvas>
-            </div>
-            <div class="chart-container">
-                <h3>PROFIT POR DÍA</h3>
-                <canvas id="dayAnalysis"></canvas>
-            </div>
-            <div class="chart-container">
-                <h3>EFICIENCIA POR HORA</h3>
-                <canvas id="hourAnalysis"></canvas>
-            </div>
-            <div class="chart-container">
-                <h3>TOP LIGAS (EXP/PICK)</h3>
-                <div id="leagueAnalysis"></div>
-            </div>
-        </div>
+    <div class="card chart-container">
+        <canvas id="profitChart"></canvas>
+    </div>
+
+    <div class="card" style="overflow-x: auto;">
+        <h3>📊 Detalle de Picks</h3>
+        <table id="results-table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Min</th>
+                    <th>Evento</th>
+                    <th>Liga</th>
+                    <th>Cuota</th>
+                    <th>Resultado</th>
+                    <th>Profit (U)</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
     </div>
 </div>
 
 <script>
-let charts = {};
+    let chart;
 
-function runProAnalysis() {
-    const raw = document.getElementById('rawData').value.trim();
-    if(!raw) return;
+    function erfc(x) {
+        const z = Math.abs(x);
+        const t = 1 / (1 + z / 2);
+        const r = t * Math.exp(-z * z - 1.26551223 + t * (1.00002368 + t * (0.37409196 + t * (0.09678418 + t * (-0.18628806 + t * (0.27886807 + t * (-1.13520398 + t * (1.48851587 + t * (-0.82215223 + t * 0.17087277)))))))));
+        return x >= 0 ? r : 2 - r;
+    }
 
-    const lines = raw.split('\n');
-    let rawDataObjects = [];
+    function calculatePValue(winRate, n, avgOdd) {
+        if (n === 0) return 0;
+        const expectedWinRate = 1 / avgOdd;
+        const sd = Math.sqrt((expectedWinRate * (1 - expectedWinRate)) / n);
+        const z = (winRate - expectedWinRate) / sd;
+        return (erfc(z / Math.sqrt(2)) / 2) * 100;
+    }
 
-    // 1. Parsing y Limpieza
-    lines.forEach(line => {
-        const c = line.split('\t');
-        if(c.length < 8 || c[0].toLowerCase().includes('fecha')) return;
+    function processData() {
+        const rawText = document.getElementById('raw-data').value;
+        const bankInitial = parseFloat(document.getElementById('bank-initial').value);
+        const unitSize = parseFloat(document.getElementById('unit-size').value);
+        const unitValue = parseFloat(document.getElementById('unit-value').value);
 
-        const odd = parseFloat(c[5].replace(',', '.'));
-        const win = c[7].toLowerCase().trim() === 'verde';
-        const profit = win ? (odd - 1) : -1;
-        const dt = new Date(c[0]);
+        const filterLiga = document.getElementById('filter-liga').value.toLowerCase();
+        const filterMinOdd = parseFloat(document.getElementById('filter-min-odd').value) || 0;
+        const filterMaxOdd = parseFloat(document.getElementById('filter-max-odd').value) || 999;
+        const filterDay = document.getElementById('filter-day').value;
+        const filterMinPick = document.getElementById('filter-minute-pick').value;
 
-        rawDataObjects.push({
-            date: dt,
-            h: dt.getHours(),
-            d: dt.toLocaleString('es-ES', { weekday: 'short' }),
-            m: parseInt(c[1].replace("'", "").trim()),
-            league: c[3].trim(),
-            odd: odd,
-            profit: profit,
-            win: win
-        });
-    });
+        const lines = rawText.trim().split('\n');
+        let data = [];
 
-    // 2. Ordenar por fecha para Equity real
-    rawDataObjects.sort((a, b) => a.date - b.date);
+        // Parsing de la tabla (Simulamos resultados para el backtesting ya que tu tabla no tiene Score)
+        // REGLA: Usaremos un generador de resultados aleatorios para este demo, en una herramienta real 
+        // añadirías una columna de "Resultado" (W/L)
+        for(let i = 1; i < lines.length; i++) {
+            const cols = lines[i].split('\t');
+            if(cols.length < 6) continue;
 
-    // 3. Cálculos Pro
-    let equity = [0];
-    let maxEquity = 0;
-    let maxDD = 0;
-    let winP = 0;
-    let lossP = 0;
+            const dateObj = new Date(cols[0]);
+            const row = {
+                fecha: cols[0],
+                diaSemana: dateObj.getDay(),
+                minuto: cols[1],
+                evento: cols[2],
+                liga: cols[3],
+                mercado: cols[4],
+                odd: parseFloat(cols[5]),
+                // Simulamos W/L basado en probabilidad de la cuota para mostrar funcionalidad
+                win: Math.random() > (1 / parseFloat(cols[5])) ? false : true 
+            };
 
-    rawDataObjects.forEach(x => {
-        if(x.win) winP += x.profit; else lossP += Math.abs(x.profit);
-        
-        const currentEquity = equity[equity.length - 1] + x.profit;
-        equity.push(parseFloat(currentEquity.toFixed(2)));
-        
-        if(currentEquity > maxEquity) maxEquity = currentEquity;
-        const dd = maxEquity - currentEquity;
-        if(dd > maxDD) maxDD = dd;
-    });
+            // Aplicar Filtros
+            if (filterLiga && !row.liga.toLowerCase().includes(filterLiga)) continue;
+            if (row.odd < filterMinOdd || row.odd > filterMaxOdd) continue;
+            if (filterDay !== "" && row.diaSemana != filterDay) continue;
+            if (filterMinPick && row.minuto !== filterMinPick) continue;
 
-    renderPro(rawDataObjects, equity, maxDD, winP, lossP);
-}
-
-function renderPro(db, equity, maxDD, winP, lossP) {
-    document.getElementById('dashboard').style.display = 'block';
-    const profitTotal = equity[equity.length - 1];
-    const profitFactor = (winP / (lossP || 1)).toFixed(2);
-    const ev = (profitTotal / db.length).toFixed(2);
-
-    document.getElementById('proMetrics').innerHTML = `
-        <div class="metric-card high-profit"><small>Net Profit</small><div class="${profitTotal>=0?'val-up':'val-down'}">${profitTotal.toFixed(2)} u.</div></div>
-        <div class="metric-card"><small>Profit Factor</small><div class="${profitFactor>1.2?'val-up':'val-down'}">${profitFactor}</div></div>
-        <div class="metric-card high-risk"><small>Max Drawdown</small><div class="val-down">-${maxDD.toFixed(2)} u.</div></div>
-        <div class="metric-card"><small>Esperanza</small><div>${ev} u.</div></div>
-        <div class="metric-card"><small>Yield %</small><div>${((profitTotal/db.length)*100).toFixed(1)}%</div></div>
-        <div class="metric-card"><small>Winrate</small><div>${((db.filter(x=>x.win).length/db.length)*100).toFixed(0)}%</div></div>
-    `;
-
-    updateChart('mainEquity', 'line', equity.map((_,i)=>i), equity, 'Equity');
-
-    // Profit Factor por Rango (Corregido)
-    const ranges = {'<1.6':[], '1.6-1.7':[], '1.7-1.8':[], '1.8+':[]};
-    db.forEach(x => {
-        let r = x.odd < 1.6 ? '<1.6' : x.odd < 1.7 ? '1.6-1.7' : x.odd < 1.8 ? '1.7-1.8' : '1.8+';
-        ranges[r].push(x);
-    });
-    const pfData = Object.keys(ranges).map(r => {
-        const w = ranges[r].filter(x=>x.win).reduce((a,b)=>a+b.profit,0);
-        const l = ranges[r].filter(x=>!x.win).length;
-        return (w/(l||1)).toFixed(2);
-    });
-    updateChart('profitFactorChart', 'bar', Object.keys(ranges), pfData, 'Profit Factor');
-
-    updateChart('minuteProfit', 'bar', Object.keys(group(db, 'm')), Object.values(group(db, 'm')), 'Profit');
-    updateChart('dayAnalysis', 'bar', Object.keys(group(db, 'd')), Object.values(group(db, 'd')), 'Profit');
-    
-    const hGroup = group(db, 'h');
-    updateChart('hourAnalysis', 'line', Object.keys(hGroup).sort((a,b)=>a-b), Object.values(hGroup), 'Profit');
-
-    // Tabla de Ligas
-    const leagues = {};
-    db.forEach(x => {
-        if(!leagues[x.league]) leagues[x.league] = {p:0, n:0};
-        leagues[x.league].p += x.profit;
-        leagues[x.league].n += 1;
-    });
-    let lHtml = `<table><tr><th>Liga</th><th>Profit</th><th>Exp/Pick</th></tr>`;
-    Object.keys(leagues).sort((a,b)=>leagues[b].p - leagues[a].p).slice(0,10).forEach(l => {
-        const exp = (leagues[l].p / leagues[l].n).toFixed(2);
-        lHtml += `<tr><td>${l}</td><td class="val-up">${leagues[l].p.toFixed(2)}</td><td>${exp}</td></tr>`;
-    });
-    document.getElementById('leagueAnalysis').innerHTML = lHtml + `</table>`;
-}
-
-function group(data, key) {
-    let res = {};
-    data.forEach(x => { res[x[key]] = (res[x[key]] || 0) + x.profit; });
-    return res;
-}
-
-function updateChart(id, type, labels, data, label) {
-    if(charts[id]) charts[id].destroy();
-    const ctx = document.getElementById(id).getContext('2d');
-    charts[id] = new Chart(ctx, {
-        type: type,
-        data: {
-            labels: labels,
-            datasets: [{
-                label: label,
-                data: data,
-                borderColor: '#00f2fe',
-                backgroundColor: data.map(v => v >= 0 ? 'rgba(0, 242, 254, 0.4)' : 'rgba(255, 84, 112, 0.4)'),
-                tension: 0.3,
-                fill: type === 'line',
-                pointRadius: type === 'line' ? 2 : 3
-            }]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { grid: { color: '#21262d' }, ticks: { color: '#8b949e'} },
-                x: { grid: { display: false }, ticks: { color: '#8b949e'} }
-            }
+            data.push(row);
         }
-    });
-}
+
+        updateDashboard(data, bankInitial, unitSize, unitValue);
+    }
+
+    function updateDashboard(data, bankInitial, unitSize, unitValue) {
+        let totalPicks = data.length;
+        let wins = data.filter(d => d.win).length;
+        let winRate = totalPicks > 0 ? (wins / totalPicks) * 100 : 0;
+        
+        let profitU = 0;
+        let maxProfit = 0;
+        let drawdown = 0;
+        let chartData = [0];
+        let totalStaked = totalPicks * unitSize;
+        let sumOdds = 0;
+
+        data.forEach(d => {
+            sumOdds += d.odd;
+            if(d.win) {
+                profitU += (unitSize * (d.odd - 1));
+            } else {
+                profitU -= unitSize;
+            }
+            chartData.push(parseFloat(profitU.toFixed(2)));
+            
+            if (profitU > maxProfit) maxProfit = profitU;
+            let currentDD = maxProfit - profitU;
+            if (currentDD > drawdown) drawdown = currentDD;
+        });
+
+        let yieldVal = totalStaked > 0 ? (profitU / totalStaked) * 100 : 0;
+        let avgOdd = totalPicks > 0 ? sumOdds / totalPicks : 0;
+        let pValue = calculatePValue(winRate / 100, totalPicks, avgOdd);
+
+        // Render Stats
+        document.getElementById('stats-output').innerHTML = `
+            <div class="stat-box"><span>Picks</span><b>${totalPicks}</b></div>
+            <div class="stat-box"><span>Win Rate</span><b>${winRate.toFixed(1)}%</b></div>
+            <div class="stat-box"><span>Profit</span><b style="color:var(--green)">${profitU.toFixed(2)}U</b></div>
+            <div class="stat-box"><span>ROI (Bank)</span><b>${((profitU * unitValue / bankInitial) * 100).toFixed(1)}%</b></div>
+            <div class="stat-box"><span>Yield</span><b>${yieldVal.toFixed(1)}%</b></div>
+            <div class="stat-box"><span>Drawdown Máx</span><b style="color:var(--red)">${drawdown.toFixed(2)}U</b></div>
+            <div class="stat-box"><span>P-Value</span><b>${pValue.toFixed(2)}%</b></div>
+        `;
+
+        // Render Chart
+        if (chart) chart.destroy();
+        const ctx = document.getElementById('profitChart').getContext('2d');
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartData.map((_, i) => i),
+                datasets: [{
+                    label: 'Profit Acumulado (Unidades)',
+                    data: chartData,
+                    borderColor: '#bd93f9',
+                    backgroundColor: 'rgba(189, 147, 249, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { grid: { color: '#44475a' }, ticks: { color: '#f8f8f2' } },
+                    x: { grid: { display: false }, ticks: { color: '#f8f8f2' } }
+                },
+                plugins: { legend: { labels: { color: '#f8f8f2' } } }
+            }
+        });
+
+        // Render Table
+        const tbody = document.querySelector('#results-table tbody');
+        tbody.innerHTML = data.map(d => `
+            <tr>
+                <td>${d.fecha}</td>
+                <td>${d.minuto}</td>
+                <td>${d.evento}</td>
+                <td>${d.liga}</td>
+                <td>${d.odd.toFixed(2)}</td>
+                <td class="${d.win ? 'status-win' : 'status-loss'}">${d.win ? 'WIN' : 'LOSS'}</td>
+                <td>${d.win ? '+' + (unitSize * (d.odd - 1)).toFixed(2) : '-' + unitSize}</td>
+            </tr>
+        `).join('');
+    }
+
+    // Inicializar
+    window.onload = processData;
 </script>
+
 </body>
 </html>
