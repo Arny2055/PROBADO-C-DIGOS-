@@ -3,249 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Profit Backtester - Sniper Mode</title>
+    <title>Elite Quant Backtester - Institutional Grade</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --verde: #00f2fe;
-            --verde-soft: rgba(0, 242, 254, 0.2);
             --rojo: #ff5470;
-            --rojo-soft: rgba(255, 84, 112, 0.2);
             --bg: #0b0e14;
             --card: #161b22;
             --accent: #7928ca;
+            --gold: #f1c40f;
         }
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Inter', -apple-system, sans-serif;
             background-color: var(--bg);
             color: #e6edf3;
             margin: 0;
-            padding: 10px;
-        }
-        .container {
-            max-width: 1400px;
-            margin: auto;
-            background: var(--bg);
-            padding: 20px;
-        }
-        .header { text-align: center; padding: 20px 0; border-bottom: 1px solid #30363d; margin-bottom: 20px; }
-        .header h1 { margin: 0; background: linear-gradient(90deg, #00f2fe, #4facfe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2.5em; }
-
-        textarea {
-            width: 100%;
-            height: 100px;
-            background: #0d1117;
-            color: #58a6ff;
-            border: 1px solid #30363d;
-            border-radius: 6px;
             padding: 15px;
-            font-family: 'Consolas', monospace;
-            margin-bottom: 10px;
+        }
+        .container { max-width: 1500px; margin: auto; }
+        
+        /* Header & Input */
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid #30363d; }
+        .header h1 { margin: 0; font-size: 1.5em; color: var(--verde); letter-spacing: 2px; }
+        textarea {
+            width: 100%; height: 80px; background: #0d1117; color: #58a6ff;
+            border: 1px solid #30363d; border-radius: 8px; padding: 12px;
+            font-family: monospace; font-size: 12px; margin-top: 15px;
         }
         button {
-            width: 100%;
-            padding: 15px;
-            background: linear-gradient(135deg, #7928ca, #ff0080);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-weight: bold;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: 0.3s;
+            width: 100%; padding: 12px; background: var(--accent); color: white;
+            border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+            margin: 10px 0; transition: 0.3s;
         }
-        button:hover { filter: brightness(1.2); transform: scale(1.01); }
+        button:hover { background: #9146ff; }
 
-        .summary-grid {
+        /* Metrics Grid */
+        .metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px; margin-bottom: 20px;
         }
-        .stat-card {
-            background: var(--card);
-            padding: 20px;
-            border-radius: 10px;
-            border-left: 4px solid var(--accent);
-            text-align: center;
+        .metric-card {
+            background: var(--card); padding: 15px; border-radius: 10px;
+            border: 1px solid #30363d; position: relative;
         }
-        .stat-card small { color: #8b949e; text-transform: uppercase; font-size: 0.8em; }
-        .stat-card div { font-size: 1.8em; font-weight: bold; margin-top: 5px; }
+        .metric-card small { color: #8b949e; display: block; font-size: 11px; margin-bottom: 5px; }
+        .metric-card div { font-size: 1.4em; font-weight: 800; }
+        .high-risk { border-left: 4px solid var(--rojo); }
+        .high-profit { border-left: 4px solid var(--verde); }
 
-        .charts-main {
+        /* Charts Layout */
+        .grid-layout {
             display: grid;
             grid-template-columns: 2fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
+            gap: 15px; margin-bottom: 15px;
         }
-        .chart-box {
-            background: var(--card);
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid #30363d;
+        .chart-container {
+            background: var(--card); border: 1px solid #30363d;
+            padding: 15px; border-radius: 12px;
         }
-        .stats-details {
+        .secondary-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 15px;
         }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
-        th { text-align: left; color: #8b949e; font-weight: 500; border-bottom: 1px solid #30363d; padding: 10px; }
+        /* Utilities */
+        .val-up { color: var(--verde); }
+        .val-down { color: var(--rojo); }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { text-align: left; padding: 10px; border-bottom: 1px solid #30363d; color: #8b949e; }
         td { padding: 10px; border-bottom: 1px solid #21262d; }
-        
-        .val-profit { color: var(--verde); font-weight: bold; }
-        .val-loss { color: var(--rojo); font-weight: bold; }
-        .badge { padding: 2px 6px; border-radius: 4px; font-size: 0.8em; background: #30363d; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <h1>PROFIT ANALYZER 2026</h1>
-        <p>Donde los datos se convierten en dinero</p>
+        <h1>QUANTUM BACKTEST <span>PRO</span></h1>
+        <div id="status">READY TO ANALYZE</div>
     </div>
 
-    <textarea id="rawData" placeholder="Pega aquí los datos de Excel o de la herramienta..."></textarea>
-    <button onclick="runAnalysis()">ANALIZAR PROFIT POR FILTRO</button>
+    <textarea id="rawData" placeholder="Pega tus datos aquí..."></textarea>
+    <button onclick="runProAnalysis()">EJECUTAR ANÁLISIS PROFESIONAL</button>
 
     <div id="dashboard" style="display:none;">
-        <div class="summary-grid" id="mainSummary"></div>
+        <div class="metrics-grid" id="proMetrics"></div>
 
-        <div class="charts-main">
-            <div class="chart-box">
-                <h3>Curva de Crecimiento (Unidades de Profit)</h3>
-                <canvas id="equityChart" style="height: 300px;"></canvas>
+        <div class="grid-layout">
+            <div class="chart-container">
+                <h3>Equity Curve & Drawdown Analysis</h3>
+                <canvas id="mainEquity" style="height: 350px;"></canvas>
             </div>
-            <div class="chart-box">
-                <h3>Profit por Rango de Cuota</h3>
-                <canvas id="oddProfitChart"></canvas>
+            <div class="chart-container">
+                <h3>Profit Factor por Cuota</h3>
+                <canvas id="profitFactorChart"></canvas>
             </div>
         </div>
 
-        <div class="stats-details">
-            <div class="chart-box">
-                <h3>Profit por Minuto de Alerta</h3>
-                <canvas id="minProfitChart"></canvas>
+        <div class="secondary-grid">
+            <div class="chart-container">
+                <h3>Net Profit por Minuto (Filtro Crítico)</h3>
+                <canvas id="minuteProfit"></canvas>
             </div>
-            <div class="chart-box">
-                <h3>Profit por Día de la Semana</h3>
-                <canvas id="dayProfitChart"></canvas>
+            <div class="chart-container">
+                <h3>Rendimiento por Día (Volumen vs Profit)</h3>
+                <canvas id="dayAnalysis"></canvas>
             </div>
-            <div class="chart-box">
-                <h3>Profit por Hora del Día</h3>
-                <canvas id="hourProfitChart"></canvas>
+            <div class="chart-container">
+                <h3>Eficiencia por Hora del Evento</h3>
+                <canvas id="hourAnalysis"></canvas>
             </div>
-            <div class="chart-box">
-                <h3>Filtro por Liga (Top 10 Profit)</h3>
-                <div id="leagueTable"></div>
+            <div class="chart-container">
+                <h3>Top Ligas (Expectativa por Pick)</h3>
+                <div id="leagueAnalysis"></div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-let activeCharts = {};
+let charts = {};
 
-function runAnalysis() {
+function runProAnalysis() {
     const raw = document.getElementById('rawData').value.trim();
     if(!raw) return;
 
     const lines = raw.split('\n');
     let db = [];
-    let curProfit = 0;
-    let equityHistory = [0];
+    let equity = [0];
+    let maxEquity = 0;
+    let maxDD = 0;
+    let totalWinProfit = 0;
+    let totalLosses = 0;
 
     lines.forEach(line => {
         const c = line.split('\t');
         if(c.length < 8 || c[0].toLowerCase().includes('fecha')) return;
 
         const odd = parseFloat(c[5].replace(',', '.'));
-        const isWin = c[7].toLowerCase().trim() === 'verde';
-        const profit = isWin ? (odd - 1) : -1;
-        
-        const dt = new Date(c[0]);
-        const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        const win = c[7].toLowerCase().trim() === 'verde';
+        const profit = win ? (odd - 1) : -1;
 
+        if(win) totalWinProfit += profit; else totalLosses += Math.abs(profit);
+
+        const dt = new Date(c[0]);
         db.push({
-            month: dt.toLocaleString('es-ES', { month: 'long' }),
-            day: dayNames[dt.getDay()],
-            hour: dt.getHours() + ':00',
-            min: parseInt(c[1]),
+            h: dt.getHours(),
+            d: dt.toLocaleString('es-ES', { weekday: 'short' }),
+            m: parseInt(c[1]),
             league: c[3],
-            oddRange: getRange(odd),
+            odd: odd,
             profit: profit,
-            win: isWin
+            win: win
         });
 
-        curProfit += profit;
-        equityHistory.push(parseFloat(curProfit.toFixed(2)));
+        const currentEquity = equity[equity.length - 1] + profit;
+        equity.push(parseFloat(currentEquity.toFixed(2)));
+        
+        // Calcular Drawdown
+        if(currentEquity > maxEquity) maxEquity = currentEquity;
+        const dd = maxEquity - currentEquity;
+        if(dd > maxDD) maxDD = dd;
     });
 
-    render(db, equityHistory);
+    renderPro(db, equity, maxDD, totalWinProfit, totalLosses);
 }
 
-function getRange(o) {
-    if(o < 1.60) return '1.0 - 1.59';
-    if(o < 1.70) return '1.6 - 1.69';
-    if(o < 1.80) return '1.7 - 1.79';
-    return '1.80+';
-}
-
-function render(db, equity) {
+function renderPro(db, equity, maxDD, winP, lossP) {
     document.getElementById('dashboard').style.display = 'block';
+    
+    const profitTotal = equity[equity.length - 1];
+    const profitFactor = (winP / (lossP || 1)).toFixed(2);
+    const ev = (profitTotal / db.length).toFixed(2); // Esperanza Matemática
 
-    // Resumen
-    const totalP = equity[equity.length - 1];
-    const wins = db.filter(x => x.win).length;
-    document.getElementById('mainSummary').innerHTML = `
-        <div class="stat-card"><small>Profit Total</small><div class="${totalP>=0?'val-profit':'val-loss'}">${totalP.toFixed(2)} u.</div></div>
-        <div class="stat-card"><small>Yield</small><div>${((totalP/db.length)*100).toFixed(1)}%</div></div>
-        <div class="stat-card"><small>Winrate</small><div>${((wins/db.length)*100).toFixed(1)}%</div></div>
-        <div class="stat-card"><small>Picks Analizados</small><div>${db.length}</div></div>
+    // Render Métricas
+    document.getElementById('proMetrics').innerHTML = `
+        <div class="metric-card high-profit"><small>NET PROFIT</small><div class="${profitTotal>=0?'val-up':'val-down'}">${profitTotal.toFixed(2)} u.</div></div>
+        <div class="metric-card"><small>PROFIT FACTOR</small><div class="${profitFactor>1.2?'val-up':'val-down'}">${profitFactor}</div></div>
+        <div class="metric-card high-risk"><small>MAX DRAWDOWN</small><div class="val-down">-${maxDD.toFixed(2)} u.</div></div>
+        <div class="metric-card"><small>EXP. MATEMÁTICA</small><div>${ev} u.</div></div>
+        <div class="metric-card"><small>YIELD %</small><div>${((profitTotal/db.length)*100).toFixed(1)}%</div></div>
+        <div class="metric-card"><small>WINRATE</small><div>${((db.filter(x=>x.win).length/db.length)*100).toFixed(0)}%</div></div>
     `;
 
-    // Gráfica de Línea (Equity)
-    updateChart('equityChart', 'line', equity.map((v, i) => i), equity, 'Profit Acumulado', true);
+    // Gráfica Principal
+    updateChart('mainEquity', 'line', equity.map((_,i)=>i), equity, 'Equity');
 
-    // Agrupaciones de Profit
-    const oddData = groupProfit(db, 'oddRange');
-    updateChart('oddProfitChart', 'bar', Object.keys(oddData), Object.values(oddData), 'Profit por Cuota');
-
-    const minData = groupProfit(db, 'min');
-    updateChart('minProfitChart', 'bar', Object.keys(minData), Object.values(minData), 'Profit por Minuto');
-
-    const dayData = groupProfit(db, 'day');
-    updateChart('dayProfitChart', 'bar', Object.keys(dayData), Object.values(dayData), 'Profit por Día');
-
-    const hourData = groupProfit(db, 'hour');
-    updateChart('hourProfitChart', 'bar', Object.keys(hourData).sort(), Object.values(hourData), 'Profit por Hora');
-
-    // Tabla de Ligas
-    const lData = groupProfit(db, 'league');
-    const sortedLeagues = Object.keys(lData).sort((a,b) => lData[b] - lData[a]).slice(0, 10);
-    let html = `<table><tr><th>Liga</th><th>Net Profit</th></tr>`;
-    sortedLeagues.forEach(l => {
-        html += `<tr><td>${l}</td><td class="${lData[l]>=0?'val-profit':'val-loss'}">${lData[l].toFixed(2)} u.</td></tr>`;
+    // Profit Factor por Rango de Cuota (Análisis de Valor)
+    const oddRanges = {'1.5-1.6':[], '1.6-1.7':[], '1.7-1.8':[], '1.8+':[]};
+    db.forEach(x => {
+        let r = x.odd < 1.6 ? '1.5-1.6' : x.odd < 1.7 ? '1.6-1.7' : x.odd < 1.8 ? '1.7-1.8' : '1.8+';
+        oddRanges[r].push(x);
     });
-    document.getElementById('leagueTable').innerHTML = html + `</table>`;
+    const pfData = Object.keys(oddRanges).map(r => {
+        const w = oddRanges[r].filter(x=>x.win).reduce((a,b)=>a+(b.odd-1),0);
+        const l = oddRanges[r].filter(x=>!x.win).length;
+        return (w/(l||1)).toFixed(2);
+    });
+    updateChart('profitFactorChart', 'bar', Object.keys(oddRanges), pfData, 'Profit Factor');
+
+    // Profit por Minuto
+    const minData = group(db, 'm');
+    updateChart('minuteProfit', 'bar', Object.keys(minData), Object.values(minData), 'Profit Real');
+
+    // Análisis por Día
+    const dayData = group(db, 'd');
+    updateChart('dayAnalysis', 'bar', Object.keys(dayData), Object.values(dayData), 'Profit por Día');
+
+    // Análisis por Hora
+    const hourData = group(db, 'h');
+    updateChart('hourAnalysis', 'line', Object.keys(hourData).sort((a,b)=>a-b), Object.values(hourData), 'Profit por Hora');
+
+    // Tabla de Ligas Profesional (Profit / Pick)
+    const leagues = {};
+    db.forEach(x => {
+        if(!leagues[x.league]) leagues[x.league] = {p:0, n:0};
+        leagues[x.league].p += x.profit;
+        leagues[x.league].n += 1;
+    });
+    let lHtml = `<table><tr><th>Liga</th><th>Profit</th><th>Exp/Pick</th></tr>`;
+    Object.keys(leagues).sort((a,b)=>leagues[b].p - leagues[a].p).slice(0,8).forEach(l => {
+        const exp = (leagues[l].p / leagues[l].n).toFixed(2);
+        lHtml += `<tr><td>${l}</td><td class="val-up">${leagues[l].p.toFixed(2)}</td><td>${exp}</td></tr>`;
+    });
+    document.getElementById('leagueAnalysis').innerHTML = lHtml + `</table>`;
 }
 
-function groupProfit(data, key) {
+function group(data, key) {
     let res = {};
-    data.forEach(item => {
-        let k = item[key];
-        res[k] = (res[k] || 0) + item.profit;
-    });
+    data.forEach(x => { res[x[key]] = (res[x[key]] || 0) + x.profit; });
     return res;
 }
 
-function updateChart(id, type, labels, data, label, isEquity = false) {
-    if(activeCharts[id]) activeCharts[id].destroy();
-    const ctx = document.getElementById(id).getContext('2d');
-    
-    activeCharts[id] = new Chart(ctx, {
+function updateChart(id, type, labels, data, label) {
+    if(charts[id]) charts[id].destroy();
+    charts[id] = new Chart(document.getElementById(id), {
         type: type,
         data: {
             labels: labels,
@@ -253,20 +247,18 @@ function updateChart(id, type, labels, data, label, isEquity = false) {
                 label: label,
                 data: data,
                 borderColor: '#00f2fe',
-                backgroundColor: data.map(v => v >= 0 ? 'rgba(0, 242, 254, 0.5)' : 'rgba(255, 84, 112, 0.5)'),
-                fill: isEquity,
-                tension: 0.3,
-                borderWidth: 2
+                backgroundColor: data.map(v => v >= 0 ? 'rgba(0, 242, 254, 0.4)' : 'rgba(255, 84, 112, 0.4)'),
+                tension: 0.1,
+                fill: type === 'line'
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
             scales: {
-                y: { grid: { color: '#30363d' }, ticks: { color: '#8b949e' } },
-                x: { grid: { display: false }, ticks: { color: '#8b949e' } }
-            },
-            plugins: { legend: { display: false } }
+                y: { grid: { color: '#21262d' } },
+                x: { grid: { display: false } }
+            }
         }
     });
 }
