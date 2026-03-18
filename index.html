@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>EL GURÚ DE LAS APUESTAS - Backtesting Lab</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
@@ -21,39 +21,43 @@
             --yellow: #f1fa8c;
         }
 
+        * { box-sizing: border-box; } /* Evita desbordamientos por padding */
+
         body {
             background-color: var(--bg);
             color: var(--fg);
             font-family: 'Inter', sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 15px; /* Reducido para móvil */
+            overflow-x: hidden; /* Evita scroll horizontal parásito */
         }
 
-        h1, h2, h3 { font-family: 'Fira Code', monospace; color: var(--purple); text-transform: uppercase; letter-spacing: 2px; }
+        h1 { font-family: 'Fira Code', monospace; color: var(--purple); text-transform: uppercase; letter-spacing: 1px; font-size: 1.4rem; }
+        h3 { font-family: 'Fira Code', monospace; color: var(--purple); font-size: 1rem; margin-top: 0; }
 
         .container { max-width: 1400px; margin: auto; }
 
         .grid-config {
             display: grid;
             grid-template-columns: 1fr 2fr;
-            gap: 20px;
-            margin-bottom: 20px;
+            gap: 15px;
+            margin-bottom: 15px;
         }
 
-        /* Estilo unificado para tarjetas */
         .card {
             background: var(--current-line);
-            padding: 20px;
+            padding: 15px;
             border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             border: 1px solid var(--comment);
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             position: relative;
+            width: 100%;
         }
 
         textarea {
             width: 100%;
-            height: 180px;
+            height: 150px;
             background: var(--bg);
             color: var(--green);
             border: 1px solid var(--purple);
@@ -62,89 +66,75 @@
             font-family: 'Fira Code', monospace;
             font-size: 11px;
             resize: none;
-            white-space: pre;
-            overflow-x: auto;
         }
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
         }
 
         .stat-box {
             text-align: center;
-            padding: 15px;
+            padding: 10px;
             border-radius: 8px;
             background: rgba(0,0,0,0.2);
             border-bottom: 3px solid var(--purple);
         }
 
-        .stat-box span { display: block; font-size: 0.8rem; color: var(--comment); }
-        .stat-box b { font-size: 1.4rem; color: var(--cyan); }
+        .stat-box span { display: block; font-size: 0.7rem; color: var(--comment); }
+        .stat-box b { font-size: 1.1rem; color: var(--cyan); }
 
         .filters {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 10px;
-            margin-top: 15px;
+            display: flex;
+            flex-wrap: wrap; /* Para que bajen en iPhone */
+            gap: 8px;
+            margin-top: 10px;
         }
 
-        input, select {
+        .filters input, .filters select {
+            flex: 1 1 140px; /* Tamaño mínimo antes de bajar */
             background: var(--bg);
             border: 1px solid var(--comment);
             color: var(--fg);
             padding: 8px;
             border-radius: 5px;
-            outline: none;
+            font-size: 0.9rem;
         }
 
-        .chart-main { height: 350px; }
-        .chart-mini { height: 320px; }
+        .chart-main { height: 300px; }
+        .chart-mini { height: 280px; }
 
         .grid-charts-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
+            gap: 15px;
+            margin-bottom: 15px;
         }
 
-        /* Corrección de Tablas */
         .analysis-grid {
             display: grid;
             grid-template-columns: 1fr 2fr;
-            gap: 20px;
+            gap: 15px;
         }
 
         .table-wrapper {
             overflow-x: auto;
-            overflow-y: auto;
-            max-height: 450px;
+            max-height: 400px;
             background: rgba(0,0,0,0.2);
             border-radius: 8px;
-            border: 1px solid var(--comment);
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.85rem;
-            min-width: 500px; /* Evita que la tabla se colapse en móvil */
+            font-size: 0.8rem;
+            min-width: 450px;
         }
 
-        th { 
-            background: var(--purple); 
-            color: var(--bg); 
-            padding: 12px 10px; 
-            text-align: left; 
-            position: sticky; 
-            top: 0; 
-            z-index: 10;
-        }
-
-        td { padding: 10px; border-bottom: 1px solid var(--current-line); white-space: nowrap; }
-        tr:hover { background: rgba(255, 255, 255, 0.05); }
+        th { background: var(--purple); color: var(--bg); padding: 10px; text-align: left; position: sticky; top: 0; }
+        td { padding: 8px; border-bottom: 1px solid var(--current-line); }
 
         .status-win { color: var(--green); font-weight: bold; }
         .status-loss { color: var(--red); font-weight: bold; }
@@ -153,62 +143,60 @@
             background: var(--red);
             color: white;
             border: none;
-            padding: 8px 15px;
+            padding: 10px;
             border-radius: 5px;
+            width: 100%;
             cursor: pointer;
-            font-weight: bold;
             margin-top: 10px;
-            font-size: 12px;
+            font-weight: bold;
         }
 
+        /* AJUSTES ESPECÍFICOS PARA IPHONE / MÓVIL */
         @media (max-width: 768px) {
             .grid-config, .grid-charts-row, .analysis-grid {
                 grid-template-columns: 1fr;
             }
+            body { padding: 10px; }
+            h1 { font-size: 1.2rem; }
+            .card { padding: 10px; }
+            .chart-main, .chart-mini { height: 250px; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🚀 Backtesting Lab <span style="font-size: 12px; color: var(--comment);">EL GURÚ</span></h1>
+    <h1>🚀 Backtesting Lab <span style="font-size: 10px; color: var(--comment);">GURÚ v2.1</span></h1>
 
     <div class="grid-config">
         <div class="card">
-            <h3>⚙️ Configuración</h3>
-            <div style="display:flex; flex-direction:column; gap:10px;">
-                <label>Bank inicial ($):</label>
-                <input type="number" id="bank-initial" value="1000" oninput="processData()">
-                <label>Valor de 1 Unidad ($):</label>
-                <input type="number" id="unit-value" value="10" oninput="processData()">
+            <h3>⚙️ Config</h3>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <input type="number" id="bank-initial" value="1000" placeholder="Bank $" oninput="processData()">
+                <input type="number" id="unit-value" value="10" placeholder="Unidad $" oninput="processData()">
             </div>
         </div>
         <div class="card">
-            <h3>📋 Pegar Datos</h3>
+            <h3>📋 Datos</h3>
             <textarea id="raw-data" placeholder="Pega aquí tu tabla..." oninput="processData()">
 Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
 3/17/26 16:30	18'	Richmond Kickers x Northern Virginia	USA US Open Cup	Gol	1.61	1	verde
 3/17/26 16:30	14'	Academia Puerto Cabello x UCV	Venezuela Primera Division	Gol	1.8	1	verde
 3/17/26 13:45	14'	Horsham x Bath City	England Vanarama National League South	Gol	1.62	1	rojo
 3/17/26 13:45	14'	Cheltenham Town x Crewe Alexandra	England League Two	Gol	1.7	1	rojo</textarea>
-            <button class="btn-clear" onclick="clearData()">🧹 Limpiar Campo</button>
+            <button class="btn-clear" onclick="clearData()">Limpiar Datos</button>
         </div>
     </div>
 
     <div class="card">
-        <h3>🔍 Filtros</h3>
+        <h3>🔍 Filtros Rápidos</h3>
         <div class="filters">
-            <input type="text" id="filter-liga" placeholder="Filtrar Liga..." oninput="processData()">
-            <input type="number" id="filter-min-odd" step="0.1" placeholder="Cuota Min" oninput="processData()">
-            <input type="number" id="filter-max-odd" step="0.1" placeholder="Cuota Max" oninput="processData()">
+            <input type="text" id="filter-liga" placeholder="Liga..." oninput="processData()">
+            <input type="number" id="filter-min-odd" step="0.1" placeholder="Cuota Mín" oninput="processData()">
             <select id="filter-day" onchange="processData()">
-                <option value="">Cualquier día</option>
-                <option value="1">Lunes</option>
-                <option value="2">Martes</option>
-                <option value="3">Miércoles</option>
-                <option value="4">Jueves</option>
-                <option value="5">Viernes</option>
-                <option value="6">Sábado</option>
+                <option value="">Todos los días</option>
+                <option value="1">Lunes</option><option value="2">Martes</option><option value="3">Miércoles</option>
+                <option value="4">Jueves</option><option value="5">Viernes</option><option value="6">Sábado</option>
                 <option value="0">Domingo</option>
             </select>
             <input type="text" id="filter-minute-pick" placeholder="Minuto (ej. 14')" oninput="processData()">
@@ -218,57 +206,41 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
     <div class="stats-grid" id="stats-output"></div>
 
     <div class="card chart-main">
-        <h3>📈 Curva de Profit (U)</h3>
+        <h3>📈 Curva de Profit</h3>
         <canvas id="profitChart"></canvas>
     </div>
 
     <div class="grid-charts-row">
         <div class="card chart-mini">
-            <h3>⏱️ Tendencia por Minuto</h3>
+            <h3>⏱️ Profit/Minuto</h3>
             <canvas id="minuteChart"></canvas>
         </div>
         <div class="card chart-mini">
-            <h3>📅 Profit por Día</h3>
+            <h3>📅 Profit/Día</h3>
             <canvas id="dayChart"></canvas>
         </div>
     </div>
 
     <div class="card chart-mini">
-        <h3>🕒 Profit por Franja Horaria</h3>
+        <h3>🕒 Profit/Hora</h3>
         <canvas id="hourChart"></canvas>
     </div>
 
     <div class="analysis-grid">
         <div class="card">
-            <h3>⏱️ Análisis por Minuto</h3>
+            <h3>⏱️ Análisis Minuto</h3>
             <div class="table-wrapper">
                 <table id="minute-analysis-table">
-                    <thead>
-                        <tr>
-                            <th>Minuto</th>
-                            <th>Picks</th>
-                            <th>Acierto</th>
-                            <th>Profit</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>Min</th><th>Picks</th><th>%</th><th>Profit</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
         </div>
         <div class="card">
-            <h3>📊 Historial Detallado</h3>
+            <h3>📊 Historial</h3>
             <div class="table-wrapper">
                 <table id="results-table">
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Min</th>
-                            <th>Liga</th>
-                            <th>Cuota</th>
-                            <th>Resultado</th>
-                            <th>Profit (U)</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>Fecha</th><th>Min</th><th>Liga</th><th>Odd</th><th>Res</th><th>U</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -302,134 +274,91 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
     function processData() {
         const rawText = document.getElementById('raw-data').value;
         const lines = rawText.trim().split('\n');
-        
         let data = [];
         let minuteMap = {};
         let dayStats = [0,0,0,0,0,0,0];
         let hourStats = Array(24).fill(0);
 
-        const filterLiga = document.getElementById('filter-liga').value.toLowerCase();
-        const filterMinOdd = parseFloat(document.getElementById('filter-min-odd').value) || 0;
-        const filterMaxOdd = parseFloat(document.getElementById('filter-max-odd').value) || 999;
-        const filterDay = document.getElementById('filter-day').value;
-        const filterMinPick = document.getElementById('filter-minute-pick').value;
+        const fL = document.getElementById('filter-liga').value.toLowerCase();
+        const fMinO = parseFloat(document.getElementById('filter-min-odd').value) || 0;
+        const fD = document.getElementById('filter-day').value;
+        const fMinP = document.getElementById('filter-minute-pick').value;
 
         for(let i = 1; i < lines.length; i++) {
             const cols = lines[i].split('\t');
             if(cols.length < 8) continue;
-
-            const dateStr = cols[0].trim();
-            const dateObj = new Date(dateStr);
-            
+            const dateObj = new Date(cols[0].trim());
             const row = {
-                fecha: dateStr,
-                diaSemana: isNaN(dateObj.getDay()) ? null : dateObj.getDay(),
+                fecha: cols[0].trim(),
+                dia: isNaN(dateObj.getDay()) ? null : dateObj.getDay(),
                 hora: isNaN(dateObj.getHours()) ? null : dateObj.getHours(),
                 minuto: cols[1],
-                minNum: parseInt(cols[1].replace("'", "")) || 0,
-                evento: cols[2],
+                minNum: parseInt(cols[1]) || 0,
                 liga: cols[3],
                 odd: parseFloat(cols[5]),
                 stake: parseFloat(cols[6]) || 0,
-                resultado: cols[7].trim().toLowerCase()
+                res: cols[7].trim().toLowerCase()
             };
 
-            if (filterLiga && !row.liga.toLowerCase().includes(filterLiga)) continue;
-            if (row.odd < filterMinOdd || row.odd > filterMaxOdd) continue;
-            if (filterDay !== "" && row.diaSemana !== null && row.diaSemana != filterDay) continue;
-            if (filterMinPick && row.minuto !== filterMinPick) continue;
+            if (fL && !row.liga.toLowerCase().includes(fL)) continue;
+            if (row.odd < fMinO) continue;
+            if (fD !== "" && row.dia !== null && row.dia != fD) continue;
+            if (fMinP && row.minuto !== fMinP) continue;
 
             data.push(row);
+            let p = (row.res === 'verde') ? (row.stake * (row.odd - 1)) : -row.stake;
 
-            let p = (row.resultado === 'verde') ? (row.stake * (row.odd - 1)) : -row.stake;
-
-            if (!minuteMap[row.minuto]) minuteMap[row.minuto] = { picks: 0, wins: 0, profit: 0, minNum: row.minNum };
-            minuteMap[row.minuto].picks++;
-            minuteMap[row.minuto].profit += p;
-            if(row.resultado === 'verde') minuteMap[row.minuto].wins++;
-
-            if(row.diaSemana !== null) dayStats[row.diaSemana] += p;
+            if (!minuteMap[row.minuto]) minuteMap[row.minuto] = { p: 0, w: 0, pr: 0, n: row.minNum };
+            minuteMap[row.minuto].p++;
+            minuteMap[row.minuto].pr += p;
+            if(row.res === 'verde') minuteMap[row.minuto].w++;
+            if(row.dia !== null) dayStats[row.dia] += p;
             if(row.hora !== null) hourStats[row.hora] += p;
         }
-
         updateDashboard(data, minuteMap, dayStats, hourStats);
     }
 
     function updateDashboard(data, minuteMap, dayStats, hourStats) {
-        let totalPicks = data.length;
-        let wins = data.filter(d => d.resultado === 'verde').length;
-        let winRate = totalPicks > 0 ? (wins / totalPicks) * 100 : 0;
-        let profitU = 0, maxProfit = 0, drawdown = 0, totalStaked = 0, sumOdds = 0;
-        let chartDataProfit = [0];
+        let tp = data.length, wins = data.filter(d => d.res === 'verde').length;
+        let wr = tp > 0 ? (wins / tp) * 100 : 0;
+        let profitU = 0, totalS = 0, sumO = 0;
+        let cData = [0];
 
         data.forEach(d => {
-            sumOdds += d.odd;
-            totalStaked += d.stake;
-            let p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
+            sumO += d.odd; totalS += d.stake;
+            let p = (d.res === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
             profitU += p;
-            chartDataProfit.push(parseFloat(profitU.toFixed(2)));
-            if (profitU > maxProfit) maxProfit = profitU;
-            let currentDD = maxProfit - profitU;
-            if (currentDD > drawdown) drawdown = currentDD;
+            cData.push(parseFloat(profitU.toFixed(2)));
         });
 
-        const pValue = calculatePValue(winRate / 100, totalPicks, sumOdds/totalPicks);
+        const pV = calculatePValue(wr / 100, tp, sumO/tp);
         document.getElementById('stats-output').innerHTML = `
-            <div class="stat-box"><span>Picks</span><b>${totalPicks}</b></div>
-            <div class="stat-box"><span>Acierto</span><b>${winRate.toFixed(1)}%</b></div>
+            <div class="stat-box"><span>Picks</span><b>${tp}</b></div>
+            <div class="stat-box"><span>WinRate</span><b>${wr.toFixed(1)}%</b></div>
             <div class="stat-box"><span>Profit</span><b style="color:var(--green)">${profitU.toFixed(2)}U</b></div>
-            <div class="stat-box"><span>Yield</span><b>${totalStaked > 0 ? ((profitU/totalStaked)*100).toFixed(1) : 0}%</b></div>
-            <div class="stat-box"><span>Drawdown</span><b style="color:var(--red)">${drawdown.toFixed(2)}U</b></div>
-            <div class="stat-box"><span>P-Value</span><b>${pValue.toFixed(2)}%</b></div>
+            <div class="stat-box"><span>P-Value</span><b>${pV.toFixed(1)}%</b></div>
         `;
 
-        const baseOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
+        const bO = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
 
         if (chartProfit) chartProfit.destroy();
-        chartProfit = new Chart(document.getElementById('profitChart'), {
-            type: 'line',
-            data: { labels: chartDataProfit.map((_, i) => i), datasets: [{ data: chartDataProfit, borderColor: '#bd93f9', backgroundColor: 'rgba(189, 147, 249, 0.1)', fill: true, tension: 0.1 }] },
-            options: baseOpts
-        });
+        chartProfit = new Chart(document.getElementById('profitChart'), { type: 'line', data: { labels: cData.map((_, i) => i), datasets: [{ data: cData, borderColor: '#bd93f9', fill: true, backgroundColor: 'rgba(189, 147, 249, 0.1)' }] }, options: bO });
 
-        const sortedMinutes = Object.keys(minuteMap).sort((a, b) => minuteMap[a].minNum - minuteMap[b].minNum);
-        let cumP = 0;
+        const sM = Object.keys(minuteMap).sort((a,b) => minuteMap[a].n - minuteMap[b].n);
+        let cp = 0;
         if (chartMinute) chartMinute.destroy();
-        chartMinute = new Chart(document.getElementById('minuteChart'), {
-            type: 'line',
-            data: { labels: sortedMinutes, datasets: [{ data: sortedMinutes.map(m => { cumP += minuteMap[m].profit; return cumP.toFixed(2); }), borderColor: '#ff79c6', tension: 0.3 }] },
-            options: baseOpts
-        });
+        chartMinute = new Chart(document.getElementById('minuteChart'), { type: 'line', data: { labels: sM, datasets: [{ data: sM.map(m => { cp += minuteMap[m].pr; return cp.toFixed(2); }), borderColor: '#ff79c6' }] }, options: bO });
 
-        const dayLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-        const dayValues = [1, 2, 3, 4, 5, 6, 0].map(i => dayStats[i]);
+        const dL = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+        const dV = [1, 2, 3, 4, 5, 6, 0].map(i => dayStats[i]);
         if (chartDay) chartDay.destroy();
-        chartDay = new Chart(document.getElementById('dayChart'), {
-            type: 'bar',
-            data: { labels: dayLabels, datasets: [{ data: dayValues, backgroundColor: dayValues.map(v => v >= 0 ? '#50fa7b' : '#ff5555') }] },
-            options: baseOpts
-        });
+        chartDay = new Chart(document.getElementById('dayChart'), { type: 'bar', data: { labels: dL, datasets: [{ data: dV, backgroundColor: dV.map(v => v >= 0 ? '#50fa7b' : '#ff5555') }] }, options: bO });
 
         if (chartHour) chartHour.destroy();
-        chartHour = new Chart(document.getElementById('hourChart'), {
-            type: 'bar',
-            data: { labels: Array.from({length: 24}, (_, i) => `${i}h`), datasets: [{ data: hourStats, backgroundColor: hourStats.map(v => v >= 0 ? '#8be9fd' : '#ffb86c') }] },
-            options: baseOpts
-        });
+        chartHour = new Chart(document.getElementById('hourChart'), { type: 'bar', data: { labels: Array.from({length: 24}, (_, i) => i+'h'), datasets: [{ data: hourStats, backgroundColor: '#8be9fd' }] }, options: bO });
 
-        // Actualización de Tablas Limpia
-        const minBody = document.querySelector('#minute-analysis-table tbody');
-        minBody.innerHTML = Object.keys(minuteMap).sort((a, b) => minuteMap[b].profit - minuteMap[a].profit).map(m => {
-            const row = minuteMap[m];
-            const acc = ((row.wins/row.picks)*100).toFixed(1);
-            return `<tr><td><b>${m}</b></td><td>${row.picks}</td><td>${acc}%</td><td style="color:${row.profit>=0?'var(--green)':'var(--red)'}">${row.profit.toFixed(2)}U</td></tr>`;
-        }).join('');
-
-        const resBody = document.querySelector('#results-table tbody');
-        resBody.innerHTML = data.map(d => {
-            const p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
-            return `<tr><td>${d.fecha}</td><td>${d.minuto}</td><td>${d.liga}</td><td>${d.odd.toFixed(2)}</td><td class="${d.resultado==='verde'?'status-win':'status-loss'}">${d.resultado.toUpperCase()}</td><td style="color:${p>=0?'var(--green)':'var(--red)'}">${p.toFixed(2)}</td></tr>`;
-        }).join('');
+        document.querySelector('#minute-analysis-table tbody').innerHTML = Object.keys(minuteMap).sort((a,b) => minuteMap[b].pr - minuteMap[a].pr).map(m => `<tr><td>${m}</td><td>${minuteMap[m].p}</td><td>${((minuteMap[m].w/minuteMap[m].p)*100).toFixed(0)}%</td><td style="color:${minuteMap[m].pr>=0?'var(--green)':'var(--red)'}">${minuteMap[m].pr.toFixed(2)}</td></tr>`).join('');
+        document.querySelector('#results-table tbody').innerHTML = data.map(d => { let p = (d.res === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake; return `<tr><td>${d.fecha.split(' ')[0]}</td><td>${d.minuto}</td><td>${d.liga.substring(0,15)}</td><td>${d.odd}</td><td class="${d.res==='verde'?'status-win':'status-loss'}">${d.res[0].toUpperCase()}</td><td>${p.toFixed(1)}</td></tr>`; }).join('');
     }
 
     window.onload = processData;
