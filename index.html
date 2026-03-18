@@ -29,7 +29,7 @@
             padding: 20px;
         }
 
-        h1, h2 { font-family: 'Fira Code', monospace; color: var(--purple); text-transform: uppercase; letter-spacing: 2px; }
+        h1, h2, h3 { font-family: 'Fira Code', monospace; color: var(--purple); text-transform: uppercase; letter-spacing: 2px; }
 
         .container { max-width: 1400px; margin: auto; }
 
@@ -46,6 +46,7 @@
             border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             border: 1px solid var(--comment);
+            margin-bottom: 20px;
         }
 
         textarea {
@@ -99,15 +100,17 @@
 
         input:focus { border-color: var(--pink); }
 
-        .chart-container {
-            height: 400px;
-            margin-top: 20px;
+        .chart-container { height: 400px; }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
             font-size: 0.85rem;
         }
 
@@ -130,7 +133,6 @@
             font-size: 12px;
             transition: 0.3s;
         }
-
         .btn-clear:hover { filter: brightness(1.2); }
     </style>
 </head>
@@ -141,17 +143,16 @@
 
     <div class="grid-config">
         <div class="card">
-            <h3>⚙️ Configuración Global</h3>
+            <h3>⚙️ Configuración</h3>
             <div style="display:flex; flex-direction:column; gap:10px;">
                 <label>Bank inicial ($):</label>
                 <input type="number" id="bank-initial" value="1000" oninput="processData()">
                 <label>Valor de 1 Unidad ($):</label>
                 <input type="number" id="unit-value" value="10" oninput="processData()">
-                <p style="font-size: 11px; color: var(--comment);">* El Stake se toma de cada fila de la tabla.</p>
             </div>
         </div>
         <div class="card">
-            <h3>📋 Pegar Datos (Fecha, Min, Evento, Liga, Mercado, Odd, Stake, Resultado)</h3>
+            <h3>📋 Pegar Datos</h3>
             <textarea id="raw-data" placeholder="Pega aquí tu tabla..." oninput="processData()">
 Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
 3/17/26 16:30	18'	Richmond Kickers x Northern Virginia	USA US Open Cup	Gol	1.61	1	verde
@@ -163,7 +164,7 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
     </div>
 
     <div class="card">
-        <h3>🔍 Filtros en Tiempo Real</h3>
+        <h3>🔍 Filtros</h3>
         <div class="filters">
             <input type="text" id="filter-liga" placeholder="Filtrar Liga..." oninput="processData()">
             <input type="number" id="filter-min-odd" step="0.1" placeholder="Cuota Min" oninput="processData()">
@@ -188,23 +189,41 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         <canvas id="profitChart"></canvas>
     </div>
 
-    <div class="card" style="overflow-x: auto;">
-        <h3>📊 Detalle de Rendimiento</h3>
-        <table id="results-table">
-            <thead>
-                <tr>
-                    <th>Fecha</th>
-                    <th>Min</th>
-                    <th>Evento</th>
-                    <th>Liga</th>
-                    <th>Cuota</th>
-                    <th>Stake</th>
-                    <th>Resultado</th>
-                    <th>Profit (U)</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+    <div class="analysis-grid">
+        <div class="card">
+            <h3>⏱️ Rendimiento por Minuto</h3>
+            <div style="overflow-y: auto; max-height: 400px;">
+                <table id="minute-analysis-table">
+                    <thead>
+                        <tr>
+                            <th>Minuto</th>
+                            <th>Picks</th>
+                            <th>Acierto</th>
+                            <th>Profit</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card">
+            <h3>📊 Historial Detallado</h3>
+            <div style="overflow-y: auto; max-height: 400px;">
+                <table id="results-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Min</th>
+                            <th>Liga</th>
+                            <th>Cuota</th>
+                            <th>Resultado</th>
+                            <th>Profit (U)</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -244,131 +263,109 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
 
         const lines = rawText.trim().split('\n');
         let data = [];
+        let minuteMap = {};
 
         for(let i = 1; i < lines.length; i++) {
             const cols = lines[i].split('\t');
             if(cols.length < 8) continue;
 
-            const dateStr = cols[0];
-            const dateObj = new Date(dateStr);
-            
+            const dateObj = new Date(cols[0]);
             const row = {
                 fecha: cols[0],
                 diaSemana: dateObj.getDay(),
                 minuto: cols[1],
                 evento: cols[2],
                 liga: cols[3],
-                mercado: cols[4],
                 odd: parseFloat(cols[5]),
                 stake: parseFloat(cols[6]) || 0,
                 resultado: cols[7].trim().toLowerCase()
             };
 
-            // Filtros
             if (filterLiga && !row.liga.toLowerCase().includes(filterLiga)) continue;
             if (row.odd < filterMinOdd || row.odd > filterMaxOdd) continue;
             if (filterDay !== "" && row.diaSemana != filterDay) continue;
             if (filterMinPick && row.minuto !== filterMinPick) continue;
 
             data.push(row);
+
+            // Lógica Análisis por Minuto
+            if (!minuteMap[row.minuto]) {
+                minuteMap[row.minuto] = { picks: 0, wins: 0, profit: 0 };
+            }
+            minuteMap[row.minuto].picks++;
+            let p = (row.resultado === 'verde') ? (row.stake * (row.odd - 1)) : -row.stake;
+            minuteMap[row.minuto].profit += p;
+            if(row.resultado === 'verde') minuteMap[row.minuto].wins++;
         }
 
-        updateDashboard(data, bankInitial, unitValue);
+        updateDashboard(data, bankInitial, unitValue, minuteMap);
     }
 
-    function updateDashboard(data, bankInitial, unitValue) {
+    function updateDashboard(data, bankInitial, unitValue, minuteMap) {
         let totalPicks = data.length;
         let wins = data.filter(d => d.resultado === 'verde').length;
         let winRate = totalPicks > 0 ? (wins / totalPicks) * 100 : 0;
-        
-        let profitU = 0;
-        let maxProfit = 0;
-        let drawdown = 0;
+        let profitU = 0, maxProfit = 0, drawdown = 0, totalStaked = 0, sumOdds = 0;
         let chartData = [0];
-        let totalStaked = 0;
-        let sumOdds = 0;
 
         data.forEach(d => {
             sumOdds += d.odd;
             totalStaked += d.stake;
-            let currentProfit = 0;
-
-            if(d.resultado === 'verde') {
-                currentProfit = (d.stake * (d.odd - 1));
-            } else if(d.resultado === 'rojo') {
-                currentProfit = -d.stake;
-            }
-            
+            let currentProfit = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
             profitU += currentProfit;
             chartData.push(parseFloat(profitU.toFixed(2)));
-            
             if (profitU > maxProfit) maxProfit = profitU;
             let currentDD = maxProfit - profitU;
             if (currentDD > drawdown) drawdown = currentDD;
         });
 
-        let yieldVal = totalStaked > 0 ? (profitU / totalStaked) * 100 : 0;
-        let avgOdd = totalPicks > 0 ? sumOdds / totalPicks : 0;
-        let pValue = calculatePValue(winRate / 100, totalPicks, avgOdd);
-        let roiBank = bankInitial > 0 ? ((profitU * unitValue / bankInitial) * 100) : 0;
-
+        // Stats Principales
+        const yieldVal = totalStaked > 0 ? (profitU / totalStaked) * 100 : 0;
+        const pValue = calculatePValue(winRate / 100, totalPicks, sumOdds/totalPicks);
         document.getElementById('stats-output').innerHTML = `
             <div class="stat-box"><span>Picks</span><b>${totalPicks}</b></div>
             <div class="stat-box"><span>Acierto</span><b>${winRate.toFixed(1)}%</b></div>
             <div class="stat-box"><span>Profit</span><b style="color:var(--green)">${profitU.toFixed(2)}U</b></div>
-            <div class="stat-box"><span>ROI (Bank)</span><b>${roiBank.toFixed(1)}%</b></div>
             <div class="stat-box"><span>Yield</span><b>${yieldVal.toFixed(1)}%</b></div>
             <div class="stat-box"><span>Drawdown</span><b style="color:var(--red)">${drawdown.toFixed(2)}U</b></div>
             <div class="stat-box"><span>P-Value</span><b>${pValue.toFixed(2)}%</b></div>
         `;
 
+        // Chart
         if (chart) chart.destroy();
-        const ctx = document.getElementById('profitChart').getContext('2d');
-        chart = new Chart(ctx, {
+        chart = new Chart(document.getElementById('profitChart').getContext('2d'), {
             type: 'line',
             data: {
                 labels: chartData.map((_, i) => i),
                 datasets: [{
-                    label: 'Profit Acumulado (U)',
-                    data: chartData,
-                    borderColor: '#bd93f9',
-                    backgroundColor: 'rgba(189, 147, 249, 0.1)',
-                    fill: true,
-                    tension: 0.2,
-                    pointRadius: totalPicks > 50 ? 0 : 3
+                    data: chartData, borderColor: '#bd93f9', backgroundColor: 'rgba(189, 147, 249, 0.1)', fill: true, tension: 0.2
                 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: { grid: { color: '#44475a' }, ticks: { color: '#f8f8f2' } },
-                    x: { grid: { display: false }, ticks: { color: '#f8f8f2' } }
-                },
-                plugins: { legend: { display: false } }
-            }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
 
+        // Tabla Minutos
+        const minBody = document.querySelector('#minute-analysis-table tbody');
+        minBody.innerHTML = Object.keys(minuteMap)
+            .sort((a, b) => minuteMap[b].profit - minuteMap[a].profit)
+            .map(m => `
+                <tr>
+                    <td><b>${m}</b></td>
+                    <td>${minuteMap[m].picks}</td>
+                    <td>${((minuteMap[m].wins / minuteMap[m].picks) * 100).toFixed(1)}%</td>
+                    <td style="color:${minuteMap[m].profit >= 0 ? 'var(--green)' : 'var(--red)'}">${minuteMap[m].profit.toFixed(2)}U</td>
+                </tr>
+            `).join('');
+
+        // Tabla Historial
         const tbody = document.querySelector('#results-table tbody');
         tbody.innerHTML = data.map(d => {
-            let rowProfit = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
-            return `
-                <tr>
-                    <td>${d.fecha}</td>
-                    <td>${d.minuto}</td>
-                    <td>${d.evento}</td>
-                    <td>${d.liga}</td>
-                    <td>${d.odd.toFixed(2)}</td>
-                    <td>${d.stake}</td>
-                    <td class="${d.resultado === 'verde' ? 'status-win' : 'status-loss'}">${d.resultado.toUpperCase()}</td>
-                    <td style="color: ${rowProfit >= 0 ? 'var(--green)' : 'var(--red)'}">${rowProfit.toFixed(2)}</td>
-                </tr>
-            `;
+            let p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
+            return `<tr><td>${d.fecha}</td><td>${d.minuto}</td><td>${d.liga}</td><td>${d.odd.toFixed(2)}</td><td class="${d.resultado === 'verde' ? 'status-win' : 'status-loss'}">${d.resultado.toUpperCase()}</td><td style="color:${p >= 0 ? 'var(--green)' : 'var(--red)'}">${p.toFixed(2)}</td></tr>`;
         }).join('');
     }
 
     window.onload = processData;
 </script>
-
 </body>
 </html>
