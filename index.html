@@ -50,15 +50,17 @@
 
         textarea {
             width: 100%;
-            height: 150px;
+            height: 180px;
             background: var(--bg);
             color: var(--green);
             border: 1px solid var(--purple);
             border-radius: 8px;
             padding: 10px;
             font-family: 'Fira Code', monospace;
-            font-size: 12px;
+            font-size: 11px;
             resize: none;
+            white-space: pre;
+            overflow-x: auto;
         }
 
         .stats-grid {
@@ -116,18 +118,20 @@
         .status-win { color: var(--green); font-weight: bold; }
         .status-loss { color: var(--red); font-weight: bold; }
 
-        .btn-update {
-            background: var(--pink);
+        .btn-clear {
+            background: var(--red);
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 8px 15px;
             border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
+            margin-top: 10px;
+            font-size: 12px;
             transition: 0.3s;
         }
 
-        .btn-update:hover { background: var(--purple); transform: scale(1.05); }
+        .btn-clear:hover { filter: brightness(1.2); }
     </style>
 </head>
 <body>
@@ -137,30 +141,29 @@
 
     <div class="grid-config">
         <div class="card">
-            <h3>⚙️ Configuración</h3>
+            <h3>⚙️ Configuración Global</h3>
             <div style="display:flex; flex-direction:column; gap:10px;">
                 <label>Bank inicial ($):</label>
                 <input type="number" id="bank-initial" value="1000" oninput="processData()">
-                <label>Unidades por apuesta:</label>
-                <input type="number" id="unit-size" value="1" oninput="processData()">
                 <label>Valor de 1 Unidad ($):</label>
                 <input type="number" id="unit-value" value="10" oninput="processData()">
+                <p style="font-size: 11px; color: var(--comment);">* El Stake se toma de cada fila de la tabla.</p>
             </div>
         </div>
         <div class="card">
-            <h3>📋 Pegar Datos (Excel/Tab)</h3>
-            <textarea id="raw-data" placeholder="Pega aquí tu tabla... (Fecha, Minuto, Evento, Liga, Mercado, Odd)" oninput="processData()">
-Fecha	Minuto	Evento	Liga	Mercado	Odd
-3/17/26 16:30	18'	Richmond Kickers x Northern Virginia	USA US Open Cup	Gol	1.61
-3/17/26 16:30	14'	Academia Puerto Cabello x UCV	Venezuela Primera Division	Gol	1.8
-3/17/26 14:00	24'	KH Hlidarendi x Hvíti riddarinn	Iceland Iceland Cup	Gol	1.61
-3/17/26 14:00	14'	Barnsley x Wigan Athletic	England League One	Gol	1.6
-3/17/26 13:45	14'	Salford City x Barrow	England League Two	Gol	1.65</textarea>
+            <h3>📋 Pegar Datos (Fecha, Min, Evento, Liga, Mercado, Odd, Stake, Resultado)</h3>
+            <textarea id="raw-data" placeholder="Pega aquí tu tabla..." oninput="processData()">
+Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
+3/17/26 16:30	18'	Richmond Kickers x Northern Virginia	USA US Open Cup	Gol	1.61	1	verde
+3/17/26 16:30	14'	Academia Puerto Cabello x UCV	Venezuela Primera Division	Gol	1.8	1	verde
+3/17/26 13:45	14'	Horsham x Bath City	England Vanarama National League South	Gol	1.62	1	rojo
+3/17/26 13:45	14'	Cheltenham Town x Crewe Alexandra	England League Two	Gol	1.7	1	rojo</textarea>
+            <button class="btn-clear" onclick="clearData()">🧹 Limpiar Campo</button>
         </div>
     </div>
 
     <div class="card">
-        <h3>🔍 Filtros Avanzados</h3>
+        <h3>🔍 Filtros en Tiempo Real</h3>
         <div class="filters">
             <input type="text" id="filter-liga" placeholder="Filtrar Liga..." oninput="processData()">
             <input type="number" id="filter-min-odd" step="0.1" placeholder="Cuota Min" oninput="processData()">
@@ -175,19 +178,18 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd
                 <option value="6">Sábado</option>
                 <option value="0">Domingo</option>
             </select>
-            <input type="text" id="filter-minute-pick" placeholder="Minuto exacto (ej. 14')" oninput="processData()">
+            <input type="text" id="filter-minute-pick" placeholder="Minuto (ej. 14')" oninput="processData()">
         </div>
     </div>
 
-    <div class="stats-grid" id="stats-output">
-        </div>
+    <div class="stats-grid" id="stats-output"></div>
 
     <div class="card chart-container">
         <canvas id="profitChart"></canvas>
     </div>
 
     <div class="card" style="overflow-x: auto;">
-        <h3>📊 Detalle de Picks</h3>
+        <h3>📊 Detalle de Rendimiento</h3>
         <table id="results-table">
             <thead>
                 <tr>
@@ -196,6 +198,7 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd
                     <th>Evento</th>
                     <th>Liga</th>
                     <th>Cuota</th>
+                    <th>Stake</th>
                     <th>Resultado</th>
                     <th>Profit (U)</th>
                 </tr>
@@ -216,18 +219,22 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd
     }
 
     function calculatePValue(winRate, n, avgOdd) {
-        if (n === 0) return 0;
+        if (n === 0 || avgOdd <= 1) return 0;
         const expectedWinRate = 1 / avgOdd;
         const sd = Math.sqrt((expectedWinRate * (1 - expectedWinRate)) / n);
         const z = (winRate - expectedWinRate) / sd;
         return (erfc(z / Math.sqrt(2)) / 2) * 100;
     }
 
+    function clearData() {
+        document.getElementById('raw-data').value = '';
+        processData();
+    }
+
     function processData() {
         const rawText = document.getElementById('raw-data').value;
-        const bankInitial = parseFloat(document.getElementById('bank-initial').value);
-        const unitSize = parseFloat(document.getElementById('unit-size').value);
-        const unitValue = parseFloat(document.getElementById('unit-value').value);
+        const bankInitial = parseFloat(document.getElementById('bank-initial').value) || 0;
+        const unitValue = parseFloat(document.getElementById('unit-value').value) || 0;
 
         const filterLiga = document.getElementById('filter-liga').value.toLowerCase();
         const filterMinOdd = parseFloat(document.getElementById('filter-min-odd').value) || 0;
@@ -238,14 +245,13 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd
         const lines = rawText.trim().split('\n');
         let data = [];
 
-        // Parsing de la tabla (Simulamos resultados para el backtesting ya que tu tabla no tiene Score)
-        // REGLA: Usaremos un generador de resultados aleatorios para este demo, en una herramienta real 
-        // añadirías una columna de "Resultado" (W/L)
         for(let i = 1; i < lines.length; i++) {
             const cols = lines[i].split('\t');
-            if(cols.length < 6) continue;
+            if(cols.length < 8) continue;
 
-            const dateObj = new Date(cols[0]);
+            const dateStr = cols[0];
+            const dateObj = new Date(dateStr);
+            
             const row = {
                 fecha: cols[0],
                 diaSemana: dateObj.getDay(),
@@ -254,11 +260,11 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd
                 liga: cols[3],
                 mercado: cols[4],
                 odd: parseFloat(cols[5]),
-                // Simulamos W/L basado en probabilidad de la cuota para mostrar funcionalidad
-                win: Math.random() > (1 / parseFloat(cols[5])) ? false : true 
+                stake: parseFloat(cols[6]) || 0,
+                resultado: cols[7].trim().toLowerCase()
             };
 
-            // Aplicar Filtros
+            // Filtros
             if (filterLiga && !row.liga.toLowerCase().includes(filterLiga)) continue;
             if (row.odd < filterMinOdd || row.odd > filterMaxOdd) continue;
             if (filterDay !== "" && row.diaSemana != filterDay) continue;
@@ -267,28 +273,33 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd
             data.push(row);
         }
 
-        updateDashboard(data, bankInitial, unitSize, unitValue);
+        updateDashboard(data, bankInitial, unitValue);
     }
 
-    function updateDashboard(data, bankInitial, unitSize, unitValue) {
+    function updateDashboard(data, bankInitial, unitValue) {
         let totalPicks = data.length;
-        let wins = data.filter(d => d.win).length;
+        let wins = data.filter(d => d.resultado === 'verde').length;
         let winRate = totalPicks > 0 ? (wins / totalPicks) * 100 : 0;
         
         let profitU = 0;
         let maxProfit = 0;
         let drawdown = 0;
         let chartData = [0];
-        let totalStaked = totalPicks * unitSize;
+        let totalStaked = 0;
         let sumOdds = 0;
 
         data.forEach(d => {
             sumOdds += d.odd;
-            if(d.win) {
-                profitU += (unitSize * (d.odd - 1));
-            } else {
-                profitU -= unitSize;
+            totalStaked += d.stake;
+            let currentProfit = 0;
+
+            if(d.resultado === 'verde') {
+                currentProfit = (d.stake * (d.odd - 1));
+            } else if(d.resultado === 'rojo') {
+                currentProfit = -d.stake;
             }
+            
+            profitU += currentProfit;
             chartData.push(parseFloat(profitU.toFixed(2)));
             
             if (profitU > maxProfit) maxProfit = profitU;
@@ -299,19 +310,18 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd
         let yieldVal = totalStaked > 0 ? (profitU / totalStaked) * 100 : 0;
         let avgOdd = totalPicks > 0 ? sumOdds / totalPicks : 0;
         let pValue = calculatePValue(winRate / 100, totalPicks, avgOdd);
+        let roiBank = bankInitial > 0 ? ((profitU * unitValue / bankInitial) * 100) : 0;
 
-        // Render Stats
         document.getElementById('stats-output').innerHTML = `
             <div class="stat-box"><span>Picks</span><b>${totalPicks}</b></div>
-            <div class="stat-box"><span>Win Rate</span><b>${winRate.toFixed(1)}%</b></div>
+            <div class="stat-box"><span>Acierto</span><b>${winRate.toFixed(1)}%</b></div>
             <div class="stat-box"><span>Profit</span><b style="color:var(--green)">${profitU.toFixed(2)}U</b></div>
-            <div class="stat-box"><span>ROI (Bank)</span><b>${((profitU * unitValue / bankInitial) * 100).toFixed(1)}%</b></div>
+            <div class="stat-box"><span>ROI (Bank)</span><b>${roiBank.toFixed(1)}%</b></div>
             <div class="stat-box"><span>Yield</span><b>${yieldVal.toFixed(1)}%</b></div>
-            <div class="stat-box"><span>Drawdown Máx</span><b style="color:var(--red)">${drawdown.toFixed(2)}U</b></div>
+            <div class="stat-box"><span>Drawdown</span><b style="color:var(--red)">${drawdown.toFixed(2)}U</b></div>
             <div class="stat-box"><span>P-Value</span><b>${pValue.toFixed(2)}%</b></div>
         `;
 
-        // Render Chart
         if (chart) chart.destroy();
         const ctx = document.getElementById('profitChart').getContext('2d');
         chart = new Chart(ctx, {
@@ -319,13 +329,13 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd
             data: {
                 labels: chartData.map((_, i) => i),
                 datasets: [{
-                    label: 'Profit Acumulado (Unidades)',
+                    label: 'Profit Acumulado (U)',
                     data: chartData,
                     borderColor: '#bd93f9',
                     backgroundColor: 'rgba(189, 147, 249, 0.1)',
                     fill: true,
-                    tension: 0.3,
-                    pointRadius: 2
+                    tension: 0.2,
+                    pointRadius: totalPicks > 50 ? 0 : 3
                 }]
             },
             options: {
@@ -335,26 +345,28 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd
                     y: { grid: { color: '#44475a' }, ticks: { color: '#f8f8f2' } },
                     x: { grid: { display: false }, ticks: { color: '#f8f8f2' } }
                 },
-                plugins: { legend: { labels: { color: '#f8f8f2' } } }
+                plugins: { legend: { display: false } }
             }
         });
 
-        // Render Table
         const tbody = document.querySelector('#results-table tbody');
-        tbody.innerHTML = data.map(d => `
-            <tr>
-                <td>${d.fecha}</td>
-                <td>${d.minuto}</td>
-                <td>${d.evento}</td>
-                <td>${d.liga}</td>
-                <td>${d.odd.toFixed(2)}</td>
-                <td class="${d.win ? 'status-win' : 'status-loss'}">${d.win ? 'WIN' : 'LOSS'}</td>
-                <td>${d.win ? '+' + (unitSize * (d.odd - 1)).toFixed(2) : '-' + unitSize}</td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = data.map(d => {
+            let rowProfit = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
+            return `
+                <tr>
+                    <td>${d.fecha}</td>
+                    <td>${d.minuto}</td>
+                    <td>${d.evento}</td>
+                    <td>${d.liga}</td>
+                    <td>${d.odd.toFixed(2)}</td>
+                    <td>${d.stake}</td>
+                    <td class="${d.resultado === 'verde' ? 'status-win' : 'status-loss'}">${d.resultado.toUpperCase()}</td>
+                    <td style="color: ${rowProfit >= 0 ? 'var(--green)' : 'var(--red)'}">${rowProfit.toFixed(2)}</td>
+                </tr>
+            `;
+        }).join('');
     }
 
-    // Inicializar
     window.onload = processData;
 </script>
 
