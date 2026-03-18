@@ -47,8 +47,7 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             border: 1px solid var(--comment);
             margin-bottom: 20px;
-            position: relative; /* Importante para que Chart.js no desborde */
-            overflow: hidden;
+            position: relative;
         }
 
         textarea {
@@ -103,7 +102,7 @@
         input:focus { border-color: var(--pink); }
 
         .chart-main { height: 350px; }
-        .chart-mini { height: 300px; } /* Un poco más de altura para evitar cortes */
+        .chart-mini { height: 320px; }
 
         .grid-charts-row {
             display: grid;
@@ -149,7 +148,7 @@
 <body>
 
 <div class="container">
-    <h1>🚀 Backtesting Lab <span style="font-size: 12px; color: var(--comment);">supersónico</span></h1>
+    <h1>🚀 Backtesting Lab <span style="font-size: 12px; color: var(--comment);">EL GURÚ</span></h1>
 
     <div class="grid-config">
         <div class="card">
@@ -279,8 +278,12 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
 
     function processData() {
         const rawText = document.getElementById('raw-data').value;
-        const bankInitial = parseFloat(document.getElementById('bank-initial').value) || 0;
-        const unitValue = parseFloat(document.getElementById('unit-value').value) || 0;
+        const lines = rawText.trim().split('\n');
+        
+        let data = [];
+        let minuteMap = {};
+        let dayStats = [0,0,0,0,0,0,0]; // Dom=0
+        let hourStats = Array(24).fill(0);
 
         const filterLiga = document.getElementById('filter-liga').value.toLowerCase();
         const filterMinOdd = parseFloat(document.getElementById('filter-min-odd').value) || 0;
@@ -288,21 +291,18 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         const filterDay = document.getElementById('filter-day').value;
         const filterMinPick = document.getElementById('filter-minute-pick').value;
 
-        const lines = rawText.trim().split('\n');
-        let data = [];
-        let minuteMap = {};
-        let dayStats = [0,0,0,0,0,0,0]; 
-        let hourStats = Array(24).fill(0);
-
         for(let i = 1; i < lines.length; i++) {
             const cols = lines[i].split('\t');
             if(cols.length < 8) continue;
 
-            const dateObj = new Date(cols[0]);
+            // Intento robusto de parseo de fecha
+            const dateStr = cols[0].trim();
+            const dateObj = new Date(dateStr);
+            
             const row = {
-                fecha: cols[0],
-                diaSemana: dateObj.getDay(),
-                hora: dateObj.getHours(),
+                fecha: dateStr,
+                diaSemana: isNaN(dateObj.getDay()) ? null : dateObj.getDay(),
+                hora: isNaN(dateObj.getHours()) ? null : dateObj.getHours(),
                 minuto: cols[1],
                 minNum: parseInt(cols[1].replace("'", "")) || 0,
                 evento: cols[2],
@@ -314,28 +314,28 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
 
             if (filterLiga && !row.liga.toLowerCase().includes(filterLiga)) continue;
             if (row.odd < filterMinOdd || row.odd > filterMaxOdd) continue;
-            if (filterDay !== "" && row.diaSemana != filterDay) continue;
+            if (filterDay !== "" && row.diaSemana !== null && row.diaSemana != filterDay) continue;
             if (filterMinPick && row.minuto !== filterMinPick) continue;
 
             data.push(row);
 
             let p = (row.resultado === 'verde') ? (row.stake * (row.odd - 1)) : -row.stake;
 
-            if (!minuteMap[row.minuto]) {
-                minuteMap[row.minuto] = { picks: 0, wins: 0, profit: 0, minNum: row.minNum };
-            }
+            // Minutos
+            if (!minuteMap[row.minuto]) minuteMap[row.minuto] = { picks: 0, wins: 0, profit: 0, minNum: row.minNum };
             minuteMap[row.minuto].picks++;
             minuteMap[row.minuto].profit += p;
             if(row.resultado === 'verde') minuteMap[row.minuto].wins++;
 
-            dayStats[row.diaSemana] += p;
-            if(!isNaN(row.hora)) hourStats[row.hora] += p;
+            // Días y Horas
+            if(row.diaSemana !== null) dayStats[row.diaSemana] += p;
+            if(row.hora !== null) hourStats[row.hora] += p;
         }
 
-        updateDashboard(data, bankInitial, unitValue, minuteMap, dayStats, hourStats);
+        updateDashboard(data, minuteMap, dayStats, hourStats);
     }
 
-    function updateDashboard(data, bankInitial, unitValue, minuteMap, dayStats, hourStats) {
+    function updateDashboard(data, minuteMap, dayStats, hourStats) {
         let totalPicks = data.length;
         let wins = data.filter(d => d.resultado === 'verde').length;
         let winRate = totalPicks > 0 ? (wins / totalPicks) * 100 : 0;
@@ -345,69 +345,65 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         data.forEach(d => {
             sumOdds += d.odd;
             totalStaked += d.stake;
-            let currentProfit = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
-            profitU += currentProfit;
+            let p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
+            profitU += p;
             chartDataProfit.push(parseFloat(profitU.toFixed(2)));
             if (profitU > maxProfit) maxProfit = profitU;
             let currentDD = maxProfit - profitU;
             if (currentDD > drawdown) drawdown = currentDD;
         });
 
-        const yieldVal = totalStaked > 0 ? (profitU / totalStaked) * 100 : 0;
         const pValue = calculatePValue(winRate / 100, totalPicks, sumOdds/totalPicks);
         document.getElementById('stats-output').innerHTML = `
             <div class="stat-box"><span>Picks</span><b>${totalPicks}</b></div>
             <div class="stat-box"><span>Acierto</span><b>${winRate.toFixed(1)}%</b></div>
             <div class="stat-box"><span>Profit</span><b style="color:var(--green)">${profitU.toFixed(2)}U</b></div>
-            <div class="stat-box"><span>Yield</span><b>${yieldVal.toFixed(1)}%</b></div>
+            <div class="stat-box"><span>Yield</span><b>${totalStaked > 0 ? ((profitU/totalStaked)*100).toFixed(1) : 0}%</b></div>
             <div class="stat-box"><span>Drawdown</span><b style="color:var(--red)">${drawdown.toFixed(2)}U</b></div>
             <div class="stat-box"><span>P-Value</span><b>${pValue.toFixed(2)}%</b></div>
         `;
 
-        const chartOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } }
-        };
+        const baseOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
 
+        // Profit Chart
         if (chartProfit) chartProfit.destroy();
-        chartProfit = new Chart(document.getElementById('profitChart').getContext('2d'), {
+        chartProfit = new Chart(document.getElementById('profitChart'), {
             type: 'line',
-            data: { labels: chartDataProfit.map((_, i) => i), datasets: [{ data: chartDataProfit, borderColor: '#bd93f9', backgroundColor: 'rgba(189, 147, 249, 0.1)', fill: true, tension: 0.1 }] },
-            options: chartOptions
+            data: { labels: chartDataProfit.map((_, i) => i), datasets: [{ data: chartDataProfit, borderColor: '#bd93f9', backgroundColor: 'rgba(189, 147, 249, 0.1)', fill: true }] },
+            options: baseOpts
         });
 
+        // Minute Chart
         const sortedMinutes = Object.keys(minuteMap).sort((a, b) => minuteMap[a].minNum - minuteMap[b].minNum);
-        let cumMinP = 0;
-        const chartDataMin = sortedMinutes.map(m => { cumMinP += minuteMap[m].profit; return cumMinP.toFixed(2); });
+        let cumP = 0;
         if (chartMinute) chartMinute.destroy();
-        chartMinute = new Chart(document.getElementById('minuteChart').getContext('2d'), {
+        chartMinute = new Chart(document.getElementById('minuteChart'), {
             type: 'line',
-            data: { labels: sortedMinutes, datasets: [{ data: chartDataMin, borderColor: '#ff79c6', fill: false, tension: 0.4 }] },
-            options: chartOptions
+            data: { labels: sortedMinutes, datasets: [{ data: sortedMinutes.map(m => { cumP += minuteMap[m].profit; return cumP.toFixed(2); }), borderColor: '#ff79c6' }] },
+            options: baseOpts
         });
 
-        const dayLabels = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-        const orderedDays = [1, 2, 3, 4, 5, 6, 0].map(i => dayStats[i]);
-        const orderedLabels = [1, 2, 3, 4, 5, 6, 0].map(i => dayLabels[i]);
+        // Day Chart (Lunes a Domingo)
+        const dayLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+        const dayValues = [1, 2, 3, 4, 5, 6, 0].map(i => dayStats[i]);
         if (chartDay) chartDay.destroy();
-        chartDay = new Chart(document.getElementById('dayChart').getContext('2d'), {
+        chartDay = new Chart(document.getElementById('dayChart'), {
             type: 'bar',
-            data: { labels: orderedLabels, datasets: [{ label: 'Profit', data: orderedDays, backgroundColor: orderedDays.map(v => v >= 0 ? '#50fa7b' : '#ff5555') }] },
-            options: chartOptions
+            data: { labels: dayLabels, datasets: [{ data: dayValues, backgroundColor: dayValues.map(v => v >= 0 ? '#50fa7b' : '#ff5555') }] },
+            options: baseOpts
         });
 
+        // Hour Chart
         if (chartHour) chartHour.destroy();
-        chartHour = new Chart(document.getElementById('hourChart').getContext('2d'), {
+        chartHour = new Chart(document.getElementById('hourChart'), {
             type: 'bar',
-            data: { labels: Array.from({length: 24}, (_, i) => `${i}:00`), datasets: [{ label: 'Profit', data: hourStats, backgroundColor: '#8be9fd' }] },
-            options: chartOptions
+            data: { labels: Array.from({length: 24}, (_, i) => `${i}h`), datasets: [{ data: hourStats, backgroundColor: hourStats.map(v => v >= 0 ? '#8be9fd' : '#ffb86c') }] },
+            options: baseOpts
         });
 
-        const minBody = document.querySelector('#minute-analysis-table tbody');
-        minBody.innerHTML = Object.keys(minuteMap).sort((a, b) => minuteMap[b].profit - minuteMap[a].profit).map(m => `<tr><td><b>${m}</b></td><td>${minuteMap[m].picks}</td><td>${((minuteMap[m].wins/minuteMap[m].picks)*100).toFixed(1)}%</td><td style="color:${minuteMap[m].profit>=0?'var(--green)':'var(--red)'}">${minuteMap[m].profit.toFixed(2)}U</td></tr>`).join('');
-        const tbody = document.querySelector('#results-table tbody');
-        tbody.innerHTML = data.map(d => { let p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake; return `<tr><td>${d.fecha}</td><td>${d.minuto}</td><td>${d.liga}</td><td>${d.odd.toFixed(2)}</td><td class="${d.resultado==='verde'?'status-win':'status-loss'}">${d.resultado.toUpperCase()}</td><td style="color:${p>=0?'var(--green)':'var(--red)'}">${p.toFixed(2)}</td></tr>`; }).join('');
+        // Tablas
+        document.querySelector('#minute-analysis-table tbody').innerHTML = Object.keys(minuteMap).sort((a, b) => minuteMap[b].profit - minuteMap[a].profit).map(m => `<tr><td><b>${m}</b></td><td>${minuteMap[m].picks}</td><td>${((minuteMap[m].wins/minuteMap[m].picks)*100).toFixed(1)}%</td><td style="color:${minuteMap[m].profit>=0?'var(--green)':'var(--red)'}">${minuteMap[m].profit.toFixed(2)}U</td></tr>`).join('');
+        document.querySelector('#results-table tbody').innerHTML = data.map(d => { let p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake; return `<tr><td>${d.fecha}</td><td>${d.minuto}</td><td>${d.liga}</td><td>${d.odd.toFixed(2)}</td><td class="${d.resultado==='verde'?'status-win':'status-loss'}">${d.resultado.toUpperCase()}</td><td style="color:${p>=0?'var(--green)':'var(--red)'}">${p.toFixed(2)}</td></tr>`; }).join('');
     }
 
     window.onload = processData;
