@@ -40,6 +40,7 @@
             margin-bottom: 20px;
         }
 
+        /* Estilo unificado para tarjetas */
         .card {
             background: var(--current-line);
             padding: 20px;
@@ -99,8 +100,6 @@
             outline: none;
         }
 
-        input:focus { border-color: var(--pink); }
-
         .chart-main { height: 350px; }
         .chart-mini { height: 320px; }
 
@@ -111,20 +110,40 @@
             margin-bottom: 20px;
         }
 
+        /* Corrección de Tablas */
         .analysis-grid {
             display: grid;
             grid-template-columns: 1fr 2fr;
             gap: 20px;
         }
 
+        .table-wrapper {
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 450px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            border: 1px solid var(--comment);
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
             font-size: 0.85rem;
+            min-width: 500px; /* Evita que la tabla se colapse en móvil */
         }
 
-        th { background: var(--purple); color: var(--bg); padding: 10px; text-align: left; }
-        td { padding: 8px; border-bottom: 1px solid var(--current-line); }
+        th { 
+            background: var(--purple); 
+            color: var(--bg); 
+            padding: 12px 10px; 
+            text-align: left; 
+            position: sticky; 
+            top: 0; 
+            z-index: 10;
+        }
+
+        td { padding: 10px; border-bottom: 1px solid var(--current-line); white-space: nowrap; }
         tr:hover { background: rgba(255, 255, 255, 0.05); }
 
         .status-win { color: var(--green); font-weight: bold; }
@@ -140,9 +159,13 @@
             font-weight: bold;
             margin-top: 10px;
             font-size: 12px;
-            transition: 0.3s;
         }
-        .btn-clear:hover { filter: brightness(1.2); }
+
+        @media (max-width: 768px) {
+            .grid-config, .grid-charts-row, .analysis-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -195,7 +218,7 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
     <div class="stats-grid" id="stats-output"></div>
 
     <div class="card chart-main">
-        <h3>📈 Curva de Profit (Orden Cronológico)</h3>
+        <h3>📈 Curva de Profit (U)</h3>
         <canvas id="profitChart"></canvas>
     </div>
 
@@ -205,20 +228,20 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             <canvas id="minuteChart"></canvas>
         </div>
         <div class="card chart-mini">
-            <h3>📅 Profit por Día de la Semana</h3>
+            <h3>📅 Profit por Día</h3>
             <canvas id="dayChart"></canvas>
         </div>
     </div>
 
     <div class="card chart-mini">
-        <h3>🕒 Profit por Franja Horaria (24h)</h3>
+        <h3>🕒 Profit por Franja Horaria</h3>
         <canvas id="hourChart"></canvas>
     </div>
 
     <div class="analysis-grid">
         <div class="card">
             <h3>⏱️ Análisis por Minuto</h3>
-            <div style="overflow-y: auto; max-height: 400px;">
+            <div class="table-wrapper">
                 <table id="minute-analysis-table">
                     <thead>
                         <tr>
@@ -234,7 +257,7 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         </div>
         <div class="card">
             <h3>📊 Historial Detallado</h3>
-            <div style="overflow-y: auto; max-height: 400px;">
+            <div class="table-wrapper">
                 <table id="results-table">
                     <thead>
                         <tr>
@@ -264,7 +287,7 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
     }
 
     function calculatePValue(winRate, n, avgOdd) {
-        if (n === 0 || avgOdd <= 1) return 0;
+        if (n <= 1 || avgOdd <= 1) return 100;
         const expectedWinRate = 1 / avgOdd;
         const sd = Math.sqrt((expectedWinRate * (1 - expectedWinRate)) / n);
         const z = (winRate - expectedWinRate) / sd;
@@ -282,7 +305,7 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         
         let data = [];
         let minuteMap = {};
-        let dayStats = [0,0,0,0,0,0,0]; // Dom=0
+        let dayStats = [0,0,0,0,0,0,0];
         let hourStats = Array(24).fill(0);
 
         const filterLiga = document.getElementById('filter-liga').value.toLowerCase();
@@ -295,7 +318,6 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             const cols = lines[i].split('\t');
             if(cols.length < 8) continue;
 
-            // Intento robusto de parseo de fecha
             const dateStr = cols[0].trim();
             const dateObj = new Date(dateStr);
             
@@ -321,13 +343,11 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
 
             let p = (row.resultado === 'verde') ? (row.stake * (row.odd - 1)) : -row.stake;
 
-            // Minutos
             if (!minuteMap[row.minuto]) minuteMap[row.minuto] = { picks: 0, wins: 0, profit: 0, minNum: row.minNum };
             minuteMap[row.minuto].picks++;
             minuteMap[row.minuto].profit += p;
             if(row.resultado === 'verde') minuteMap[row.minuto].wins++;
 
-            // Días y Horas
             if(row.diaSemana !== null) dayStats[row.diaSemana] += p;
             if(row.hora !== null) hourStats[row.hora] += p;
         }
@@ -365,25 +385,22 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
 
         const baseOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
 
-        // Profit Chart
         if (chartProfit) chartProfit.destroy();
         chartProfit = new Chart(document.getElementById('profitChart'), {
             type: 'line',
-            data: { labels: chartDataProfit.map((_, i) => i), datasets: [{ data: chartDataProfit, borderColor: '#bd93f9', backgroundColor: 'rgba(189, 147, 249, 0.1)', fill: true }] },
+            data: { labels: chartDataProfit.map((_, i) => i), datasets: [{ data: chartDataProfit, borderColor: '#bd93f9', backgroundColor: 'rgba(189, 147, 249, 0.1)', fill: true, tension: 0.1 }] },
             options: baseOpts
         });
 
-        // Minute Chart
         const sortedMinutes = Object.keys(minuteMap).sort((a, b) => minuteMap[a].minNum - minuteMap[b].minNum);
         let cumP = 0;
         if (chartMinute) chartMinute.destroy();
         chartMinute = new Chart(document.getElementById('minuteChart'), {
             type: 'line',
-            data: { labels: sortedMinutes, datasets: [{ data: sortedMinutes.map(m => { cumP += minuteMap[m].profit; return cumP.toFixed(2); }), borderColor: '#ff79c6' }] },
+            data: { labels: sortedMinutes, datasets: [{ data: sortedMinutes.map(m => { cumP += minuteMap[m].profit; return cumP.toFixed(2); }), borderColor: '#ff79c6', tension: 0.3 }] },
             options: baseOpts
         });
 
-        // Day Chart (Lunes a Domingo)
         const dayLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
         const dayValues = [1, 2, 3, 4, 5, 6, 0].map(i => dayStats[i]);
         if (chartDay) chartDay.destroy();
@@ -393,7 +410,6 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             options: baseOpts
         });
 
-        // Hour Chart
         if (chartHour) chartHour.destroy();
         chartHour = new Chart(document.getElementById('hourChart'), {
             type: 'bar',
@@ -401,9 +417,19 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             options: baseOpts
         });
 
-        // Tablas
-        document.querySelector('#minute-analysis-table tbody').innerHTML = Object.keys(minuteMap).sort((a, b) => minuteMap[b].profit - minuteMap[a].profit).map(m => `<tr><td><b>${m}</b></td><td>${minuteMap[m].picks}</td><td>${((minuteMap[m].wins/minuteMap[m].picks)*100).toFixed(1)}%</td><td style="color:${minuteMap[m].profit>=0?'var(--green)':'var(--red)'}">${minuteMap[m].profit.toFixed(2)}U</td></tr>`).join('');
-        document.querySelector('#results-table tbody').innerHTML = data.map(d => { let p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake; return `<tr><td>${d.fecha}</td><td>${d.minuto}</td><td>${d.liga}</td><td>${d.odd.toFixed(2)}</td><td class="${d.resultado==='verde'?'status-win':'status-loss'}">${d.resultado.toUpperCase()}</td><td style="color:${p>=0?'var(--green)':'var(--red)'}">${p.toFixed(2)}</td></tr>`; }).join('');
+        // Actualización de Tablas Limpia
+        const minBody = document.querySelector('#minute-analysis-table tbody');
+        minBody.innerHTML = Object.keys(minuteMap).sort((a, b) => minuteMap[b].profit - minuteMap[a].profit).map(m => {
+            const row = minuteMap[m];
+            const acc = ((row.wins/row.picks)*100).toFixed(1);
+            return `<tr><td><b>${m}</b></td><td>${row.picks}</td><td>${acc}%</td><td style="color:${row.profit>=0?'var(--green)':'var(--red)'}">${row.profit.toFixed(2)}U</td></tr>`;
+        }).join('');
+
+        const resBody = document.querySelector('#results-table tbody');
+        resBody.innerHTML = data.map(d => {
+            const p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
+            return `<tr><td>${d.fecha}</td><td>${d.minuto}</td><td>${d.liga}</td><td>${d.odd.toFixed(2)}</td><td class="${d.resultado==='verde'?'status-win':'status-loss'}">${d.resultado.toUpperCase()}</td><td style="color:${p>=0?'var(--green)':'var(--red)'}">${p.toFixed(2)}</td></tr>`;
+        }).join('');
     }
 
     window.onload = processData;
