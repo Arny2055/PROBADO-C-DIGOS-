@@ -289,16 +289,18 @@
 
         .league-item-select input { width: auto; }
 
-        /* Estilo para el switch de filtro de Copas/Femenil */
+        /* Estilos para switches */
         .switch-container {
             display: flex;
             align-items: center;
             gap: 10px;
-            background: rgba(255, 85, 85, 0.1);
             padding: 8px 12px;
             border-radius: 8px;
-            border: 1px solid var(--red);
+            border: 1px solid var(--comment);
         }
+
+        .switch-container.red { background: rgba(255, 85, 85, 0.1); border-color: var(--red); }
+        .switch-container.cyan { background: rgba(139, 233, 253, 0.1); border-color: var(--cyan); }
 
         @media (max-width: 900px) {
             #ai-insights { grid-template-columns: 1fr; }
@@ -366,8 +368,15 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
                 <button class="league-selector-btn" onclick="toggleLeagueModal()">📂 Seleccionar Ligas</button>
             </div>
             <div class="filter-group">
+                <label>Top Ligas Mundo</label>
+                <div class="switch-container cyan">
+                    <input type="checkbox" id="filter-top-leagues" onchange="processData()" style="width:20px; cursor:pointer;">
+                    <span style="font-size:11px; font-weight:bold; color:var(--cyan);">SOLO TOP 20 LIGAS</span>
+                </div>
+            </div>
+            <div class="filter-group">
                 <label>Limpieza Pro</label>
-                <div class="switch-container">
+                <div class="switch-container red">
                     <input type="checkbox" id="filter-exclude-cups-women" checked onchange="processData()" style="width:20px; cursor:pointer;">
                     <span style="font-size:11px; font-weight:bold; color:var(--red);">IGNORAR COPAS/FEMENIL</span>
                 </div>
@@ -504,6 +513,15 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
     let selectedLeagues = new Set();
     let leagueProfitCache = {};
 
+    // Lista Maestra de Ligas Top (Palabras clave para detección)
+    const TOP_LEAGUES_KEYWORDS = [
+        "premier league", "la liga", "bundesliga", "serie a", "ligue 1", 
+        "champions league", "europa league", "liga mx", "brasileirao", 
+        "eredivisie", "primeira liga", "mls", "argentina liga profesional",
+        "belgium jupiler", "turkey super lig", "championship", "copa libertadores",
+        "bundesliga 2", "scotland premiership", "denmark superligaen"
+    ];
+
     function toggleLeagueModal() {
         const modal = document.getElementById('league-modal');
         const overlay = document.getElementById('overlay');
@@ -519,9 +537,9 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         const leaguesFound = new Set();
         leagueProfitCache = {};
 
-        // Palabras de exclusión (mismas que en processData)
         const excludeKeywords = ["women", "femenil", "cup", "copa", "taca", "u19", "u20", "u21", "u23", "olympic"];
         const excludeActive = document.getElementById('filter-exclude-cups-women').checked;
+        const topLeaguesActive = document.getElementById('filter-top-leagues').checked;
 
         for(let i = 1; i < lines.length; i++) {
             const cols = lines[i].split('\t');
@@ -532,10 +550,14 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             const ligaLower = liga.toLowerCase();
             const eventoLower = evento.toLowerCase();
 
-            // Si el filtro está activo, no mostramos estas ligas ni siquiera en el selector manual
             if (excludeActive) {
                 const isExcluded = excludeKeywords.some(key => ligaLower.includes(key) || eventoLower.includes(key));
                 if (isExcluded) continue;
+            }
+
+            if (topLeaguesActive) {
+                const isTop = TOP_LEAGUES_KEYWORDS.some(key => ligaLower.includes(key));
+                if (!isTop) continue;
             }
 
             const res = cols[7].trim().toLowerCase();
@@ -598,8 +620,8 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         const filterDay = document.getElementById('filter-day').value;
         const startHour = document.getElementById('filter-start-hour').value !== "" ? parseInt(document.getElementById('filter-start-hour').value) : null;
         
-        // Lógica de Exclusión
         const excludeActive = document.getElementById('filter-exclude-cups-women').checked;
+        const topLeaguesActive = document.getElementById('filter-top-leagues').checked;
         const excludeKeywords = ["women", "femenil", "cup", "copa", "taca", "u19", "u20", "u21", "u23", "olympic"];
 
         for(let i = 1; i < lines.length; i++) {
@@ -611,10 +633,16 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             const ligaLower = liga.toLowerCase();
             const eventoLower = evento.toLowerCase();
 
-            // MEJORA: Aplicar filtro de exclusión
+            // Filtro de Exclusión
             if (excludeActive) {
                 const shouldExclude = excludeKeywords.some(key => ligaLower.includes(key) || eventoLower.includes(key));
                 if (shouldExclude) continue;
+            }
+
+            // Filtro de Ligas Top
+            if (topLeaguesActive) {
+                const isTop = TOP_LEAGUES_KEYWORDS.some(key => ligaLower.includes(key));
+                if (!isTop) continue;
             }
 
             if (selectedLeagues.size > 0 && !selectedLeagues.has(liga)) continue;
