@@ -89,6 +89,20 @@
             margin-top: 15px;
         }
 
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-group label {
+            font-size: 10px;
+            color: var(--comment);
+            text-transform: uppercase;
+            font-weight: bold;
+            padding-left: 2px;
+        }
+
         input, select {
             background: #161621;
             border: 1px solid var(--comment);
@@ -109,7 +123,6 @@
             margin-bottom: 20px;
         }
 
-        /* Estilo de Tablas Mejorado */
         .analysis-grid {
             display: grid;
             grid-template-columns: 1fr 1.8fr;
@@ -207,19 +220,39 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
     <div class="card">
         <h3>🔍 Filtros de Análisis</h3>
         <div class="filters">
-            <input type="text" id="filter-liga" placeholder="Filtrar Liga..." oninput="processData()">
-            <input type="number" id="filter-min-odd" step="0.1" placeholder="Cuota Min" oninput="processData()">
-            <input type="number" id="filter-max-odd" step="0.1" placeholder="Cuota Max" oninput="processData()">
-            <select id="filter-day" onchange="processData()">
-                <option value="">Todos los días</option>
-                <option value="1">Lunes</option>
-                <option value="2">Martes</option>
-                <option value="3">Miércoles</option>
-                <option value="4">Jueves</option>
-                <option value="5">Viernes</option>
-                <option value="6">Sábado</option>
-                <option value="0">Domingo</option>
-            </select>
+            <div class="filter-group">
+                <label>Liga</label>
+                <input type="text" id="filter-liga" placeholder="Buscar..." oninput="processData()">
+            </div>
+            <div class="filter-group">
+                <label>Cuota Min</label>
+                <input type="number" id="filter-min-odd" step="0.1" placeholder="0.0" oninput="processData()">
+            </div>
+            <div class="filter-group">
+                <label>Cuota Max</label>
+                <input type="number" id="filter-max-odd" step="0.1" placeholder="9.9" oninput="processData()">
+            </div>
+            <div class="filter-group">
+                <label>Día</label>
+                <select id="filter-day" onchange="processData()">
+                    <option value="">Todos</option>
+                    <option value="1">Lunes</option>
+                    <option value="2">Martes</option>
+                    <option value="3">Miércoles</option>
+                    <option value="4">Jueves</option>
+                    <option value="5">Viernes</option>
+                    <option value="6">Sábado</option>
+                    <option value="0">Domingo</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Hora Inicio (0-23)</label>
+                <input type="number" id="filter-start-hour" min="0" max="23" placeholder="Ej: 2" oninput="processData()">
+            </div>
+            <div class="filter-group">
+                <label>Hora Fin (0-23)</label>
+                <input type="number" id="filter-end-hour" min="0" max="23" placeholder="Ej: 10" oninput="processData()">
+            </div>
         </div>
     </div>
 
@@ -309,20 +342,22 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         const filterMinOdd = parseFloat(document.getElementById('filter-min-odd').value) || 0;
         const filterMaxOdd = parseFloat(document.getElementById('filter-max-odd').value) || 999;
         const filterDay = document.getElementById('filter-day').value;
+        const startHour = document.getElementById('filter-start-hour').value !== "" ? parseInt(document.getElementById('filter-start-hour').value) : null;
+        const endHour = document.getElementById('filter-end-hour').value !== "" ? parseInt(document.getElementById('filter-end-hour').value) : null;
 
-        // 1. Parsing y Filtrado inicial
         for(let i = 1; i < lines.length; i++) {
             const cols = lines[i].split('\t');
             if(cols.length < 8) continue;
 
             const dateStr = cols[0].trim();
             const dateObj = new Date(dateStr);
+            const hour = isNaN(dateObj.getHours()) ? null : dateObj.getHours();
             
             const row = {
                 fecha: dateStr,
                 ts: dateObj.getTime(),
                 diaSemana: isNaN(dateObj.getDay()) ? null : dateObj.getDay(),
-                hora: isNaN(dateObj.getHours()) ? null : dateObj.getHours(),
+                hora: hour,
                 minuto: cols[1].trim(),
                 minNum: parseInt(cols[1].replace("'", "")) || 0,
                 evento: cols[2],
@@ -332,17 +367,29 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
                 resultado: cols[7].trim().toLowerCase()
             };
 
+            // Lógica de Filtros
             if (filterLiga && !row.liga.toLowerCase().includes(filterLiga)) continue;
             if (row.odd < filterMinOdd || row.odd > filterMaxOdd) continue;
             if (filterDay !== "" && row.diaSemana !== null && row.diaSemana != filterDay) continue;
+            
+            // Filtro por rango de horas
+            if (startHour !== null && endHour !== null) {
+                if (startHour <= endHour) {
+                    if (row.hora < startHour || row.hora > endHour) continue;
+                } else { // Rango cruzando medianoche (ej: de 22h a 4h)
+                    if (row.hora < startHour && row.hora > endHour) continue;
+                }
+            } else if (startHour !== null) {
+                if (row.hora < startHour) continue;
+            } else if (endHour !== null) {
+                if (row.hora > endHour) continue;
+            }
 
             rawData.push(row);
         }
 
-        // 2. ORDENAR CRONOLÓGICAMENTE (Más antiguo primero para los gráficos)
         const chronologicalData = [...rawData].sort((a, b) => a.ts - b.ts);
         
-        // 3. Cálculos de métricas
         let minuteMap = {};
         let dayStats = Array(7).fill(0);
         let hourStats = Array(24).fill(0);
@@ -359,7 +406,6 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             
             profitCurve.push(parseFloat(currentProfit.toFixed(2)));
 
-            // Estadísticas por minuto
             if (!minuteMap[d.minuto]) minuteMap[d.minuto] = { picks: 0, wins: 0, profit: 0, minNum: d.minNum };
             minuteMap[d.minuto].picks++;
             minuteMap[d.minuto].profit += p;
@@ -373,7 +419,6 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
     }
 
     function renderDashboard(originalData, chronologicalData, minuteMap, dayStats, hourStats, profitCurve, wins, totalStaked, currentProfit) {
-        // Stats boxes
         const winRate = originalData.length > 0 ? (wins / originalData.length) * 100 : 0;
         document.getElementById('stats-output').innerHTML = `
             <div class="stat-box"><span>Picks</span><b>${originalData.length}</b></div>
@@ -382,7 +427,6 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             <div class="stat-box"><span>Yield</span><b>${totalStaked > 0 ? ((currentProfit/totalStaked)*100).toFixed(1) : 0}%</b></div>
         `;
 
-        // Gráfico Principal (Profit Curve)
         updateChart('profitChart', 'line', {
             labels: profitCurve.map((_, i) => i),
             datasets: [{ 
@@ -396,7 +440,6 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             }]
         });
 
-        // Tendencia por Minuto (Ordenado por valor de minuto 14, 15, 16...)
         const sortedMinLabels = Object.keys(minuteMap).sort((a, b) => minuteMap[a].minNum - minuteMap[b].minNum);
         let accMinP = 0;
         updateChart('minuteChart', 'line', {
@@ -408,7 +451,6 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             }]
         });
 
-        // Profit por Día
         const dayLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
         const dayValues = [1, 2, 3, 4, 5, 6, 0].map(i => dayStats[i]);
         updateChart('dayChart', 'bar', {
@@ -416,13 +458,11 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             datasets: [{ data: dayValues, backgroundColor: dayValues.map(v => v >= 0 ? '#50fa7b' : '#ff5555') }]
         });
 
-        // Profit por Hora
         updateChart('hourChart', 'bar', {
             labels: Array.from({length: 24}, (_, i) => `${i}h`),
             datasets: [{ data: hourStats, backgroundColor: hourStats.map(v => v >= 0 ? '#8be9fd' : '#ffb86c') }]
         });
 
-        // Tabla Análisis Minuto (Ordenada por Profit)
         const minBody = document.querySelector('#minute-analysis-table tbody');
         minBody.innerHTML = Object.keys(minuteMap)
             .sort((a, b) => minuteMap[b].profit - minuteMap[a].profit)
@@ -432,7 +472,6 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
                 return `<tr><td><b>${m}</b></td><td>${row.picks}</td><td>${acc}%</td><td style="color:${row.profit>=0?'var(--green)':'var(--red)'}">${row.profit.toFixed(2)}U</td></tr>`;
             }).join('');
 
-        // Tabla Historial (Mostramos el orden original de pegado, usualmente lo más reciente arriba)
         const resBody = document.querySelector('#results-table tbody');
         resBody.innerHTML = originalData.map(d => {
             const p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
