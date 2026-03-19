@@ -265,6 +265,54 @@
         }
         .btn-clear:hover { opacity: 0.8; }
 
+        /* Estilos para el Selector de Ligas */
+        .league-selector-btn {
+            background: var(--purple);
+            color: var(--bg);
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        #league-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            background: var(--bg);
+            border: 2px solid var(--purple);
+            border-radius: 15px;
+            z-index: 100;
+            padding: 20px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            overflow-y: auto;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 99;
+        }
+
+        .league-item-select {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            border-bottom: 1px solid var(--current-line);
+        }
+
+        .league-item-select input { width: auto; }
+
         @media (max-width: 900px) {
             #ai-insights { grid-template-columns: 1fr; }
             .grid-config, .grid-charts-row, .analysis-grid { grid-template-columns: 1fr; }
@@ -272,6 +320,20 @@
     </style>
 </head>
 <body>
+
+<div class="modal-overlay" id="overlay" onclick="toggleLeagueModal()"></div>
+<div id="league-modal">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h3>🏆 Seleccionar Ligas</h3>
+        <button class="btn-clear" style="background:var(--comment); margin:0;" onclick="toggleLeagueModal()">Cerrar</button>
+    </div>
+    <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
+        <button onclick="bulkSelectLeagues(true)" style="background:var(--cyan); border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:12px;">Marcar Todas</button>
+        <button onclick="bulkSelectLeagues(false)" style="background:var(--red); border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:12px; color:white;">Desmarcar Todas</button>
+        <button onclick="selectProfitableLeagues()" style="background:var(--green); border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:12px;">✨ Solo Rentables</button>
+    </div>
+    <div id="league-checkboxes-container"></div>
+</div>
 
 <div class="container">
     <h1>🚀 Backtesting Lab <span style="font-size: 14px; color: var(--comment); vertical-align: middle;">EL GURÚ</span></h1>
@@ -288,7 +350,7 @@
         </div>
         <div class="card">
             <h3>📋 Pegar Datos</h3>
-            <textarea id="raw-data" placeholder="Pega aquí tu tabla..." oninput="processData()">
+            <textarea id="raw-data" placeholder="Pega aquí tu tabla..." oninput="rebuildLeagueSelector(); processData()">
 Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
 3/18/26 17:30	14'	Dvo. La Guaira x Caracas	Venezuela Primera Division	Gol	1.61	1	verde
 3/18/26 17:20	14'	Millonarios x Junior	Colombia Liga BetPlay	Gol	1.62	1	verde
@@ -313,7 +375,11 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         <h3>🔍 Filtros de Análisis</h3>
         <div class="filters">
             <div class="filter-group">
-                <label>Liga</label>
+                <label>Selección de Ligas</label>
+                <button class="league-selector-btn" onclick="toggleLeagueModal()">📂 Seleccionar Ligas</button>
+            </div>
+            <div class="filter-group">
+                <label>Liga (Texto)</label>
                 <input type="text" id="filter-liga" placeholder="Buscar..." oninput="processData()">
             </div>
             <div class="filter-group">
@@ -338,12 +404,8 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
                 </select>
             </div>
             <div class="filter-group">
-                <label>Hora Inicio (0-23)</label>
+                <label>Hora Inicio</label>
                 <input type="number" id="filter-start-hour" min="0" max="23" placeholder="Ej: 2" oninput="processData()">
-            </div>
-            <div class="filter-group">
-                <label>Hora Fin (0-23)</label>
-                <input type="number" id="filter-end-hour" min="0" max="23" placeholder="Ej: 10" oninput="processData()">
             </div>
         </div>
     </div>
@@ -444,9 +506,74 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
 
 <script>
     let charts = {};
+    let selectedLeagues = new Set();
+    let leagueProfitCache = {}; // Para el botón de "Solo Rentables"
+
+    function toggleLeagueModal() {
+        const modal = document.getElementById('league-modal');
+        const overlay = document.getElementById('overlay');
+        const display = modal.style.display === 'block' ? 'none' : 'block';
+        modal.style.display = display;
+        overlay.style.display = display;
+    }
+
+    function rebuildLeagueSelector() {
+        const rawText = document.getElementById('raw-data').value;
+        const lines = rawText.trim().split('\n');
+        const container = document.getElementById('league-checkboxes-container');
+        const leaguesFound = new Set();
+        leagueProfitCache = {};
+
+        for(let i = 1; i < lines.length; i++) {
+            const cols = lines[i].split('\t');
+            if(cols.length < 8) continue;
+            const liga = cols[3].trim();
+            const res = cols[7].trim().toLowerCase();
+            const odd = parseFloat(cols[5]);
+            const stake = parseFloat(cols[6]) || 0;
+            const p = (res === 'verde') ? (stake * (odd - 1)) : -stake;
+
+            leaguesFound.add(liga);
+            leagueProfitCache[liga] = (leagueProfitCache[liga] || 0) + p;
+        }
+
+        const sortedLeagues = Array.from(leaguesFound).sort();
+        container.innerHTML = sortedLeagues.map(liga => `
+            <div class="league-item-select">
+                <input type="checkbox" id="lg-${liga}" value="${liga}" checked onchange="updateLeagueSelection()">
+                <label for="lg-${liga}" style="font-size:13px;">${liga} <span style="color:var(--comment); font-size:11px;">(${leagueProfitCache[liga].toFixed(1)}U)</span></label>
+            </div>
+        `).join('');
+
+        sortedLeagues.forEach(l => selectedLeagues.add(l));
+    }
+
+    function updateLeagueSelection() {
+        const checkboxes = document.querySelectorAll('#league-checkboxes-container input');
+        selectedLeagues.clear();
+        checkboxes.forEach(cb => {
+            if(cb.checked) selectedLeagues.add(cb.value);
+        });
+        processData();
+    }
+
+    function bulkSelectLeagues(state) {
+        const checkboxes = document.querySelectorAll('#league-checkboxes-container input');
+        checkboxes.forEach(cb => cb.checked = state);
+        updateLeagueSelection();
+    }
+
+    function selectProfitableLeagues() {
+        const checkboxes = document.querySelectorAll('#league-checkboxes-container input');
+        checkboxes.forEach(cb => {
+            cb.checked = leagueProfitCache[cb.value] > 0;
+        });
+        updateLeagueSelection();
+    }
 
     function clearData() {
         document.getElementById('raw-data').value = '';
+        rebuildLeagueSelector();
         processData();
     }
 
@@ -455,16 +582,19 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         const lines = rawText.trim().split('\n');
         
         let rawData = [];
-        const filterLiga = document.getElementById('filter-liga').value.toLowerCase();
+        const filterLigaText = document.getElementById('filter-liga').value.toLowerCase();
         const filterMinOdd = parseFloat(document.getElementById('filter-min-odd').value) || 0;
         const filterMaxOdd = parseFloat(document.getElementById('filter-max-odd').value) || 999;
         const filterDay = document.getElementById('filter-day').value;
         const startHour = document.getElementById('filter-start-hour').value !== "" ? parseInt(document.getElementById('filter-start-hour').value) : null;
-        const endHour = document.getElementById('filter-end-hour').value !== "" ? parseInt(document.getElementById('filter-end-hour').value) : null;
 
         for(let i = 1; i < lines.length; i++) {
             const cols = lines[i].split('\t');
             if(cols.length < 8) continue;
+
+            const liga = cols[3].trim();
+            // FILTRO DE LIGAS SELECCIONADAS
+            if (selectedLeagues.size > 0 && !selectedLeagues.has(liga)) continue;
 
             const dateStr = cols[0].trim();
             const dateObj = new Date(dateStr);
@@ -478,27 +608,16 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
                 minuto: cols[1].trim(),
                 minNum: parseInt(cols[1].replace("'", "")) || 0,
                 evento: cols[2],
-                liga: cols[3],
+                liga: liga,
                 odd: parseFloat(cols[5]),
                 stake: parseFloat(cols[6]) || 0,
                 resultado: cols[7].trim().toLowerCase()
             };
 
-            if (filterLiga && !row.liga.toLowerCase().includes(filterLiga)) continue;
+            if (filterLigaText && !row.liga.toLowerCase().includes(filterLigaText)) continue;
             if (row.odd < filterMinOdd || row.odd > filterMaxOdd) continue;
             if (filterDay !== "" && row.diaSemana !== null && row.diaSemana != filterDay) continue;
-            
-            if (startHour !== null && endHour !== null) {
-                if (startHour <= endHour) {
-                    if (row.hora < startHour || row.hora > endHour) continue;
-                } else { 
-                    if (row.hora < startHour && row.hora > endHour) continue;
-                }
-            } else if (startHour !== null) {
-                if (row.hora < startHour) continue;
-            } else if (endHour !== null) {
-                if (row.hora > endHour) continue;
-            }
+            if (startHour !== null && row.hora !== null && row.hora < startHour) continue;
 
             rawData.push(row);
         }
@@ -568,12 +687,11 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         const trainResults = analyzeSet(trainSet);
         const testResults = analyzeSet(testSet);
 
-        const candidates = [
-            { name: "Top Liga", type: "liga", val: Object.entries(trainResults.ligaMap).sort((a,b)=>b[1]-a[1])[0][0] },
-            { name: "Minuto Oro", type: "minute", val: Object.entries(trainResults.minuteMap).sort((a,b)=>b[1]-a[1])[0][0] },
-            { name: "Mejor Hora", type: "hour", val: Object.entries(trainResults.hourMap).sort((a,b)=>b[1]-a[1])[0][0] },
-            { name: "Rango Cuota", type: "odd", val: Object.entries(trainResults.oddMap).sort((a,b)=>b[1]-a[1])[0][0] }
-        ];
+        const candidates = [];
+        if(Object.keys(trainResults.ligaMap).length > 0) candidates.push({ name: "Top Liga", type: "liga", val: Object.entries(trainResults.ligaMap).sort((a,b)=>b[1]-a[1])[0][0] });
+        if(Object.keys(trainResults.minuteMap).length > 0) candidates.push({ name: "Minuto Oro", type: "minute", val: Object.entries(trainResults.minuteMap).sort((a,b)=>b[1]-a[1])[0][0] });
+        if(Object.keys(trainResults.hourMap).length > 0) candidates.push({ name: "Mejor Hora", type: "hour", val: Object.entries(trainResults.hourMap).sort((a,b)=>b[1]-a[1])[0][0] });
+        candidates.push({ name: "Rango Cuota", type: "odd", val: Object.entries(trainResults.oddMap).sort((a,b)=>b[1]-a[1])[0][1] > 0 ? Object.entries(trainResults.oddMap).sort((a,b)=>b[1]-a[1])[0][0] : "N/A" });
 
         const validatedStrategies = candidates.map(strat => {
             let testProfit = 0;
@@ -586,48 +704,21 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
                                strat.type === "minute" ? trainResults.minuteMap[strat.val] :
                                strat.type === "hour" ? trainResults.hourMap[strat.val] : trainResults.oddMap[strat.val]) || 0;
 
-            return {
-                ...strat,
-                trainProfit,
-                testProfit,
-                total: trainProfit + testProfit,
-                isRobust: testProfit > 0
-            };
+            return { ...strat, trainProfit, testProfit, total: trainProfit + testProfit, isRobust: testProfit > 0 };
         });
 
         aiContainer.innerHTML = `
-            <div class="insight-group">
-                <span class="insight-title">🛠️ Entrenamiento (Primer 70%)</span>
-                <div class="insight-item">Picks Analizados: <b>${trainSet.length}</b></div>
-                <div class="insight-item">Estrategias detectadas con éxito.</div>
-            </div>
-            <div class="insight-group">
-                <span class="insight-title">🧪 Validación (Último 30%)</span>
-                <div class="insight-item">Picks de Prueba: <b>${testSet.length}</b></div>
-                <div class="insight-item">Probando robustez en datos nuevos...</div>
-            </div>
-
+            <div class="insight-group"><span class="insight-title">🛠️ Entrenamiento</span><div class="insight-item">Picks: <b>${trainSet.length}</b></div></div>
+            <div class="insight-group"><span class="insight-title">🧪 Validación</span><div class="insight-item">Picks: <b>${testSet.length}</b></div></div>
             <div class="strategy-top-list">
-                <span class="insight-title" style="color:var(--cyan); margin-bottom:15px; display:block;">📊 Reporte de Robustez (Train vs Test)</span>
+                <span class="insight-title" style="color:var(--cyan); margin-bottom:10px; display:block;">📊 Robustez de Ligas Filtradas</span>
                 ${validatedStrategies.sort((a,b)=>b.total - a.total).map((s, i) => `
                     <div class="strategy-item">
                         <div class="strategy-rank">#${i+1}</div>
-                        <div class="strategy-desc">
-                            <b>${s.name}: ${s.val}</b> ${s.isRobust ? '<span class="badge-robust">ROBUSTO</span>' : '<span class="badge-fragile">FRÁGIL</span>'}<br>
-                            <span style="color:var(--comment); font-size:11px;">Entrenamiento: ${s.trainProfit.toFixed(2)}U | Validación: ${s.testProfit.toFixed(2)}U</span>
-                        </div>
-                        <div class="strategy-profit" style="color:${s.total >= 0 ? 'var(--green)' : 'var(--red)'}">
-                            TOTAL: ${s.total.toFixed(2)}U
-                        </div>
+                        <div class="strategy-desc"><b>${s.name}: ${s.val}</b> ${s.isRobust ? '<span class="badge-robust">ROBUSTO</span>' : '<span class="badge-fragile">FRÁGIL</span>'}</div>
+                        <div class="strategy-profit" style="color:${s.total >= 0 ? 'var(--green)' : 'var(--red)'}">${s.total.toFixed(2)}U</div>
                     </div>
                 `).join('')}
-            </div>
-
-            <div class="strategy-highlight">
-                <b>🎯 VERDICTO FINAL:</b> 
-                ${validatedStrategies.some(s=>s.isRobust) ? 
-                    `Se recomienda seguir la estrategia <b>${validatedStrategies.find(s=>s.isRobust).val}</b>, ya que confirmó beneficios en la fase de validación oculta.` : 
-                    `Atención: Ninguna estrategia superó la validación del 30%. Los patrones detectados podrían ser coincidencia.`}
             </div>
         `;
     }
@@ -643,58 +734,33 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
 
         updateChart('profitChart', 'line', {
             labels: profitCurve.map((_, i) => i),
-            datasets: [{ 
-                label: 'Profit (U)', 
-                data: profitCurve, 
-                borderColor: '#bd93f9', 
-                backgroundColor: 'rgba(189, 147, 249, 0.1)', 
-                fill: true,
-                tension: 0.2,
-                pointRadius: 2
-            }]
+            datasets: [{ label: 'Profit', data: profitCurve, borderColor: '#bd93f9', backgroundColor: 'rgba(189, 147, 249, 0.1)', fill: true, tension: 0.2 }]
         });
 
-        // --- Renderizado de Ligas ---
-        const sortedLeagues = Object.entries(leagueMap)
-            .sort((a,b) => b[1].profit - a[1].profit);
-        
+        const sortedLeagues = Object.entries(leagueMap).sort((a,b) => b[1].profit - a[1].profit);
         const top10Leagues = sortedLeagues.slice(0, 10);
         updateChart('leagueChart', 'bar', {
             labels: top10Leagues.map(l => l[0].substring(0, 15)),
-            datasets: [{ 
-                data: top10Leagues.map(l => l[1].profit.toFixed(2)), 
-                backgroundColor: top10Leagues.map(l => l[1].profit >= 0 ? '#50fa7b' : '#ff5555'),
-                indexAxis: 'y'
-            }]
+            datasets: [{ data: top10Leagues.map(l => l[1].profit.toFixed(2)), backgroundColor: top10Leagues.map(l => l[1].profit >= 0 ? '#50fa7b' : '#ff5555'), indexAxis: 'y' }]
         });
 
         const leagueBody = document.querySelector('#league-analysis-table tbody');
         leagueBody.innerHTML = sortedLeagues.map(l => {
             const yieldVal = ((l[1].profit / l[1].staked) * 100).toFixed(1);
-            return `<tr>
-                <td><b>${l[0]}</b></td>
-                <td>${l[1].picks}</td>
-                <td style="color:${yieldVal >= 0 ? 'var(--cyan)' : 'var(--orange)'}">${yieldVal}%</td>
-                <td style="color:${l[1].profit >= 0 ? 'var(--green)' : 'var(--red)'}">${l[1].profit.toFixed(2)}U</td>
-            </tr>`;
+            return `<tr><td><b>${l[0]}</b></td><td>${l[1].picks}</td><td style="color:${yieldVal >= 0 ? 'var(--cyan)' : 'var(--orange)'}">${yieldVal}%</td><td style="color:${l[1].profit >= 0 ? 'var(--green)' : 'var(--red)'}">${l[1].profit.toFixed(2)}U</td></tr>`;
         }).join('');
 
         const sortedMinLabels = Object.keys(minuteMap).sort((a, b) => minuteMap[a].minNum - minuteMap[b].minNum);
         let accMinP = 0;
         updateChart('minuteChart', 'line', {
             labels: sortedMinLabels,
-            datasets: [{ 
-                data: sortedMinLabels.map(m => { accMinP += minuteMap[m].profit; return accMinP.toFixed(2); }), 
-                borderColor: '#ff79c6',
-                tension: 0.4 
-            }]
+            datasets: [{ data: sortedMinLabels.map(m => { accMinP += minuteMap[m].profit; return accMinP.toFixed(2); }), borderColor: '#ff79c6', tension: 0.4 }]
         });
 
         const dayLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-        const dayValues = [1, 2, 3, 4, 5, 6, 0].map(i => dayStats[i]);
         updateChart('dayChart', 'bar', {
             labels: dayLabels,
-            datasets: [{ data: dayValues, backgroundColor: dayValues.map(v => v >= 0 ? '#50fa7b' : '#ff5555') }]
+            datasets: [{ data: [1, 2, 3, 4, 5, 6, 0].map(i => dayStats[i]), backgroundColor: [1, 2, 3, 4, 5, 6, 0].map(i => dayStats[i] >= 0 ? '#50fa7b' : '#ff5555') }]
         });
 
         updateChart('hourChart', 'bar', {
@@ -703,25 +769,15 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         });
 
         const minBody = document.querySelector('#minute-analysis-table tbody');
-        minBody.innerHTML = Object.keys(minuteMap)
-            .sort((a, b) => minuteMap[b].profit - minuteMap[a].profit)
-            .map(m => {
-                const row = minuteMap[m];
-                const acc = ((row.wins/row.picks)*100).toFixed(1);
-                return `<tr><td><b>${m}</b></td><td>${row.picks}</td><td>${acc}%</td><td style="color:${row.profit>=0?'var(--green)':'var(--red)'}">${row.profit.toFixed(2)}U</td></tr>`;
-            }).join('');
+        minBody.innerHTML = Object.keys(minuteMap).sort((a, b) => minuteMap[b].profit - minuteMap[a].profit).map(m => {
+            const row = minuteMap[m];
+            return `<tr><td><b>${m}</b></td><td>${row.picks}</td><td>${((row.wins/row.picks)*100).toFixed(1)}%</td><td style="color:${row.profit>=0?'var(--green)':'var(--red)'}">${row.profit.toFixed(2)}U</td></tr>`;
+        }).join('');
 
         const resBody = document.querySelector('#results-table tbody');
         resBody.innerHTML = originalData.map(d => {
             const p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
-            return `<tr>
-                <td style="color:var(--comment)">${d.fecha}</td>
-                <td><b>${d.minuto}</b></td>
-                <td style="max-width:150px; overflow:hidden; text-overflow:ellipsis;">${d.liga}</td>
-                <td>${d.odd.toFixed(2)}</td>
-                <td class="${d.resultado==='verde'?'status-win':'status-loss'}">${d.resultado.toUpperCase()}</td>
-                <td style="color:${p>=0?'var(--green)':'var(--red)'}">${p>=0?'+':''}${p.toFixed(2)}</td>
-            </tr>`;
+            return `<tr><td style="color:var(--comment)">${d.fecha}</td><td><b>${d.minuto}</b></td><td>${d.liga}</td><td>${d.odd.toFixed(2)}</td><td class="${d.resultado==='verde'?'status-win':'status-loss'}">${d.resultado.toUpperCase()}</td><td style="color:${p>=0?'var(--green)':'var(--red)'}">${p.toFixed(2)}</td></tr>`;
         }).join('');
     }
 
@@ -729,7 +785,6 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         if (charts[id]) charts[id].destroy();
         const ctx = document.getElementById(id).getContext('2d');
         const isHorizontal = data.datasets[0].indexAxis === 'y';
-        
         charts[id] = new Chart(ctx, {
             type: type,
             data: data,
@@ -740,13 +795,13 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
                 plugins: { legend: { display: false } },
                 scales: {
                     y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6272a4' } },
-                    x: { grid: { display: isHorizontal ? true : false, color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6272a4' } }
+                    x: { grid: { display: isHorizontal, color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6272a4' } }
                 }
             }
         });
     }
 
-    window.onload = processData;
+    window.onload = () => { rebuildLeagueSelector(); processData(); };
 </script>
 </body>
 </html>
