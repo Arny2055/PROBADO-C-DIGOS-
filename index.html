@@ -166,6 +166,29 @@
             line-height: 1.3;
         }
 
+        /* Estilos Simulación Estrategias */
+        .strategy-top-list {
+            grid-column: 1 / -1;
+            background: rgba(189, 147, 249, 0.05);
+            border: 1px solid rgba(189, 147, 249, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+
+        .strategy-item {
+            display: grid;
+            grid-template-columns: 40px 1fr 120px;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .strategy-item:last-child { border-bottom: none; }
+        .strategy-rank { font-weight: bold; color: var(--purple); }
+        .strategy-desc { font-size: 0.8rem; }
+        .strategy-profit { text-align: right; font-weight: bold; color: var(--green); }
+
         .strategy-highlight {
             grid-column: 1 / -1;
             background: rgba(80, 250, 123, 0.1);
@@ -281,7 +304,7 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
     </div>
 
     <div class="card ai-card">
-        <h3>🧠 Master Strategy AI</h3>
+        <h3>🧠 Master Strategy AI & Simulation</h3>
         <div id="ai-insights">Analizando profundidad de datos...</div>
     </div>
 
@@ -497,10 +520,11 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         // --- 1. IDENTIFICAR LIGAS ---
         let ligaMap = {};
         rawData.forEach(d => {
-            if(!ligaMap[d.liga]) ligaMap[d.liga] = { p: 0, t: 0 };
+            if(!ligaMap[d.liga]) ligaMap[d.liga] = { p: 0, t: 0, wins:0 };
             const p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
             ligaMap[d.liga].p += p;
             ligaMap[d.liga].t++;
+            if(d.resultado === 'verde') ligaMap[d.liga].wins++;
         });
         let bestLiga = Object.entries(ligaMap).sort((a,b) => b[1].p - a[1].p)[0];
         let worstLiga = Object.entries(ligaMap).sort((a,b) => a[1].p - b[1].p)[0];
@@ -516,17 +540,43 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         });
         let bestOdd = Object.entries(oddRanges).sort((a,b) => b[1] - a[1])[0];
 
-        // --- 3. IDENTIFICAR MEJOR DÍA Y HORA ---
+        // --- 3. MEJOR DÍA Y HORA ---
         let bestDayIdx = dayStats.indexOf(Math.max(...dayStats));
         let bestHourIdx = hourStats.indexOf(Math.max(...hourStats));
         
-        // --- 4. IDENTIFICAR MINUTO DE ORO ---
+        // --- 4. SIMULACIÓN DE 5 ESTRATEGIAS TOP ---
+        const strategies = [];
+        
+        // Estrategia A: Mejor Liga
+        strategies.push({ name: `Dominio en ${bestLiga[0]}`, desc: `Apostar solo en esta liga`, profit: bestLiga[1].p });
+        
+        // Estrategia B: Rango de Cuota Optimo
+        strategies.push({ name: `Rango Cuota ${bestOdd[0]}`, desc: `Filtrar solo por este rango de cuota`, profit: bestOdd[1] });
+        
+        // Estrategia C: El Minuto de Oro
         let bestMin = Object.entries(minuteMap).sort((a,b) => b[1].profit - a[1].profit)[0];
+        strategies.push({ name: `Minuto Sagrado: ${bestMin[0]}`, desc: `Operar solo en picks de este minuto`, profit: bestMin[1].profit });
+
+        // Estrategia D: Especialista de Fin de Semana (si aplica)
+        let weekendProfit = dayStats[6] + dayStats[0];
+        strategies.push({ name: `Fines de Semana`, desc: `Operar solo Sábados y Domingos`, profit: weekendProfit });
+
+        // Estrategia E: El Combo Gurú (Liga + Cuota)
+        let comboProfit = 0;
+        rawData.forEach(d => {
+            if(d.liga === bestLiga[0] && d.odd >= parseFloat(bestOdd[0].split('-')[0] || 2.2)) {
+                 comboProfit += (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
+            }
+        });
+        strategies.push({ name: `Estrategia Combo Gurú`, desc: `${bestLiga[0]} + Cuota ${bestOdd[0]}`, profit: comboProfit });
+
+        // Ordenar y tomar las 5 mejores
+        const top5 = strategies.sort((a,b) => b.profit - a.profit).slice(0, 5);
 
         // RENDERIZAR INSIGHTS
         aiContainer.innerHTML = `
             <div class="insight-group">
-                <span class="insight-title">🏆 Top Desempeño</span>
+                <span class="insight-title">🏆 Top Desempeño General</span>
                 <div class="insight-item">Mejor Liga: <b>${bestLiga[0]}</b> (+${bestLiga[1].p.toFixed(2)}U)</div>
                 <div class="insight-item">Cuota Ideal: <b>${bestOdd[0]}</b> (+${bestOdd[1].toFixed(2)}U)</div>
                 <div class="insight-item">Día de Oro: <b>${dayNames[bestDayIdx]}</b></div>
@@ -534,13 +584,29 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             <div class="insight-group">
                 <span class="insight-title">⚠️ Fugas de Capital</span>
                 <div class="insight-item">Liga Evitable: <b>${worstLiga[1].p < 0 ? worstLiga[0] : 'Ninguna crítica'}</b></div>
-                <div class="insight-item">Hora Crítica: <b>${hourStats.indexOf(Math.min(...hourStats))}h</b> (Revisar picks)</div>
+                <div class="insight-item">Hora Crítica: <b>${hourStats.indexOf(Math.min(...hourStats))}h</b></div>
             </div>
+
+            <div class="strategy-top-list">
+                <span class="insight-title" style="color:var(--purple); margin-bottom:15px; display:block;">📊 Simulación de Patrones Ganadores (Si solo hubieras apostado a...)</span>
+                ${top5.map((s, i) => `
+                    <div class="strategy-item">
+                        <div class="strategy-rank">#${i+1}</div>
+                        <div class="strategy-desc">
+                            <b>${s.name}</b><br>
+                            <span style="color:var(--comment); font-size:11px;">${s.desc}</span>
+                        </div>
+                        <div class="strategy-profit" style="color:${s.profit >= 0 ? 'var(--green)' : 'var(--red)'}">
+                            ${s.profit >= 0 ? '+' : ''}${s.profit.toFixed(2)}U
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+
             <div class="strategy-highlight">
-                <b>🎯 ESTRATEGIA SUGERIDA:</b> 
-                Busca picks en el minuto <b>${bestMin[0]}</b>, preferiblemente en <b>${bestLiga[0]}</b> 
-                con cuotas entre <b>${bestOdd[0]}</b> los días <b>${dayNames[bestDayIdx]}</b> cerca de las <b>${bestHourIdx}:00h</b>. 
-                Esta combinación tiene tu mayor esperanza matemática.
+                <b>🎯 ESTRATEGIA MAESTRA SUGERIDA:</b> 
+                Según la simulación, tu mayor potencial está en <b>${top5[0].name}</b>. 
+                Si te limitas a ese patrón, tu beneficio proyectado sube a <b>${top5[0].profit.toFixed(2)}U</b> con menos riesgo.
             </div>
         `;
     }
