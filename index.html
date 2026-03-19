@@ -8,10 +8,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #282a36;
-            --current-line: #44475a;
+            --bg: #1e1e2e;
+            --current-line: #2b2b3b;
             --fg: #f8f8f2;
-            --comment: #6272a4;
+            --comment: #7970a9;
             --cyan: #8be9fd;
             --green: #50fa7b;
             --orange: #ffb86c;
@@ -27,9 +27,10 @@
             font-family: 'Inter', sans-serif;
             margin: 0;
             padding: 20px;
+            line-height: 1.5;
         }
 
-        h1, h2, h3 { font-family: 'Fira Code', monospace; color: var(--purple); text-transform: uppercase; letter-spacing: 2px; }
+        h1, h2, h3 { font-family: 'Fira Code', monospace; color: var(--purple); text-transform: uppercase; letter-spacing: 2px; margin-top: 0; }
 
         .container { max-width: 1400px; margin: auto; }
 
@@ -40,35 +41,32 @@
             margin-bottom: 20px;
         }
 
-        /* Estilo unificado para tarjetas */
         .card {
             background: var(--current-line);
             padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            border: 1px solid var(--comment);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: 1px solid rgba(189, 147, 249, 0.2);
             margin-bottom: 20px;
-            position: relative;
         }
 
         textarea {
             width: 100%;
-            height: 180px;
-            background: var(--bg);
+            height: 150px;
+            background: #161621;
             color: var(--green);
             border: 1px solid var(--purple);
             border-radius: 8px;
             padding: 10px;
             font-family: 'Fira Code', monospace;
-            font-size: 11px;
+            font-size: 12px;
             resize: none;
-            white-space: pre;
-            overflow-x: auto;
+            box-sizing: border-box;
         }
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             gap: 15px;
             margin-bottom: 20px;
         }
@@ -76,32 +74,33 @@
         .stat-box {
             text-align: center;
             padding: 15px;
-            border-radius: 8px;
+            border-radius: 10px;
             background: rgba(0,0,0,0.2);
             border-bottom: 3px solid var(--purple);
         }
 
-        .stat-box span { display: block; font-size: 0.8rem; color: var(--comment); }
-        .stat-box b { font-size: 1.4rem; color: var(--cyan); }
+        .stat-box span { display: block; font-size: 0.75rem; color: var(--comment); text-transform: uppercase; font-weight: bold; }
+        .stat-box b { font-size: 1.5rem; color: var(--cyan); }
 
         .filters {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 10px;
             margin-top: 15px;
         }
 
         input, select {
-            background: var(--bg);
+            background: #161621;
             border: 1px solid var(--comment);
             color: var(--fg);
-            padding: 8px;
-            border-radius: 5px;
+            padding: 10px;
+            border-radius: 6px;
             outline: none;
+            width: 100%;
+            box-sizing: border-box;
         }
 
-        .chart-main { height: 350px; }
-        .chart-mini { height: 320px; }
+        .chart-container { position: relative; height: 300px; width: 100%; }
 
         .grid-charts-row {
             display: grid;
@@ -110,41 +109,46 @@
             margin-bottom: 20px;
         }
 
-        /* Corrección de Tablas */
+        /* Estilo de Tablas Mejorado */
         .analysis-grid {
             display: grid;
-            grid-template-columns: 1fr 2fr;
+            grid-template-columns: 1fr 1.8fr;
             gap: 20px;
         }
 
         .table-wrapper {
             overflow-x: auto;
-            overflow-y: auto;
-            max-height: 450px;
-            background: rgba(0,0,0,0.2);
+            max-height: 500px;
+            background: #161621;
             border-radius: 8px;
-            border: 1px solid var(--comment);
+            border: 1px solid var(--current-line);
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             font-size: 0.85rem;
-            min-width: 500px; /* Evita que la tabla se colapse en móvil */
+            text-align: left;
         }
 
         th { 
             background: var(--purple); 
             color: var(--bg); 
-            padding: 12px 10px; 
-            text-align: left; 
+            padding: 12px; 
+            font-weight: 700;
             position: sticky; 
             top: 0; 
-            z-index: 10;
+            z-index: 5;
         }
 
-        td { padding: 10px; border-bottom: 1px solid var(--current-line); white-space: nowrap; }
-        tr:hover { background: rgba(255, 255, 255, 0.05); }
+        td { 
+            padding: 10px 12px; 
+            border-bottom: 1px solid var(--current-line); 
+            white-space: nowrap; 
+        }
+
+        tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+        tr:hover { background: rgba(189, 147, 249, 0.1); }
 
         .status-win { color: var(--green); font-weight: bold; }
         .status-loss { color: var(--red); font-weight: bold; }
@@ -158,28 +162,27 @@
             cursor: pointer;
             font-weight: bold;
             margin-top: 10px;
-            font-size: 12px;
+            transition: opacity 0.2s;
         }
+        .btn-clear:hover { opacity: 0.8; }
 
-        @media (max-width: 768px) {
-            .grid-config, .grid-charts-row, .analysis-grid {
-                grid-template-columns: 1fr;
-            }
+        @media (max-width: 900px) {
+            .grid-config, .grid-charts-row, .analysis-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🚀 Backtesting Lab <span style="font-size: 12px; color: var(--comment);">EL GURÚ</span></h1>
+    <h1>🚀 Backtesting Lab <span style="font-size: 14px; color: var(--comment); vertical-align: middle;">EL GURÚ</span></h1>
 
     <div class="grid-config">
         <div class="card">
             <h3>⚙️ Configuración</h3>
             <div style="display:flex; flex-direction:column; gap:10px;">
-                <label>Bank inicial ($):</label>
+                <label style="font-size: 0.8rem;">Bank inicial ($):</label>
                 <input type="number" id="bank-initial" value="1000" oninput="processData()">
-                <label>Valor de 1 Unidad ($):</label>
+                <label style="font-size: 0.8rem;">Valor de 1 Unidad ($):</label>
                 <input type="number" id="unit-value" value="10" oninput="processData()">
             </div>
         </div>
@@ -187,22 +190,28 @@
             <h3>📋 Pegar Datos</h3>
             <textarea id="raw-data" placeholder="Pega aquí tu tabla..." oninput="processData()">
 Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
-3/17/26 16:30	18'	Richmond Kickers x Northern Virginia	USA US Open Cup	Gol	1.61	1	verde
-3/17/26 16:30	14'	Academia Puerto Cabello x UCV	Venezuela Primera Division	Gol	1.8	1	verde
-3/17/26 13:45	14'	Horsham x Bath City	England Vanarama National League South	Gol	1.62	1	rojo
-3/17/26 13:45	14'	Cheltenham Town x Crewe Alexandra	England League Two	Gol	1.7	1	rojo</textarea>
+3/18/26 17:30	14'	Dvo. La Guaira x Caracas	Venezuela Primera Division	Gol	1.61	1	verde
+3/18/26 17:20	14'	Millonarios x Junior	Colombia Liga BetPlay	Gol	1.62	1	verde
+3/18/26 16:00	17'	Independencia x Rio Branco	Brazil Acreano	Gol	1.60	1	verde
+3/18/26 15:00	14'	Juventus SP x Oeste	Brazil Paulista A2	Gol	1.65	1	rojo
+3/18/26 14:00	15'	Metapan x Aguila	El Salvador Reserve League	Gol	1.60	1	verde
+3/18/26 14:00	17'	Bayern x Arsenal	UEFA Champions League	Gol	1.60	1	verde
+3/18/26 14:00	24'	Man City x Real Madrid	UEFA Champions League	Gol	1.60	1	verde
+3/18/26 13:45	14'	Glasgow City x Hearts	Scotland SWPL 1	Gol	1.60	1	rojo
+3/18/26 13:15	15'	Everton x Chelsea	England Women's Super League	Gol	1.60	1	rojo
+3/18/26 13:00	14'	Leicester x Brighton	England Womens Super League 2	Gol	1.60	1	verde</textarea>
             <button class="btn-clear" onclick="clearData()">🧹 Limpiar Campo</button>
         </div>
     </div>
 
     <div class="card">
-        <h3>🔍 Filtros</h3>
+        <h3>🔍 Filtros de Análisis</h3>
         <div class="filters">
             <input type="text" id="filter-liga" placeholder="Filtrar Liga..." oninput="processData()">
             <input type="number" id="filter-min-odd" step="0.1" placeholder="Cuota Min" oninput="processData()">
             <input type="number" id="filter-max-odd" step="0.1" placeholder="Cuota Max" oninput="processData()">
             <select id="filter-day" onchange="processData()">
-                <option value="">Cualquier día</option>
+                <option value="">Todos los días</option>
                 <option value="1">Lunes</option>
                 <option value="2">Martes</option>
                 <option value="3">Miércoles</option>
@@ -211,31 +220,38 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
                 <option value="6">Sábado</option>
                 <option value="0">Domingo</option>
             </select>
-            <input type="text" id="filter-minute-pick" placeholder="Minuto (ej. 14')" oninput="processData()">
         </div>
     </div>
 
     <div class="stats-grid" id="stats-output"></div>
 
-    <div class="card chart-main">
+    <div class="card">
         <h3>📈 Curva de Profit (U)</h3>
-        <canvas id="profitChart"></canvas>
+        <div class="chart-container" style="height: 350px;">
+            <canvas id="profitChart"></canvas>
+        </div>
     </div>
 
     <div class="grid-charts-row">
-        <div class="card chart-mini">
-            <h3>⏱️ Tendencia por Minuto</h3>
-            <canvas id="minuteChart"></canvas>
+        <div class="card">
+            <h3>⏱️ Tendencia por Minuto (Acumulado)</h3>
+            <div class="chart-container">
+                <canvas id="minuteChart"></canvas>
+            </div>
         </div>
-        <div class="card chart-mini">
+        <div class="card">
             <h3>📅 Profit por Día</h3>
-            <canvas id="dayChart"></canvas>
+            <div class="chart-container">
+                <canvas id="dayChart"></canvas>
+            </div>
         </div>
     </div>
 
-    <div class="card chart-mini">
+    <div class="card">
         <h3>🕒 Profit por Franja Horaria</h3>
-        <canvas id="hourChart"></canvas>
+        <div class="chart-container" style="height: 250px;">
+            <canvas id="hourChart"></canvas>
+        </div>
     </div>
 
     <div class="analysis-grid">
@@ -265,7 +281,7 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
                             <th>Min</th>
                             <th>Liga</th>
                             <th>Cuota</th>
-                            <th>Resultado</th>
+                            <th>Res</th>
                             <th>Profit (U)</th>
                         </tr>
                     </thead>
@@ -277,22 +293,7 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
 </div>
 
 <script>
-    let chartProfit, chartMinute, chartDay, chartHour;
-
-    function erfc(x) {
-        const z = Math.abs(x);
-        const t = 1 / (1 + z / 2);
-        const r = t * Math.exp(-z * z - 1.26551223 + t * (1.00002368 + t * (0.37409196 + t * (0.09678418 + t * (-0.18628806 + t * (0.27886807 + t * (-1.13520398 + t * (1.48851587 + t * (-0.82215223 + t * 0.17087277)))))))));
-        return x >= 0 ? r : 2 - r;
-    }
-
-    function calculatePValue(winRate, n, avgOdd) {
-        if (n <= 1 || avgOdd <= 1) return 100;
-        const expectedWinRate = 1 / avgOdd;
-        const sd = Math.sqrt((expectedWinRate * (1 - expectedWinRate)) / n);
-        const z = (winRate - expectedWinRate) / sd;
-        return (erfc(z / Math.sqrt(2)) / 2) * 100;
-    }
+    let charts = {};
 
     function clearData() {
         document.getElementById('raw-data').value = '';
@@ -303,17 +304,13 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         const rawText = document.getElementById('raw-data').value;
         const lines = rawText.trim().split('\n');
         
-        let data = [];
-        let minuteMap = {};
-        let dayStats = [0,0,0,0,0,0,0];
-        let hourStats = Array(24).fill(0);
-
+        let rawData = [];
         const filterLiga = document.getElementById('filter-liga').value.toLowerCase();
         const filterMinOdd = parseFloat(document.getElementById('filter-min-odd').value) || 0;
         const filterMaxOdd = parseFloat(document.getElementById('filter-max-odd').value) || 999;
         const filterDay = document.getElementById('filter-day').value;
-        const filterMinPick = document.getElementById('filter-minute-pick').value;
 
+        // 1. Parsing y Filtrado inicial
         for(let i = 1; i < lines.length; i++) {
             const cols = lines[i].split('\t');
             if(cols.length < 8) continue;
@@ -323,9 +320,10 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             
             const row = {
                 fecha: dateStr,
+                ts: dateObj.getTime(),
                 diaSemana: isNaN(dateObj.getDay()) ? null : dateObj.getDay(),
                 hora: isNaN(dateObj.getHours()) ? null : dateObj.getHours(),
-                minuto: cols[1],
+                minuto: cols[1].trim(),
                 minNum: parseInt(cols[1].replace("'", "")) || 0,
                 evento: cols[2],
                 liga: cols[3],
@@ -337,99 +335,134 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             if (filterLiga && !row.liga.toLowerCase().includes(filterLiga)) continue;
             if (row.odd < filterMinOdd || row.odd > filterMaxOdd) continue;
             if (filterDay !== "" && row.diaSemana !== null && row.diaSemana != filterDay) continue;
-            if (filterMinPick && row.minuto !== filterMinPick) continue;
 
-            data.push(row);
-
-            let p = (row.resultado === 'verde') ? (row.stake * (row.odd - 1)) : -row.stake;
-
-            if (!minuteMap[row.minuto]) minuteMap[row.minuto] = { picks: 0, wins: 0, profit: 0, minNum: row.minNum };
-            minuteMap[row.minuto].picks++;
-            minuteMap[row.minuto].profit += p;
-            if(row.resultado === 'verde') minuteMap[row.minuto].wins++;
-
-            if(row.diaSemana !== null) dayStats[row.diaSemana] += p;
-            if(row.hora !== null) hourStats[row.hora] += p;
+            rawData.push(row);
         }
 
-        updateDashboard(data, minuteMap, dayStats, hourStats);
+        // 2. ORDENAR CRONOLÓGICAMENTE (Más antiguo primero para los gráficos)
+        const chronologicalData = [...rawData].sort((a, b) => a.ts - b.ts);
+        
+        // 3. Cálculos de métricas
+        let minuteMap = {};
+        let dayStats = Array(7).fill(0);
+        let hourStats = Array(24).fill(0);
+        let profitCurve = [0];
+        let currentProfit = 0;
+        let totalStaked = 0;
+        let wins = 0;
+
+        chronologicalData.forEach(d => {
+            const p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
+            currentProfit += p;
+            totalStaked += d.stake;
+            if(d.resultado === 'verde') wins++;
+            
+            profitCurve.push(parseFloat(currentProfit.toFixed(2)));
+
+            // Estadísticas por minuto
+            if (!minuteMap[d.minuto]) minuteMap[d.minuto] = { picks: 0, wins: 0, profit: 0, minNum: d.minNum };
+            minuteMap[d.minuto].picks++;
+            minuteMap[d.minuto].profit += p;
+            if(d.resultado === 'verde') minuteMap[d.minuto].wins++;
+
+            if(d.diaSemana !== null) dayStats[d.diaSemana] += p;
+            if(d.hora !== null) hourStats[d.hora] += p;
+        });
+
+        renderDashboard(rawData, chronologicalData, minuteMap, dayStats, hourStats, profitCurve, wins, totalStaked, currentProfit);
     }
 
-    function updateDashboard(data, minuteMap, dayStats, hourStats) {
-        let totalPicks = data.length;
-        let wins = data.filter(d => d.resultado === 'verde').length;
-        let winRate = totalPicks > 0 ? (wins / totalPicks) * 100 : 0;
-        let profitU = 0, maxProfit = 0, drawdown = 0, totalStaked = 0, sumOdds = 0;
-        let chartDataProfit = [0];
-
-        data.forEach(d => {
-            sumOdds += d.odd;
-            totalStaked += d.stake;
-            let p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
-            profitU += p;
-            chartDataProfit.push(parseFloat(profitU.toFixed(2)));
-            if (profitU > maxProfit) maxProfit = profitU;
-            let currentDD = maxProfit - profitU;
-            if (currentDD > drawdown) drawdown = currentDD;
-        });
-
-        const pValue = calculatePValue(winRate / 100, totalPicks, sumOdds/totalPicks);
+    function renderDashboard(originalData, chronologicalData, minuteMap, dayStats, hourStats, profitCurve, wins, totalStaked, currentProfit) {
+        // Stats boxes
+        const winRate = originalData.length > 0 ? (wins / originalData.length) * 100 : 0;
         document.getElementById('stats-output').innerHTML = `
-            <div class="stat-box"><span>Picks</span><b>${totalPicks}</b></div>
+            <div class="stat-box"><span>Picks</span><b>${originalData.length}</b></div>
             <div class="stat-box"><span>Acierto</span><b>${winRate.toFixed(1)}%</b></div>
-            <div class="stat-box"><span>Profit</span><b style="color:var(--green)">${profitU.toFixed(2)}U</b></div>
-            <div class="stat-box"><span>Yield</span><b>${totalStaked > 0 ? ((profitU/totalStaked)*100).toFixed(1) : 0}%</b></div>
-            <div class="stat-box"><span>Drawdown</span><b style="color:var(--red)">${drawdown.toFixed(2)}U</b></div>
-            <div class="stat-box"><span>P-Value</span><b>${pValue.toFixed(2)}%</b></div>
+            <div class="stat-box"><span>Profit</span><b style="color:var(--green)">${currentProfit.toFixed(2)}U</b></div>
+            <div class="stat-box"><span>Yield</span><b>${totalStaked > 0 ? ((currentProfit/totalStaked)*100).toFixed(1) : 0}%</b></div>
         `;
 
-        const baseOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
-
-        if (chartProfit) chartProfit.destroy();
-        chartProfit = new Chart(document.getElementById('profitChart'), {
-            type: 'line',
-            data: { labels: chartDataProfit.map((_, i) => i), datasets: [{ data: chartDataProfit, borderColor: '#bd93f9', backgroundColor: 'rgba(189, 147, 249, 0.1)', fill: true, tension: 0.1 }] },
-            options: baseOpts
+        // Gráfico Principal (Profit Curve)
+        updateChart('profitChart', 'line', {
+            labels: profitCurve.map((_, i) => i),
+            datasets: [{ 
+                label: 'Profit (U)', 
+                data: profitCurve, 
+                borderColor: '#bd93f9', 
+                backgroundColor: 'rgba(189, 147, 249, 0.1)', 
+                fill: true,
+                tension: 0.2,
+                pointRadius: 2
+            }]
         });
 
-        const sortedMinutes = Object.keys(minuteMap).sort((a, b) => minuteMap[a].minNum - minuteMap[b].minNum);
-        let cumP = 0;
-        if (chartMinute) chartMinute.destroy();
-        chartMinute = new Chart(document.getElementById('minuteChart'), {
-            type: 'line',
-            data: { labels: sortedMinutes, datasets: [{ data: sortedMinutes.map(m => { cumP += minuteMap[m].profit; return cumP.toFixed(2); }), borderColor: '#ff79c6', tension: 0.3 }] },
-            options: baseOpts
+        // Tendencia por Minuto (Ordenado por valor de minuto 14, 15, 16...)
+        const sortedMinLabels = Object.keys(minuteMap).sort((a, b) => minuteMap[a].minNum - minuteMap[b].minNum);
+        let accMinP = 0;
+        updateChart('minuteChart', 'line', {
+            labels: sortedMinLabels,
+            datasets: [{ 
+                data: sortedMinLabels.map(m => { accMinP += minuteMap[m].profit; return accMinP.toFixed(2); }), 
+                borderColor: '#ff79c6',
+                tension: 0.4 
+            }]
         });
 
+        // Profit por Día
         const dayLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
         const dayValues = [1, 2, 3, 4, 5, 6, 0].map(i => dayStats[i]);
-        if (chartDay) chartDay.destroy();
-        chartDay = new Chart(document.getElementById('dayChart'), {
-            type: 'bar',
-            data: { labels: dayLabels, datasets: [{ data: dayValues, backgroundColor: dayValues.map(v => v >= 0 ? '#50fa7b' : '#ff5555') }] },
-            options: baseOpts
+        updateChart('dayChart', 'bar', {
+            labels: dayLabels,
+            datasets: [{ data: dayValues, backgroundColor: dayValues.map(v => v >= 0 ? '#50fa7b' : '#ff5555') }]
         });
 
-        if (chartHour) chartHour.destroy();
-        chartHour = new Chart(document.getElementById('hourChart'), {
-            type: 'bar',
-            data: { labels: Array.from({length: 24}, (_, i) => `${i}h`), datasets: [{ data: hourStats, backgroundColor: hourStats.map(v => v >= 0 ? '#8be9fd' : '#ffb86c') }] },
-            options: baseOpts
+        // Profit por Hora
+        updateChart('hourChart', 'bar', {
+            labels: Array.from({length: 24}, (_, i) => `${i}h`),
+            datasets: [{ data: hourStats, backgroundColor: hourStats.map(v => v >= 0 ? '#8be9fd' : '#ffb86c') }]
         });
 
-        // Actualización de Tablas Limpia
+        // Tabla Análisis Minuto (Ordenada por Profit)
         const minBody = document.querySelector('#minute-analysis-table tbody');
-        minBody.innerHTML = Object.keys(minuteMap).sort((a, b) => minuteMap[b].profit - minuteMap[a].profit).map(m => {
-            const row = minuteMap[m];
-            const acc = ((row.wins/row.picks)*100).toFixed(1);
-            return `<tr><td><b>${m}</b></td><td>${row.picks}</td><td>${acc}%</td><td style="color:${row.profit>=0?'var(--green)':'var(--red)'}">${row.profit.toFixed(2)}U</td></tr>`;
-        }).join('');
+        minBody.innerHTML = Object.keys(minuteMap)
+            .sort((a, b) => minuteMap[b].profit - minuteMap[a].profit)
+            .map(m => {
+                const row = minuteMap[m];
+                const acc = ((row.wins/row.picks)*100).toFixed(1);
+                return `<tr><td><b>${m}</b></td><td>${row.picks}</td><td>${acc}%</td><td style="color:${row.profit>=0?'var(--green)':'var(--red)'}">${row.profit.toFixed(2)}U</td></tr>`;
+            }).join('');
 
+        // Tabla Historial (Mostramos el orden original de pegado, usualmente lo más reciente arriba)
         const resBody = document.querySelector('#results-table tbody');
-        resBody.innerHTML = data.map(d => {
+        resBody.innerHTML = originalData.map(d => {
             const p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
-            return `<tr><td>${d.fecha}</td><td>${d.minuto}</td><td>${d.liga}</td><td>${d.odd.toFixed(2)}</td><td class="${d.resultado==='verde'?'status-win':'status-loss'}">${d.resultado.toUpperCase()}</td><td style="color:${p>=0?'var(--green)':'var(--red)'}">${p.toFixed(2)}</td></tr>`;
+            return `<tr>
+                <td style="color:var(--comment)">${d.fecha}</td>
+                <td><b>${d.minuto}</b></td>
+                <td style="max-width:150px; overflow:hidden; text-overflow:ellipsis;">${d.liga}</td>
+                <td>${d.odd.toFixed(2)}</td>
+                <td class="${d.resultado==='verde'?'status-win':'status-loss'}">${d.resultado.toUpperCase()}</td>
+                <td style="color:${p>=0?'var(--green)':'var(--red)'}">${p>=0?'+':''}${p.toFixed(2)}</td>
+            </tr>`;
         }).join('');
+    }
+
+    function updateChart(id, type, data) {
+        if (charts[id]) charts[id].destroy();
+        const ctx = document.getElementById(id).getContext('2d');
+        charts[id] = new Chart(ctx, {
+            type: type,
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6272a4' } },
+                    x: { grid: { display: false }, ticks: { color: '#6272a4' } }
+                }
+            }
+        });
     }
 
     window.onload = processData;
