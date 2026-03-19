@@ -114,7 +114,6 @@
             box-sizing: border-box;
         }
 
-        /* Estilos IA Strategy Avanzada */
         .ai-card {
             background: linear-gradient(145deg, #2b2b3b, #1a1a2e);
             border: 1px solid var(--cyan);
@@ -166,7 +165,6 @@
             line-height: 1.3;
         }
 
-        /* Estilos Simulación Estrategias */
         .strategy-top-list {
             grid-column: 1 / -1;
             background: rgba(189, 147, 249, 0.05);
@@ -178,16 +176,19 @@
 
         .strategy-item {
             display: grid;
-            grid-template-columns: 40px 1fr 120px;
+            grid-template-columns: 40px 1fr 140px;
             align-items: center;
-            padding: 8px;
+            padding: 10px;
             border-bottom: 1px solid rgba(255,255,255,0.05);
         }
 
         .strategy-item:last-child { border-bottom: none; }
         .strategy-rank { font-weight: bold; color: var(--purple); }
         .strategy-desc { font-size: 0.8rem; }
-        .strategy-profit { text-align: right; font-weight: bold; color: var(--green); }
+        .strategy-profit { text-align: right; font-weight: bold; }
+
+        .badge-robust { background: var(--green); color: var(--bg); font-size: 9px; padding: 2px 4px; border-radius: 3px; margin-left: 5px;}
+        .badge-fragile { background: var(--orange); color: var(--bg); font-size: 9px; padding: 2px 4px; border-radius: 3px; margin-left: 5px;}
 
         .strategy-highlight {
             grid-column: 1 / -1;
@@ -304,8 +305,8 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
     </div>
 
     <div class="card ai-card">
-        <h3>🧠 Master Strategy AI & Simulation</h3>
-        <div id="ai-insights">Analizando profundidad de datos...</div>
+        <h3>🧠 IA Gurú Validation (70/30 Split)</h3>
+        <div id="ai-insights">Analizando profundidad de datos con validación cruzada...</div>
     </div>
 
     <div class="card">
@@ -505,108 +506,102 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         });
 
         renderDashboard(rawData, chronologicalData, minuteMap, dayStats, hourStats, profitCurve, wins, totalStaked, currentProfit);
-        runAIStrategy(rawData, minuteMap, hourStats, dayStats, wins, currentProfit, totalStaked);
+        runAIStrategyValidation(chronologicalData);
     }
 
-    function runAIStrategy(rawData, minuteMap, hourStats, dayStats, wins, profit, staked) {
+    function runAIStrategyValidation(sortedData) {
         const aiContainer = document.getElementById('ai-insights');
-        if (rawData.length < 5) {
-            aiContainer.innerHTML = "Esperando más volumen para un diagnóstico de alta precisión...";
+        if (sortedData.length < 10) {
+            aiContainer.innerHTML = "Se requiere al menos 10 picks para el split 70/30 de validación...";
             return;
         }
 
-        const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-        
-        // --- 1. IDENTIFICAR LIGAS ---
-        let ligaMap = {};
-        rawData.forEach(d => {
-            if(!ligaMap[d.liga]) ligaMap[d.liga] = { p: 0, t: 0, wins:0 };
-            const p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
-            ligaMap[d.liga].p += p;
-            ligaMap[d.liga].t++;
-            if(d.resultado === 'verde') ligaMap[d.liga].wins++;
+        // --- SPLIT 70/30 ---
+        const trainIdx = Math.floor(sortedData.length * 0.7);
+        const trainSet = sortedData.slice(0, trainIdx);
+        const testSet = sortedData.slice(trainIdx);
+
+        // --- ANALISIS EN TRAIN (70%) ---
+        const analyzeSet = (data) => {
+            let ligaMap = {}, minuteMap = {}, hourMap = {}, oddMap = { "Low":0, "Mid":0, "High":0 };
+            data.forEach(d => {
+                const p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
+                ligaMap[d.liga] = (ligaMap[d.liga] || 0) + p;
+                minuteMap[d.minuto] = (minuteMap[d.minuto] || 0) + p;
+                hourMap[d.hora] = (hourMap[d.hora] || 0) + p;
+                if(d.odd < 1.6) oddMap["Low"] += p;
+                else if(d.odd < 2.0) oddMap["Mid"] += p;
+                else oddMap["High"] += p;
+            });
+            return { ligaMap, minuteMap, hourMap, oddMap };
+        };
+
+        const trainResults = analyzeSet(trainSet);
+        const testResults = analyzeSet(testSet);
+
+        // --- DEFINIR CANDIDATOS ---
+        const candidates = [
+            { name: "Top Liga", type: "liga", val: Object.entries(trainResults.ligaMap).sort((a,b)=>b[1]-a[1])[0][0] },
+            { name: "Minuto Oro", type: "minute", val: Object.entries(trainResults.minuteMap).sort((a,b)=>b[1]-a[1])[0][0] },
+            { name: "Mejor Hora", type: "hour", val: Object.entries(trainResults.hourMap).sort((a,b)=>b[1]-a[1])[0][0] },
+            { name: "Rango Cuota", type: "odd", val: Object.entries(trainResults.oddMap).sort((a,b)=>b[1]-a[1])[0][0] }
+        ];
+
+        // --- VALIDAR CANDIDATOS EN TEST (30%) ---
+        const validatedStrategies = candidates.map(strat => {
+            let testProfit = 0;
+            if(strat.type === "liga") testProfit = testResults.ligaMap[strat.val] || 0;
+            if(strat.type === "minute") testProfit = testResults.minuteMap[strat.val] || 0;
+            if(strat.type === "hour") testProfit = testResults.hourMap[strat.val] || 0;
+            if(strat.type === "odd") testProfit = testResults.oddMap[strat.val] || 0;
+
+            const trainProfit = (strat.type === "liga" ? trainResults.ligaMap[strat.val] : 
+                               strat.type === "minute" ? trainResults.minuteMap[strat.val] :
+                               strat.type === "hour" ? trainResults.hourMap[strat.val] : trainResults.oddMap[strat.val]) || 0;
+
+            return {
+                ...strat,
+                trainProfit,
+                testProfit,
+                total: trainProfit + testProfit,
+                isRobust: testProfit > 0
+            };
         });
-        let bestLiga = Object.entries(ligaMap).sort((a,b) => b[1].p - a[1].p)[0];
-        let worstLiga = Object.entries(ligaMap).sort((a,b) => a[1].p - b[1].p)[0];
 
-        // --- 2. IDENTIFICAR RANGO DE CUOTAS ---
-        let oddRanges = { "1.2-1.5": 0, "1.5-1.8": 0, "1.8-2.2": 0, "2.2+": 0 };
-        rawData.forEach(d => {
-            const p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
-            if(d.odd < 1.5) oddRanges["1.2-1.5"] += p;
-            else if(d.odd < 1.8) oddRanges["1.5-1.8"] += p;
-            else if(d.odd < 2.2) oddRanges["1.8-2.2"] += p;
-            else oddRanges["2.2+"] += p;
-        });
-        let bestOdd = Object.entries(oddRanges).sort((a,b) => b[1] - a[1])[0];
-
-        // --- 3. MEJOR DÍA Y HORA ---
-        let bestDayIdx = dayStats.indexOf(Math.max(...dayStats));
-        let bestHourIdx = hourStats.indexOf(Math.max(...hourStats));
-        
-        // --- 4. SIMULACIÓN DE 5 ESTRATEGIAS TOP ---
-        const strategies = [];
-        
-        // Estrategia A: Mejor Liga
-        strategies.push({ name: `Dominio en ${bestLiga[0]}`, desc: `Apostar solo en esta liga`, profit: bestLiga[1].p });
-        
-        // Estrategia B: Rango de Cuota Optimo
-        strategies.push({ name: `Rango Cuota ${bestOdd[0]}`, desc: `Filtrar solo por este rango de cuota`, profit: bestOdd[1] });
-        
-        // Estrategia C: El Minuto de Oro
-        let bestMin = Object.entries(minuteMap).sort((a,b) => b[1].profit - a[1].profit)[0];
-        strategies.push({ name: `Minuto Sagrado: ${bestMin[0]}`, desc: `Operar solo en picks de este minuto`, profit: bestMin[1].profit });
-
-        // Estrategia D: Especialista de Fin de Semana (si aplica)
-        let weekendProfit = dayStats[6] + dayStats[0];
-        strategies.push({ name: `Fines de Semana`, desc: `Operar solo Sábados y Domingos`, profit: weekendProfit });
-
-        // Estrategia E: El Combo Gurú (Liga + Cuota)
-        let comboProfit = 0;
-        rawData.forEach(d => {
-            if(d.liga === bestLiga[0] && d.odd >= parseFloat(bestOdd[0].split('-')[0] || 2.2)) {
-                 comboProfit += (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
-            }
-        });
-        strategies.push({ name: `Estrategia Combo Gurú`, desc: `${bestLiga[0]} + Cuota ${bestOdd[0]}`, profit: comboProfit });
-
-        // Ordenar y tomar las 5 mejores
-        const top5 = strategies.sort((a,b) => b.profit - a.profit).slice(0, 5);
-
-        // RENDERIZAR INSIGHTS
+        // --- RENDERIZAR ---
         aiContainer.innerHTML = `
             <div class="insight-group">
-                <span class="insight-title">🏆 Top Desempeño General</span>
-                <div class="insight-item">Mejor Liga: <b>${bestLiga[0]}</b> (+${bestLiga[1].p.toFixed(2)}U)</div>
-                <div class="insight-item">Cuota Ideal: <b>${bestOdd[0]}</b> (+${bestOdd[1].toFixed(2)}U)</div>
-                <div class="insight-item">Día de Oro: <b>${dayNames[bestDayIdx]}</b></div>
+                <span class="insight-title">🛠️ Entrenamiento (Primer 70%)</span>
+                <div class="insight-item">Picks Analizados: <b>${trainSet.length}</b></div>
+                <div class="insight-item">Estrategias detectadas con éxito.</div>
             </div>
             <div class="insight-group">
-                <span class="insight-title">⚠️ Fugas de Capital</span>
-                <div class="insight-item">Liga Evitable: <b>${worstLiga[1].p < 0 ? worstLiga[0] : 'Ninguna crítica'}</b></div>
-                <div class="insight-item">Hora Crítica: <b>${hourStats.indexOf(Math.min(...hourStats))}h</b></div>
+                <span class="insight-title">🧪 Validación (Último 30%)</span>
+                <div class="insight-item">Picks de Prueba: <b>${testSet.length}</b></div>
+                <div class="insight-item">Probando robustez en datos nuevos...</div>
             </div>
 
             <div class="strategy-top-list">
-                <span class="insight-title" style="color:var(--purple); margin-bottom:15px; display:block;">📊 Simulación de Patrones Ganadores (Si solo hubieras apostado a...)</span>
-                ${top5.map((s, i) => `
+                <span class="insight-title" style="color:var(--cyan); margin-bottom:15px; display:block;">📊 Reporte de Robustez (Train vs Test)</span>
+                ${validatedStrategies.sort((a,b)=>b.total - a.total).map((s, i) => `
                     <div class="strategy-item">
                         <div class="strategy-rank">#${i+1}</div>
                         <div class="strategy-desc">
-                            <b>${s.name}</b><br>
-                            <span style="color:var(--comment); font-size:11px;">${s.desc}</span>
+                            <b>${s.name}: ${s.val}</b> ${s.isRobust ? '<span class="badge-robust">ROBUSTO</span>' : '<span class="badge-fragile">FRÁGIL</span>'}<br>
+                            <span style="color:var(--comment); font-size:11px;">Entrenamiento: ${s.trainProfit.toFixed(2)}U | Validación: ${s.testProfit.toFixed(2)}U</span>
                         </div>
-                        <div class="strategy-profit" style="color:${s.profit >= 0 ? 'var(--green)' : 'var(--red)'}">
-                            ${s.profit >= 0 ? '+' : ''}${s.profit.toFixed(2)}U
+                        <div class="strategy-profit" style="color:${s.total >= 0 ? 'var(--green)' : 'var(--red)'}">
+                            TOTAL: ${s.total.toFixed(2)}U
                         </div>
                     </div>
                 `).join('')}
             </div>
 
             <div class="strategy-highlight">
-                <b>🎯 ESTRATEGIA MAESTRA SUGERIDA:</b> 
-                Según la simulación, tu mayor potencial está en <b>${top5[0].name}</b>. 
-                Si te limitas a ese patrón, tu beneficio proyectado sube a <b>${top5[0].profit.toFixed(2)}U</b> con menos riesgo.
+                <b>🎯 VERDICTO FINAL:</b> 
+                ${validatedStrategies.some(s=>s.isRobust) ? 
+                    `Se recomienda seguir la estrategia <b>${validatedStrategies.find(s=>s.isRobust).val}</b>, ya que confirmó beneficios en la fase de validación oculta.` : 
+                    `Atención: Ninguna estrategia superó la validación del 30%. Los patrones detectados podrían ser coincidencia.`}
             </div>
         `;
     }
