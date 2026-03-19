@@ -114,30 +114,66 @@
             box-sizing: border-box;
         }
 
-        /* Estilos IA Strategy */
+        /* Estilos IA Strategy Avanzada */
         .ai-card {
-            background: linear-gradient(145deg, #2b2b3b, #161621);
+            background: linear-gradient(145deg, #2b2b3b, #1a1a2e);
             border: 1px solid var(--cyan);
             border-left: 5px solid var(--cyan);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ai-card::after {
+            content: "AI POWERED";
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 10px;
+            background: var(--cyan);
+            color: var(--bg);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
         }
 
         #ai-insights {
             font-family: 'Fira Code', monospace;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--fg);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .insight-group {
+            background: rgba(0,0,0,0.15);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px border transparent;
+        }
+
+        .insight-title {
+            color: var(--cyan);
+            font-size: 0.7rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: block;
         }
 
         .insight-item {
-            margin-bottom: 10px;
-            padding-left: 20px;
-            position: relative;
+            margin-bottom: 6px;
+            line-height: 1.3;
         }
 
-        .insight-item::before {
-            content: "➔";
-            position: absolute;
-            left: 0;
-            color: var(--cyan);
+        .strategy-highlight {
+            grid-column: 1 / -1;
+            background: rgba(80, 250, 123, 0.1);
+            border: 1px dashed var(--green);
+            padding: 15px;
+            margin-top: 5px;
+            border-radius: 8px;
+            color: var(--green);
         }
 
         .chart-container { position: relative; height: 300px; width: 100%; }
@@ -206,6 +242,7 @@
         .btn-clear:hover { opacity: 0.8; }
 
         @media (max-width: 900px) {
+            #ai-insights { grid-template-columns: 1fr; }
             .grid-config, .grid-charts-row, .analysis-grid { grid-template-columns: 1fr; }
         }
     </style>
@@ -244,8 +281,8 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
     </div>
 
     <div class="card ai-card">
-        <h3>🧠 AI Strategy Engine (Sugerencia)</h3>
-        <div id="ai-insights">Analizando datos...</div>
+        <h3>🧠 Master Strategy AI</h3>
+        <div id="ai-insights">Analizando profundidad de datos...</div>
     </div>
 
     <div class="card">
@@ -445,45 +482,67 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         });
 
         renderDashboard(rawData, chronologicalData, minuteMap, dayStats, hourStats, profitCurve, wins, totalStaked, currentProfit);
-        runAIStrategy(minuteMap, hourStats, wins, rawData.length, currentProfit, totalStaked);
+        runAIStrategy(rawData, minuteMap, hourStats, dayStats, wins, currentProfit, totalStaked);
     }
 
-    function runAIStrategy(minuteMap, hourStats, wins, total, profit, staked) {
+    function runAIStrategy(rawData, minuteMap, hourStats, dayStats, wins, profit, staked) {
         const aiContainer = document.getElementById('ai-insights');
-        if (total < 5) {
-            aiContainer.innerHTML = "Esperando más datos para análisis inteligente (mínimo 5 picks)...";
+        if (rawData.length < 5) {
+            aiContainer.innerHTML = "Esperando más volumen para un diagnóstico de alta precisión...";
             return;
         }
 
-        let insights = [];
-        const winrate = (wins/total)*100;
-        const yield = staked > 0 ? (profit/staked)*100 : 0;
+        const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+        
+        // --- 1. IDENTIFICAR LIGAS ---
+        let ligaMap = {};
+        rawData.forEach(d => {
+            if(!ligaMap[d.liga]) ligaMap[d.liga] = { p: 0, t: 0 };
+            const p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
+            ligaMap[d.liga].p += p;
+            ligaMap[d.liga].t++;
+        });
+        let bestLiga = Object.entries(ligaMap).sort((a,b) => b[1].p - a[1].p)[0];
+        let worstLiga = Object.entries(ligaMap).sort((a,b) => a[1].p - b[1].p)[0];
 
-        // 1. Análisis de Minuto de Oro
-        let bestMin = { m: '', p: -Infinity };
-        for (let m in minuteMap) {
-            if (minuteMap[m].profit > bestMin.p) bestMin = { m, p: minuteMap[m].profit };
-        }
-        if (bestMin.p > 0) insights.push(`<div class="insight-item"><b>FOCO EN MINUTO:</b> Tu mayor rentabilidad está en el <b>${bestMin.m}</b> (+${bestMin.p.toFixed(2)}U). Considera priorizar picks en este tramo.</div>`);
+        // --- 2. IDENTIFICAR RANGO DE CUOTAS ---
+        let oddRanges = { "1.2-1.5": 0, "1.5-1.8": 0, "1.8-2.2": 0, "2.2+": 0 };
+        rawData.forEach(d => {
+            const p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
+            if(d.odd < 1.5) oddRanges["1.2-1.5"] += p;
+            else if(d.odd < 1.8) oddRanges["1.5-1.8"] += p;
+            else if(d.odd < 2.2) oddRanges["1.8-2.2"] += p;
+            else oddRanges["2.2+"] += p;
+        });
+        let bestOdd = Object.entries(oddRanges).sort((a,b) => b[1] - a[1])[0];
 
-        // 2. Análisis Horario
-        let worstHour = { h: 0, p: Infinity };
-        hourStats.forEach((p, h) => { if (p < worstHour.p) worstHour = { h, p }; });
-        if (worstHour.p < -2) insights.push(`<div class="insight-item"><b>FILTRO HORARIO:</b> Has perdido ${Math.abs(worstHour.p).toFixed(2)}U en la franja de las <b>${worstHour.h}h</b>. Considera evitar operar a esa hora.</div>`);
+        // --- 3. IDENTIFICAR MEJOR DÍA Y HORA ---
+        let bestDayIdx = dayStats.indexOf(Math.max(...dayStats));
+        let bestHourIdx = hourStats.indexOf(Math.max(...hourStats));
+        
+        // --- 4. IDENTIFICAR MINUTO DE ORO ---
+        let bestMin = Object.entries(minuteMap).sort((a,b) => b[1].profit - a[1].profit)[0];
 
-        // 3. Análisis de Yield
-        if (yield > 10 && total > 15) {
-            insights.push(`<div class="insight-item"><b>GESTIÓN DE STAKE:</b> Tienes un Yield excelente (${yield.toFixed(1)}%). Estás en condiciones de <b>subir ligeramente el valor de tu unidad</b>.</div>`);
-        } else if (yield < 0) {
-            insights.push(`<div class="insight-item" style="color:var(--red)"><b>ALERTA:</b> Yield negativo. Reduce el stake al mínimo hasta encontrar un patrón ganador en los filtros.</div>`);
-        }
-
-        // 4. Consistencia
-        if (winrate > 65) {
-            insights.push(`<div class="insight-item"><b>ESTRATEGIA SÓLIDA:</b> Tienes un acierto del ${winrate.toFixed(1)}%. Tu selección de eventos es de alta calidad.</div>`);
-        }
-
-        aiContainer.innerHTML = insights.length > 0 ? insights.join('') : "Sigue metiendo datos para encontrar patrones...";
+        // RENDERIZAR INSIGHTS
+        aiContainer.innerHTML = `
+            <div class="insight-group">
+                <span class="insight-title">🏆 Top Desempeño</span>
+                <div class="insight-item">Mejor Liga: <b>${bestLiga[0]}</b> (+${bestLiga[1].p.toFixed(2)}U)</div>
+                <div class="insight-item">Cuota Ideal: <b>${bestOdd[0]}</b> (+${bestOdd[1].toFixed(2)}U)</div>
+                <div class="insight-item">Día de Oro: <b>${dayNames[bestDayIdx]}</b></div>
+            </div>
+            <div class="insight-group">
+                <span class="insight-title">⚠️ Fugas de Capital</span>
+                <div class="insight-item">Liga Evitable: <b>${worstLiga[1].p < 0 ? worstLiga[0] : 'Ninguna crítica'}</b></div>
+                <div class="insight-item">Hora Crítica: <b>${hourStats.indexOf(Math.min(...hourStats))}h</b> (Revisar picks)</div>
+            </div>
+            <div class="strategy-highlight">
+                <b>🎯 ESTRATEGIA SUGERIDA:</b> 
+                Busca picks en el minuto <b>${bestMin[0]}</b>, preferiblemente en <b>${bestLiga[0]}</b> 
+                con cuotas entre <b>${bestOdd[0]}</b> los días <b>${dayNames[bestDayIdx]}</b> cerca de las <b>${bestHourIdx}:00h</b>. 
+                Esta combinación tiene tu mayor esperanza matemática.
+            </div>
+        `;
     }
 
     function renderDashboard(originalData, chronologicalData, minuteMap, dayStats, hourStats, profitCurve, wins, totalStaked, currentProfit) {
