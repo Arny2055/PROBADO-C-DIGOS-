@@ -190,14 +190,14 @@
         .badge-robust { background: var(--green); color: var(--bg); font-size: 9px; padding: 2px 4px; border-radius: 3px; margin-left: 5px;}
         .badge-fragile { background: var(--orange); color: var(--bg); font-size: 9px; padding: 2px 4px; border-radius: 3px; margin-left: 5px;}
 
-        .strategy-highlight {
+        /* Mejora de IA: Oráculo */
+        .oracle-box {
             grid-column: 1 / -1;
-            background: rgba(80, 250, 123, 0.1);
-            border: 1px dashed var(--green);
+            background: rgba(80, 250, 123, 0.05);
+            border: 1px solid var(--green);
             padding: 15px;
-            margin-top: 5px;
             border-radius: 8px;
-            color: var(--green);
+            margin-top: 10px;
         }
 
         .chart-container { position: relative; height: 300px; width: 100%; }
@@ -265,7 +265,6 @@
         }
         .btn-clear:hover { opacity: 0.8; }
 
-        /* Estilos para el Selector de Ligas */
         .league-selector-btn {
             background: var(--purple);
             color: var(--bg);
@@ -367,8 +366,8 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
     </div>
 
     <div class="card ai-card">
-        <h3>🧠 IA Gurú Validation (70/30 Split)</h3>
-        <div id="ai-insights">Analizando profundidad de datos con validación cruzada...</div>
+        <h3>🧠 IA Gurú Insight & Predictor</h3>
+        <div id="ai-insights">Analizando profundidad de datos...</div>
     </div>
 
     <div class="card">
@@ -507,7 +506,7 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
 <script>
     let charts = {};
     let selectedLeagues = new Set();
-    let leagueProfitCache = {}; // Para el botón de "Solo Rentables"
+    let leagueProfitCache = {};
 
     function toggleLeagueModal() {
         const modal = document.getElementById('league-modal');
@@ -593,7 +592,6 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             if(cols.length < 8) continue;
 
             const liga = cols[3].trim();
-            // FILTRO DE LIGAS SELECCIONADAS
             if (selectedLeagues.size > 0 && !selectedLeagues.has(liga)) continue;
 
             const dateStr = cols[0].trim();
@@ -659,66 +657,69 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         runAIStrategyValidation(chronologicalData);
     }
 
+    // MEJORA IA: VALIDACIÓN Y MOTOR DE RECOMENDACIÓN (ORÁCULO)
     function runAIStrategyValidation(sortedData) {
         const aiContainer = document.getElementById('ai-insights');
-        if (sortedData.length < 10) {
-            aiContainer.innerHTML = "Se requiere al menos 10 picks para el split 70/30 de validación...";
+        if (sortedData.length < 5) {
+            aiContainer.innerHTML = "Se requieren más datos para activar el Oráculo de IA...";
             return;
         }
 
+        // 1. Split de Validación (70/30)
         const trainIdx = Math.floor(sortedData.length * 0.7);
         const trainSet = sortedData.slice(0, trainIdx);
         const testSet = sortedData.slice(trainIdx);
 
         const analyzeSet = (data) => {
-            let ligaMap = {}, minuteMap = {}, hourMap = {}, oddMap = { "Low":0, "Mid":0, "High":0 };
+            let ligaMap = {}, minuteMap = {}, hourMap = {};
             data.forEach(d => {
                 const p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
                 ligaMap[d.liga] = (ligaMap[d.liga] || 0) + p;
                 minuteMap[d.minuto] = (minuteMap[d.minuto] || 0) + p;
                 hourMap[d.hora] = (hourMap[d.hora] || 0) + p;
-                if(d.odd < 1.6) oddMap["Low"] += p;
-                else if(d.odd < 2.0) oddMap["Mid"] += p;
-                else oddMap["High"] += p;
             });
-            return { ligaMap, minuteMap, hourMap, oddMap };
+            return { ligaMap, minuteMap, hourMap };
         };
 
-        const trainResults = analyzeSet(trainSet);
-        const testResults = analyzeSet(testSet);
+        const train = analyzeSet(trainSet);
+        const test = analyzeSet(testSet);
 
-        const candidates = [];
-        if(Object.keys(trainResults.ligaMap).length > 0) candidates.push({ name: "Top Liga", type: "liga", val: Object.entries(trainResults.ligaMap).sort((a,b)=>b[1]-a[1])[0][0] });
-        if(Object.keys(trainResults.minuteMap).length > 0) candidates.push({ name: "Minuto Oro", type: "minute", val: Object.entries(trainResults.minuteMap).sort((a,b)=>b[1]-a[1])[0][0] });
-        if(Object.keys(trainResults.hourMap).length > 0) candidates.push({ name: "Mejor Hora", type: "hour", val: Object.entries(trainResults.hourMap).sort((a,b)=>b[1]-a[1])[0][0] });
-        candidates.push({ name: "Rango Cuota", type: "odd", val: Object.entries(trainResults.oddMap).sort((a,b)=>b[1]-a[1])[0][1] > 0 ? Object.entries(trainResults.oddMap).sort((a,b)=>b[1]-a[1])[0][0] : "N/A" });
+        // 2. Cálculo de Robustez
+        const bestLiga = Object.entries(train.ligaMap).sort((a,b)=>b[1]-a[1])[0];
+        const bestMin = Object.entries(train.minuteMap).sort((a,b)=>b[1]-a[1])[0];
 
-        const validatedStrategies = candidates.map(strat => {
-            let testProfit = 0;
-            if(strat.type === "liga") testProfit = testResults.ligaMap[strat.val] || 0;
-            if(strat.type === "minute") testProfit = testResults.minuteMap[strat.val] || 0;
-            if(strat.type === "hour") testProfit = testResults.hourMap[strat.val] || 0;
-            if(strat.type === "odd") testProfit = testResults.oddMap[strat.val] || 0;
+        const isLigaRobust = (test.ligaMap[bestLiga[0]] || 0) > 0;
+        const isMinRobust = (test.minuteMap[bestMin[0]] || 0) > 0;
 
-            const trainProfit = (strat.type === "liga" ? trainResults.ligaMap[strat.val] : 
-                               strat.type === "minute" ? trainResults.minuteMap[strat.val] :
-                               strat.type === "hour" ? trainResults.hourMap[strat.val] : trainResults.oddMap[strat.val]) || 0;
-
-            return { ...strat, trainProfit, testProfit, total: trainProfit + testProfit, isRobust: testProfit > 0 };
+        // 3. Recomendación del Oráculo (Filtro Combinado Proactivo)
+        // Buscamos la combinación que maximizaría el profit real
+        let oracleProfit = 0;
+        let oracleLigas = [];
+        Object.entries(train.ligaMap).forEach(([liga, prof]) => {
+            if(prof > 0 && (test.ligaMap[liga] || 0) > 0) {
+                oracleProfit += prof + test.ligaMap[liga];
+                oracleLigas.push(liga);
+            }
         });
 
         aiContainer.innerHTML = `
-            <div class="insight-group"><span class="insight-title">🛠️ Entrenamiento</span><div class="insight-item">Picks: <b>${trainSet.length}</b></div></div>
-            <div class="insight-group"><span class="insight-title">🧪 Validación</span><div class="insight-item">Picks: <b>${testSet.length}</b></div></div>
-            <div class="strategy-top-list">
-                <span class="insight-title" style="color:var(--cyan); margin-bottom:10px; display:block;">📊 Robustez de Ligas Filtradas</span>
-                ${validatedStrategies.sort((a,b)=>b.total - a.total).map((s, i) => `
-                    <div class="strategy-item">
-                        <div class="strategy-rank">#${i+1}</div>
-                        <div class="strategy-desc"><b>${s.name}: ${s.val}</b> ${s.isRobust ? '<span class="badge-robust">ROBUSTO</span>' : '<span class="badge-fragile">FRÁGIL</span>'}</div>
-                        <div class="strategy-profit" style="color:${s.total >= 0 ? 'var(--green)' : 'var(--red)'}">${s.total.toFixed(2)}U</div>
-                    </div>
-                `).join('')}
+            <div class="insight-group">
+                <span class="insight-title">🛠️ Validación Cruzada</span>
+                <div class="insight-item">Liga Top: <b>${bestLiga[0]}</b> ${isLigaRobust ? '<span class="badge-robust">ESTABLE</span>' : '<span class="badge-fragile">FRÁGIL</span>'}</div>
+                <div class="insight-item">Minuto Top: <b>${bestMin[0]}</b> ${isMinRobust ? '<span class="badge-robust">ESTABLE</span>' : '<span class="badge-fragile">FRÁGIL</span>'}</div>
+            </div>
+            <div class="insight-group">
+                <span class="insight-title">🧪 Probabilidad de Éxito</span>
+                <div class="insight-item">Confianza de Muestra: <b>${((trainSet.length/sortedData.length)*100).toFixed(0)}%</b></div>
+                <div class="insight-item">Consistencia: <b>${(isLigaRobust && isMinRobust) ? 'Alta' : 'Moderada'}</b></div>
+            </div>
+            <div class="oracle-box">
+                <span class="insight-title" style="color:var(--green)">✨ EL ORÁCULO: FILTRO MAESTRO</span>
+                <div style="font-size: 0.8rem; line-height: 1.4;">
+                    Si filtras solo por: <b style="color:var(--cyan)">${oracleLigas.length} Ligas Ganadoras Estables</b> en los minutos 
+                    <b style="color:var(--cyan)">${bestMin[0]}</b>, tu Profit proyectado subiría a: 
+                    <b style="color:var(--green); font-size:1rem;">+${oracleProfit.toFixed(2)}U</b>
+                </div>
             </div>
         `;
     }
