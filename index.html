@@ -359,6 +359,31 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
 
     <div class="grid-charts-row">
         <div class="card">
+            <h3>🍯 Profit por Liga (Top 10)</h3>
+            <div class="chart-container">
+                <canvas id="leagueChart"></canvas>
+            </div>
+        </div>
+        <div class="card">
+            <h3>⭐ La Miel (Ligas más rentables)</h3>
+            <div class="table-wrapper">
+                <table id="league-analysis-table">
+                    <thead>
+                        <tr>
+                            <th>Liga</th>
+                            <th>Picks</th>
+                            <th>Yield</th>
+                            <th>Profit</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-charts-row">
+        <div class="card">
             <h3>⏱️ Tendencia por Minuto (Acumulado)</h3>
             <div class="chart-container">
                 <canvas id="minuteChart"></canvas>
@@ -481,6 +506,7 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         const chronologicalData = [...rawData].sort((a, b) => a.ts - b.ts);
         
         let minuteMap = {};
+        let leagueMap = {};
         let dayStats = Array(7).fill(0);
         let hourStats = Array(24).fill(0);
         let profitCurve = [0];
@@ -501,11 +527,16 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             minuteMap[d.minuto].profit += p;
             if(d.resultado === 'verde') minuteMap[d.minuto].wins++;
 
+            if (!leagueMap[d.liga]) leagueMap[d.liga] = { picks: 0, profit: 0, staked: 0 };
+            leagueMap[d.liga].picks++;
+            leagueMap[d.liga].profit += p;
+            leagueMap[d.liga].staked += d.stake;
+
             if(d.diaSemana !== null) dayStats[d.diaSemana] += p;
             if(d.hora !== null) hourStats[d.hora] += p;
         });
 
-        renderDashboard(rawData, chronologicalData, minuteMap, dayStats, hourStats, profitCurve, wins, totalStaked, currentProfit);
+        renderDashboard(rawData, chronologicalData, minuteMap, leagueMap, dayStats, hourStats, profitCurve, wins, totalStaked, currentProfit);
         runAIStrategyValidation(chronologicalData);
     }
 
@@ -516,12 +547,10 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             return;
         }
 
-        // --- SPLIT 70/30 ---
         const trainIdx = Math.floor(sortedData.length * 0.7);
         const trainSet = sortedData.slice(0, trainIdx);
         const testSet = sortedData.slice(trainIdx);
 
-        // --- ANALISIS EN TRAIN (70%) ---
         const analyzeSet = (data) => {
             let ligaMap = {}, minuteMap = {}, hourMap = {}, oddMap = { "Low":0, "Mid":0, "High":0 };
             data.forEach(d => {
@@ -539,7 +568,6 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         const trainResults = analyzeSet(trainSet);
         const testResults = analyzeSet(testSet);
 
-        // --- DEFINIR CANDIDATOS ---
         const candidates = [
             { name: "Top Liga", type: "liga", val: Object.entries(trainResults.ligaMap).sort((a,b)=>b[1]-a[1])[0][0] },
             { name: "Minuto Oro", type: "minute", val: Object.entries(trainResults.minuteMap).sort((a,b)=>b[1]-a[1])[0][0] },
@@ -547,7 +575,6 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             { name: "Rango Cuota", type: "odd", val: Object.entries(trainResults.oddMap).sort((a,b)=>b[1]-a[1])[0][0] }
         ];
 
-        // --- VALIDAR CANDIDATOS EN TEST (30%) ---
         const validatedStrategies = candidates.map(strat => {
             let testProfit = 0;
             if(strat.type === "liga") testProfit = testResults.ligaMap[strat.val] || 0;
@@ -568,7 +595,6 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             };
         });
 
-        // --- RENDERIZAR ---
         aiContainer.innerHTML = `
             <div class="insight-group">
                 <span class="insight-title">🛠️ Entrenamiento (Primer 70%)</span>
@@ -606,7 +632,7 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         `;
     }
 
-    function renderDashboard(originalData, chronologicalData, minuteMap, dayStats, hourStats, profitCurve, wins, totalStaked, currentProfit) {
+    function renderDashboard(originalData, chronologicalData, minuteMap, leagueMap, dayStats, hourStats, profitCurve, wins, totalStaked, currentProfit) {
         const winRate = originalData.length > 0 ? (wins / originalData.length) * 100 : 0;
         document.getElementById('stats-output').innerHTML = `
             <div class="stat-box"><span>Picks</span><b>${originalData.length}</b></div>
@@ -627,6 +653,31 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
                 pointRadius: 2
             }]
         });
+
+        // --- Renderizado de Ligas ---
+        const sortedLeagues = Object.entries(leagueMap)
+            .sort((a,b) => b[1].profit - a[1].profit);
+        
+        const top10Leagues = sortedLeagues.slice(0, 10);
+        updateChart('leagueChart', 'bar', {
+            labels: top10Leagues.map(l => l[0].substring(0, 15)),
+            datasets: [{ 
+                data: top10Leagues.map(l => l[1].profit.toFixed(2)), 
+                backgroundColor: top10Leagues.map(l => l[1].profit >= 0 ? '#50fa7b' : '#ff5555'),
+                indexAxis: 'y'
+            }]
+        });
+
+        const leagueBody = document.querySelector('#league-analysis-table tbody');
+        leagueBody.innerHTML = sortedLeagues.map(l => {
+            const yieldVal = ((l[1].profit / l[1].staked) * 100).toFixed(1);
+            return `<tr>
+                <td><b>${l[0]}</b></td>
+                <td>${l[1].picks}</td>
+                <td style="color:${yieldVal >= 0 ? 'var(--cyan)' : 'var(--orange)'}">${yieldVal}%</td>
+                <td style="color:${l[1].profit >= 0 ? 'var(--green)' : 'var(--red)'}">${l[1].profit.toFixed(2)}U</td>
+            </tr>`;
+        }).join('');
 
         const sortedMinLabels = Object.keys(minuteMap).sort((a, b) => minuteMap[a].minNum - minuteMap[b].minNum);
         let accMinP = 0;
@@ -677,16 +728,19 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
     function updateChart(id, type, data) {
         if (charts[id]) charts[id].destroy();
         const ctx = document.getElementById(id).getContext('2d');
+        const isHorizontal = data.datasets[0].indexAxis === 'y';
+        
         charts[id] = new Chart(ctx, {
             type: type,
             data: data,
             options: {
+                indexAxis: isHorizontal ? 'y' : 'x',
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
                     y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6272a4' } },
-                    x: { grid: { display: false }, ticks: { color: '#6272a4' } }
+                    x: { grid: { display: isHorizontal ? true : false, color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6272a4' } }
                 }
             }
         });
