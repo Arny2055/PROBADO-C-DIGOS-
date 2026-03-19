@@ -114,6 +114,32 @@
             box-sizing: border-box;
         }
 
+        /* Estilos IA Strategy */
+        .ai-card {
+            background: linear-gradient(145deg, #2b2b3b, #161621);
+            border: 1px solid var(--cyan);
+            border-left: 5px solid var(--cyan);
+        }
+
+        #ai-insights {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            color: var(--fg);
+        }
+
+        .insight-item {
+            margin-bottom: 10px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .insight-item::before {
+            content: "➔";
+            position: absolute;
+            left: 0;
+            color: var(--cyan);
+        }
+
         .chart-container { position: relative; height: 300px; width: 100%; }
 
         .grid-charts-row {
@@ -215,6 +241,11 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
 3/18/26 13:00	14'	Leicester x Brighton	England Womens Super League 2	Gol	1.60	1	verde</textarea>
             <button class="btn-clear" onclick="clearData()">🧹 Limpiar Campo</button>
         </div>
+    </div>
+
+    <div class="card ai-card">
+        <h3>🧠 AI Strategy Engine (Sugerencia)</h3>
+        <div id="ai-insights">Analizando datos...</div>
     </div>
 
     <div class="card">
@@ -367,16 +398,14 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
                 resultado: cols[7].trim().toLowerCase()
             };
 
-            // Lógica de Filtros
             if (filterLiga && !row.liga.toLowerCase().includes(filterLiga)) continue;
             if (row.odd < filterMinOdd || row.odd > filterMaxOdd) continue;
             if (filterDay !== "" && row.diaSemana !== null && row.diaSemana != filterDay) continue;
             
-            // Filtro por rango de horas
             if (startHour !== null && endHour !== null) {
                 if (startHour <= endHour) {
                     if (row.hora < startHour || row.hora > endHour) continue;
-                } else { // Rango cruzando medianoche (ej: de 22h a 4h)
+                } else { 
                     if (row.hora < startHour && row.hora > endHour) continue;
                 }
             } else if (startHour !== null) {
@@ -416,6 +445,45 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         });
 
         renderDashboard(rawData, chronologicalData, minuteMap, dayStats, hourStats, profitCurve, wins, totalStaked, currentProfit);
+        runAIStrategy(minuteMap, hourStats, wins, rawData.length, currentProfit, totalStaked);
+    }
+
+    function runAIStrategy(minuteMap, hourStats, wins, total, profit, staked) {
+        const aiContainer = document.getElementById('ai-insights');
+        if (total < 5) {
+            aiContainer.innerHTML = "Esperando más datos para análisis inteligente (mínimo 5 picks)...";
+            return;
+        }
+
+        let insights = [];
+        const winrate = (wins/total)*100;
+        const yield = staked > 0 ? (profit/staked)*100 : 0;
+
+        // 1. Análisis de Minuto de Oro
+        let bestMin = { m: '', p: -Infinity };
+        for (let m in minuteMap) {
+            if (minuteMap[m].profit > bestMin.p) bestMin = { m, p: minuteMap[m].profit };
+        }
+        if (bestMin.p > 0) insights.push(`<div class="insight-item"><b>FOCO EN MINUTO:</b> Tu mayor rentabilidad está en el <b>${bestMin.m}</b> (+${bestMin.p.toFixed(2)}U). Considera priorizar picks en este tramo.</div>`);
+
+        // 2. Análisis Horario
+        let worstHour = { h: 0, p: Infinity };
+        hourStats.forEach((p, h) => { if (p < worstHour.p) worstHour = { h, p }; });
+        if (worstHour.p < -2) insights.push(`<div class="insight-item"><b>FILTRO HORARIO:</b> Has perdido ${Math.abs(worstHour.p).toFixed(2)}U en la franja de las <b>${worstHour.h}h</b>. Considera evitar operar a esa hora.</div>`);
+
+        // 3. Análisis de Yield
+        if (yield > 10 && total > 15) {
+            insights.push(`<div class="insight-item"><b>GESTIÓN DE STAKE:</b> Tienes un Yield excelente (${yield.toFixed(1)}%). Estás en condiciones de <b>subir ligeramente el valor de tu unidad</b>.</div>`);
+        } else if (yield < 0) {
+            insights.push(`<div class="insight-item" style="color:var(--red)"><b>ALERTA:</b> Yield negativo. Reduce el stake al mínimo hasta encontrar un patrón ganador en los filtros.</div>`);
+        }
+
+        // 4. Consistencia
+        if (winrate > 65) {
+            insights.push(`<div class="insight-item"><b>ESTRATEGIA SÓLIDA:</b> Tienes un acierto del ${winrate.toFixed(1)}%. Tu selección de eventos es de alta calidad.</div>`);
+        }
+
+        aiContainer.innerHTML = insights.length > 0 ? insights.join('') : "Sigue metiendo datos para encontrar patrones...";
     }
 
     function renderDashboard(originalData, chronologicalData, minuteMap, dayStats, hourStats, profitCurve, wins, totalStaked, currentProfit) {
