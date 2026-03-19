@@ -352,13 +352,13 @@
             <textarea id="raw-data" placeholder="Pega aquí tu tabla..." oninput="rebuildLeagueSelector(); processData()">
 Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
 3/18/26 17:30	14'	Dvo. La Guaira x Caracas	Venezuela Primera Division	Gol	1.61	1	verde
-3/18/26 17:20	14'	Millonarios x Junior	Colombia Liga BetPlay	Gol	1.62	1	verde
-3/18/26 16:00	17'	Independencia x Rio Branco	Brazil Acreano	Gol	1.60	1	verde
+3/18/26 17:20	14'	Millonarios x Junior	Colombia Liga BetPlay	Gol	1.62	1.5	verde
+3/18/26 16:00	17'	Independencia x Rio Branco	Brazil Acreano	Gol	1.60	0.5	verde
 3/18/26 15:00	14'	Juventus SP x Oeste	Brazil Paulista A2	Gol	1.65	1	rojo
-3/18/26 14:00	15'	Metapan x Aguila	El Salvador Reserve League	Gol	1.60	1	verde
+3/18/26 14:00	15'	Metapan x Aguila	El Salvador Reserve League	Gol	1.60	2	verde
 3/18/26 14:00	17'	Bayern x Arsenal	UEFA Champions League	Gol	1.60	1	verde
 3/18/26 14:00	24'	Man City x Real Madrid	UEFA Champions League	Gol	1.60	1	verde
-3/18/26 13:45	14'	Glasgow City x Hearts	Scotland SWPL 1	Gol	1.60	1	rojo
+3/18/26 13:45	14'	Glasgow City x Hearts	Scotland SWPL 1	Gol	1.60	0.5	rojo
 3/18/26 13:15	15'	Everton x Chelsea	England Women's Super League	Gol	1.60	1	rojo
 3/18/26 13:00	14'	Leicester x Brighton	England Womens Super League 2	Gol	1.60	1	verde</textarea>
             <button class="btn-clear" onclick="clearData()">🧹 Limpiar Campo</button>
@@ -492,6 +492,7 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
                             <th>Min</th>
                             <th>Liga</th>
                             <th>Cuota</th>
+                            <th>Stake (U)</th>
                             <th>Res</th>
                             <th>Profit (U)</th>
                         </tr>
@@ -529,7 +530,7 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             const liga = cols[3].trim();
             const res = cols[7].trim().toLowerCase();
             const odd = parseFloat(cols[5]);
-            const stake = parseFloat(cols[6]) || 0;
+            const stake = parseFloat(cols[6].replace(',','.')) || 0;
             const p = (res === 'verde') ? (stake * (odd - 1)) : -stake;
 
             leaguesFound.add(liga);
@@ -608,7 +609,7 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
                 evento: cols[2],
                 liga: liga,
                 odd: parseFloat(cols[5]),
-                stake: parseFloat(cols[6]) || 0,
+                stake: parseFloat(cols[6].replace(',','.')) || 0,
                 resultado: cols[7].trim().toLowerCase()
             };
 
@@ -657,7 +658,6 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         runAIStrategyValidation(chronologicalData);
     }
 
-    // MEJORA IA: VALIDACIÓN Y MOTOR DE RECOMENDACIÓN (ORÁCULO)
     function runAIStrategyValidation(sortedData) {
         const aiContainer = document.getElementById('ai-insights');
         if (sortedData.length < 5) {
@@ -665,7 +665,6 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             return;
         }
 
-        // 1. Split de Validación (70/30)
         const trainIdx = Math.floor(sortedData.length * 0.7);
         const trainSet = sortedData.slice(0, trainIdx);
         const testSet = sortedData.slice(trainIdx);
@@ -684,15 +683,12 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         const train = analyzeSet(trainSet);
         const test = analyzeSet(testSet);
 
-        // 2. Cálculo de Robustez
         const bestLiga = Object.entries(train.ligaMap).sort((a,b)=>b[1]-a[1])[0];
         const bestMin = Object.entries(train.minuteMap).sort((a,b)=>b[1]-a[1])[0];
 
         const isLigaRobust = (test.ligaMap[bestLiga[0]] || 0) > 0;
         const isMinRobust = (test.minuteMap[bestMin[0]] || 0) > 0;
 
-        // 3. Recomendación del Oráculo (Filtro Combinado Proactivo)
-        // Buscamos la combinación que maximizaría el profit real
         let oracleProfit = 0;
         let oracleLigas = [];
         Object.entries(train.ligaMap).forEach(([liga, prof]) => {
@@ -776,10 +772,10 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         }).join('');
 
         const resBody = document.querySelector('#results-table tbody');
-        resBody.innerHTML = originalData.map(d => {
+        resBody.innerHTML = chronologicalData.map(d => {
             const p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
-            return `<tr><td style="color:var(--comment)">${d.fecha}</td><td><b>${d.minuto}</b></td><td>${d.liga}</td><td>${d.odd.toFixed(2)}</td><td class="${d.resultado==='verde'?'status-win':'status-loss'}">${d.resultado.toUpperCase()}</td><td style="color:${p>=0?'var(--green)':'var(--red)'}">${p.toFixed(2)}</td></tr>`;
-        }).join('');
+            return `<tr><td style="color:var(--comment)">${d.fecha}</td><td><b>${d.minuto}</b></td><td>${d.liga}</td><td>${d.odd.toFixed(2)}</td><td><b>${d.stake}U</b></td><td class="${d.resultado==='verde'?'status-win':'status-loss'}">${d.resultado.toUpperCase()}</td><td style="color:${p>=0?'var(--green)':'var(--red)'}">${p.toFixed(2)}</td></tr>`;
+        }).reverse().join('');
     }
 
     function updateChart(id, type, data) {
