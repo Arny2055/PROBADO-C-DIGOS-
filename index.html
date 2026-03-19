@@ -289,6 +289,17 @@
 
         .league-item-select input { width: auto; }
 
+        /* Estilo para el switch de filtro de Copas/Femenil */
+        .switch-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 85, 85, 0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--red);
+        }
+
         @media (max-width: 900px) {
             #ai-insights { grid-template-columns: 1fr; }
             .grid-config, .grid-charts-row, .analysis-grid { grid-template-columns: 1fr; }
@@ -353,6 +364,13 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             <div class="filter-group">
                 <label>Selección de Ligas</label>
                 <button class="league-selector-btn" onclick="toggleLeagueModal()">📂 Seleccionar Ligas</button>
+            </div>
+            <div class="filter-group">
+                <label>Limpieza Pro</label>
+                <div class="switch-container">
+                    <input type="checkbox" id="filter-exclude-cups-women" checked onchange="processData()" style="width:20px; cursor:pointer;">
+                    <span style="font-size:11px; font-weight:bold; color:var(--red);">IGNORAR COPAS/FEMENIL</span>
+                </div>
             </div>
             <div class="filter-group">
                 <label>Liga (Texto)</label>
@@ -501,10 +519,25 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         const leaguesFound = new Set();
         leagueProfitCache = {};
 
+        // Palabras de exclusión (mismas que en processData)
+        const excludeKeywords = ["women", "femenil", "cup", "copa", "taca", "u19", "u20", "u21", "u23", "olympic"];
+        const excludeActive = document.getElementById('filter-exclude-cups-women').checked;
+
         for(let i = 1; i < lines.length; i++) {
             const cols = lines[i].split('\t');
             if(cols.length < 8) continue;
+            
             const liga = cols[3].trim();
+            const evento = cols[2].trim();
+            const ligaLower = liga.toLowerCase();
+            const eventoLower = evento.toLowerCase();
+
+            // Si el filtro está activo, no mostramos estas ligas ni siquiera en el selector manual
+            if (excludeActive) {
+                const isExcluded = excludeKeywords.some(key => ligaLower.includes(key) || eventoLower.includes(key));
+                if (isExcluded) continue;
+            }
+
             const res = cols[7].trim().toLowerCase();
             const odd = parseFloat(cols[5]);
             const stake = parseFloat(cols[6].replace(',','.')) || 0;
@@ -564,12 +597,26 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         const filterMaxOdd = parseFloat(document.getElementById('filter-max-odd').value) || 999;
         const filterDay = document.getElementById('filter-day').value;
         const startHour = document.getElementById('filter-start-hour').value !== "" ? parseInt(document.getElementById('filter-start-hour').value) : null;
+        
+        // Lógica de Exclusión
+        const excludeActive = document.getElementById('filter-exclude-cups-women').checked;
+        const excludeKeywords = ["women", "femenil", "cup", "copa", "taca", "u19", "u20", "u21", "u23", "olympic"];
 
         for(let i = 1; i < lines.length; i++) {
             const cols = lines[i].split('\t');
             if(cols.length < 8) continue;
 
             const liga = cols[3].trim();
+            const evento = cols[2].trim();
+            const ligaLower = liga.toLowerCase();
+            const eventoLower = evento.toLowerCase();
+
+            // MEJORA: Aplicar filtro de exclusión
+            if (excludeActive) {
+                const shouldExclude = excludeKeywords.some(key => ligaLower.includes(key) || eventoLower.includes(key));
+                if (shouldExclude) continue;
+            }
+
             if (selectedLeagues.size > 0 && !selectedLeagues.has(liga)) continue;
 
             const dateStr = cols[0].trim();
@@ -583,7 +630,7 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
                 hora: hour,
                 minuto: cols[1].trim(),
                 minNum: parseInt(cols[1].replace("'", "")) || 0,
-                evento: cols[2],
+                evento: evento,
                 liga: liga,
                 odd: parseFloat(cols[5]),
                 stake: parseFloat(cols[6].replace(',','.')) || 0,
@@ -642,9 +689,9 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             return;
         }
 
-        const trainIdx = Math.floor(sortedData.length * 0.7); // 70% Entrenamiento
+        const trainIdx = Math.floor(sortedData.length * 0.7); 
         const trainSet = sortedData.slice(0, trainIdx);
-        const testSet = sortedData.slice(trainIdx); // 30% Validación (Test)
+        const testSet = sortedData.slice(trainIdx); 
 
         const analyzeSet = (data) => {
             let ligaMap = {}, minuteMap = {}, hourMap = {};
@@ -664,7 +711,6 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         const train = analyzeSet(trainSet);
         const test = analyzeSet(testSet);
 
-        // Identificar Ligas que ganaron en el 70% inicial
         const bestLigaEntry = Object.entries(train.ligaMap).sort((a,b)=>b[1].profit-a[1].profit)[0];
         const bestMinEntry = Object.entries(train.minuteMap).sort((a,b)=>b[1]-a[1])[0];
 
@@ -675,27 +721,19 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         let oracleLigasCount = 0;
         let detailsHtml = "";
 
-        // LA MEJORA: STAKE VARIABLE BASADO EN CONFIANZA (YIELD)
-        // Solo operamos ligas que fueron rentables en el 70% y se validaron en el 30%
         Object.entries(train.ligaMap).forEach(([liga, stats]) => {
             const testProfit = test.ligaMap[liga]?.profit || 0;
             if(stats.profit > 0 && testProfit > 0) {
                 oracleLigasCount++;
-                
-                // Calculamos Stake sugerido según Yield de la liga en la muestra completa
                 const totalProfit = stats.profit + testProfit;
                 const totalStaked = stats.staked + (test.ligaMap[liga]?.staked || 0);
                 const yieldLiga = (totalProfit / totalStaked) * 100;
 
-                // Definimos Stake Variable: 
-                // Yield > 15% -> Stake 2.0 (Alta Confianza)
-                // Yield 5-15% -> Stake 1.0 (Media)
-                // Yield < 5%  -> Stake 0.5 (Baja)
                 let suggestedStake = 1.0;
                 if(yieldLiga > 15) suggestedStake = 2.0;
                 else if(yieldLiga < 5) suggestedStake = 0.5;
 
-                oracleProfit += (totalProfit * suggestedStake); // Simulación con stake variable
+                oracleProfit += (totalProfit * suggestedStake); 
                 detailsHtml += `<div style="font-size:10px; color:var(--comment)">• ${liga}: Confianza ${yieldLiga.toFixed(0)}% → Stake ${suggestedStake}U</div>`;
             }
         });
