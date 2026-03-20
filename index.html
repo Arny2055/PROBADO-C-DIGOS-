@@ -1,875 +1,173 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EL GURÚ DE LAS APUESTAS - Backtesting Lab</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #1e1e2e;
-            --current-line: #2b2b3b;
-            --fg: #f8f8f2;
-            --comment: #7970a9;
-            --cyan: #8be9fd;
-            --green: #50fa7b;
-            --orange: #ffb86c;
-            --pink: #ff79c6;
-            --purple: #bd93f9;
-            --red: #ff5555;
-            --yellow: #f1fa8c;
-        }
-
-        body {
-            background-color: var(--bg);
-            color: var(--fg);
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 20px;
-            line-height: 1.5;
-        }
-
-        h1, h2, h3 { font-family: 'Fira Code', monospace; color: var(--purple); text-transform: uppercase; letter-spacing: 2px; margin-top: 0; }
-
-        .container { max-width: 1400px; margin: auto; }
-
-        .grid-config {
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .card {
-            background: var(--current-line);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            border: 1px solid rgba(189, 147, 249, 0.2);
-            margin-bottom: 20px;
-        }
-
-        textarea {
-            width: 100%;
-            height: 150px;
-            background: #161621;
-            color: var(--green);
-            border: 1px solid var(--purple);
-            border-radius: 8px;
-            padding: 10px;
-            font-family: 'Fira Code', monospace;
-            font-size: 12px;
-            resize: none;
-            box-sizing: border-box;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .stat-box {
-            text-align: center;
-            padding: 15px;
-            border-radius: 10px;
-            background: rgba(0,0,0,0.2);
-            border-bottom: 3px solid var(--purple);
-        }
-
-        .stat-box span { display: block; font-size: 0.75rem; color: var(--comment); text-transform: uppercase; font-weight: bold; }
-        .stat-box b { font-size: 1.5rem; color: var(--cyan); }
-
-        .filters {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .filter-group label {
-            font-size: 10px;
-            color: var(--comment);
-            text-transform: uppercase;
-            font-weight: bold;
-            padding-left: 2px;
-        }
-
-        input, select {
-            background: #161621;
-            border: 1px solid var(--comment);
-            color: var(--fg);
-            padding: 10px;
-            border-radius: 6px;
-            outline: none;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .ai-card {
-            background: linear-gradient(145deg, #2b2b3b, #1a1a2e);
-            border: 1px solid var(--cyan);
-            border-left: 5px solid var(--cyan);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .ai-card::after {
-            content: "AI POWERED";
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            font-size: 10px;
-            background: var(--cyan);
-            color: var(--bg);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-
-        #ai-insights {
-            font-family: 'Fira Code', monospace;
-            font-size: 0.85rem;
-            color: var(--fg);
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-
-        .insight-group {
-            background: rgba(0,0,0,0.15);
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px border transparent;
-        }
-
-        .insight-title {
-            color: var(--cyan);
-            font-size: 0.7rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            margin-bottom: 8px;
-            display: block;
-        }
-
-        .insight-item {
-            margin-bottom: 6px;
-            line-height: 1.3;
-        }
-
-        .badge-robust { background: var(--green); color: var(--bg); font-size: 9px; padding: 2px 4px; border-radius: 3px; margin-left: 5px;}
-        .badge-fragile { background: var(--orange); color: var(--bg); font-size: 9px; padding: 2px 4px; border-radius: 3px; margin-left: 5px;}
-
-        .oracle-box {
-            grid-column: 1 / -1;
-            background: rgba(80, 250, 123, 0.05);
-            border: 1px solid var(--green);
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 10px;
-        }
-
-        .chart-container { position: relative; height: 300px; width: 100%; }
-
-        .grid-charts-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .analysis-grid {
-            display: grid;
-            grid-template-columns: 1fr 1.8fr;
-            gap: 20px;
-        }
-
-        .table-wrapper {
-            overflow-x: auto;
-            max-height: 500px;
-            background: #161621;
-            border-radius: 8px;
-            border: 1px solid var(--current-line);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.85rem;
-            text-align: left;
-        }
-
-        th { 
-            background: var(--purple); 
-            color: var(--bg); 
-            padding: 12px; 
-            font-weight: 700;
-            position: sticky; 
-            top: 0; 
-            z-index: 5;
-        }
-
-        td { 
-            padding: 10px 12px; 
-            border-bottom: 1px solid var(--current-line); 
-            white-space: nowrap; 
-        }
-
-        tr:nth-child(even) { background: rgba(255,255,255,0.02); }
-        tr:hover { background: rgba(189, 147, 249, 0.1); }
-
-        .status-win { color: var(--green); font-weight: bold; }
-        .status-loss { color: var(--red); font-weight: bold; }
-
-        .btn-clear {
-            background: var(--red);
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 10px;
-            transition: opacity 0.2s;
-        }
-        .btn-clear:hover { opacity: 0.8; }
-
-        .league-selector-btn {
-            background: var(--purple);
-            color: var(--bg);
-            border: none;
-            padding: 10px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 5px;
-        }
-
-        #league-modal {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 90%;
-            max-width: 600px;
-            max-height: 80vh;
-            background: var(--bg);
-            border: 2px solid var(--purple);
-            border-radius: 15px;
-            z-index: 100;
-            padding: 20px;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
-            overflow-y: auto;
-        }
-
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
-            z-index: 99;
-        }
-
-        .league-item-select {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px;
-            border-bottom: 1px solid var(--current-line);
-        }
-
-        .league-item-select input { width: auto; }
-
-        /* Estilos para switches */
-        .switch-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: 1px solid var(--comment);
-        }
-
-        .switch-container.red { background: rgba(255, 85, 85, 0.1); border-color: var(--red); }
-        .switch-container.cyan { background: rgba(139, 233, 253, 0.1); border-color: var(--cyan); }
-
-        @media (max-width: 900px) {
-            #ai-insights { grid-template-columns: 1fr; }
-            .grid-config, .grid-charts-row, .analysis-grid { grid-template-columns: 1fr; }
-        }
-    </style>
+<meta charset="UTF-8">
+<title>BETTING QUANT ENGINE V7</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{background:#0f172a;color:#e2e8f0;font-family:Arial;padding:20px}
+textarea{width:100%;height:120px;background:#020617;color:#22c55e}
+.card{background:#020617;padding:15px;margin:10px 0;border-radius:10px}
+h2{color:#38bdf8}
+</style>
 </head>
 <body>
 
-<div class="modal-overlay" id="overlay" onclick="toggleLeagueModal()"></div>
-<div id="league-modal">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-        <h3>🏆 Seleccionar Ligas</h3>
-        <button class="btn-clear" style="background:var(--comment); margin:0;" onclick="toggleLeagueModal()">Cerrar</button>
-    </div>
-    <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
-        <button onclick="bulkSelectLeagues(true)" style="background:var(--cyan); border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:12px;">Marcar Todas</button>
-        <button onclick="bulkSelectLeagues(false)" style="background:var(--red); border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:12px; color:white;">Desmarcar Todas</button>
-        <button onclick="selectProfitableLeagues()" style="background:var(--green); border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:12px;">✨ Solo Rentables</button>
-    </div>
-    <div id="league-checkboxes-container"></div>
+<h1>🔥 BETTING QUANT ENGINE V7</h1>
+
+<div class="card">
+<textarea id="data"></textarea>
+<button onclick="run()">ANALIZAR</button>
 </div>
 
-<div class="container">
-    <h1>🚀 Backtesting Lab <span style="font-size: 14px; color: var(--comment); vertical-align: middle;">EL GURÚ</span></h1>
+<div class="card" id="stats"></div>
+<div class="card" id="ai"></div>
 
-    <div class="grid-config">
-        <div class="card">
-            <h3>⚙️ Configuración</h3>
-            <div style="display:flex; flex-direction:column; gap:10px;">
-                <label style="font-size: 0.8rem;">Bank inicial ($):</label>
-                <input type="number" id="bank-initial" value="1000" oninput="processData()">
-                <label style="font-size: 0.8rem;">Valor de 1 Unidad ($):</label>
-                <input type="number" id="unit-value" value="10" oninput="processData()">
-            </div>
-        </div>
-        <div class="card">
-            <h3>📋 Pegar Datos</h3>
-            <textarea id="raw-data" placeholder="Pega aquí tu tabla..." oninput="rebuildLeagueSelector(); processData()">
-Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
-3/18/26 17:30	14'	Dvo. La Guaira x Caracas	Venezuela Primera Division	Gol	1.61	1	verde
-3/18/26 17:20	14'	Millonarios x Junior	Colombia Liga BetPlay	Gol	1.62	1.5	verde
-3/18/26 16:00	17'	Independencia x Rio Branco	Brazil Acreano	Gol	1.60	0.5	verde
-3/18/26 15:00	14'	Juventus SP x Oeste	Brazil Paulista A2	Gol	1.65	1	rojo
-3/18/26 14:00	15'	Metapan x Aguila	El Salvador Reserve League	Gol	1.60	2	verde
-3/18/26 14:00	17'	Bayern x Arsenal	UEFA Champions League	Gol	1.60	1	verde
-3/18/26 14:00	24'	Man City x Real Madrid	UEFA Champions League	Gol	1.60	1	verde
-3/18/26 13:45	14'	Glasgow City x Hearts	Scotland SWPL 1	Gol	1.60	0.5	rojo
-3/18/26 13:15	15'	Everton x Chelsea	England Women's Super League	Gol	1.60	1	rojo
-3/18/26 13:00	14'	Leicester x Brighton	England Womens Super League 2	Gol	1.60	1	verde</textarea>
-            <button class="btn-clear" onclick="clearData()">🧹 Limpiar Campo</button>
-        </div>
-    </div>
-
-    <div class="card ai-card">
-        <h3>🧠 IA Gurú Insight & Predictor</h3>
-        <div id="ai-insights">Analizando profundidad de datos...</div>
-    </div>
-
-    <div class="card">
-        <h3>🔍 Filtros de Análisis</h3>
-        <div class="filters">
-            <div class="filter-group">
-                <label>Selección de Ligas</label>
-                <button class="league-selector-btn" onclick="toggleLeagueModal()">📂 Seleccionar Ligas</button>
-            </div>
-            <div class="filter-group">
-                <label>Top Ligas Mundo</label>
-                <div class="switch-container cyan">
-                    <input type="checkbox" id="filter-top-leagues" onchange="processData()" style="width:20px; cursor:pointer;">
-                    <span style="font-size:11px; font-weight:bold; color:var(--cyan);">SOLO TOP 20 LIGAS</span>
-                </div>
-            </div>
-            <div class="filter-group">
-                <label>Limpieza Pro</label>
-                <div class="switch-container red">
-                    <input type="checkbox" id="filter-exclude-cups-women" checked onchange="processData()" style="width:20px; cursor:pointer;">
-                    <span style="font-size:11px; font-weight:bold; color:var(--red);">IGNORAR COPAS/FEMENIL</span>
-                </div>
-            </div>
-            <div class="filter-group">
-                <label>Liga (Texto)</label>
-                <input type="text" id="filter-liga" placeholder="Buscar..." oninput="processData()">
-            </div>
-            <div class="filter-group">
-                <label>Cuota Min</label>
-                <input type="number" id="filter-min-odd" step="0.1" placeholder="0.0" oninput="processData()">
-            </div>
-            <div class="filter-group">
-                <label>Cuota Max</label>
-                <input type="number" id="filter-max-odd" step="0.1" placeholder="9.9" oninput="processData()">
-            </div>
-            <div class="filter-group">
-                <label>Día</label>
-                <select id="filter-day" onchange="processData()">
-                    <option value="">Todos</option>
-                    <option value="1">Lunes</option>
-                    <option value="2">Martes</option>
-                    <option value="3">Miércoles</option>
-                    <option value="4">Jueves</option>
-                    <option value="5">Viernes</option>
-                    <option value="6">Sábado</option>
-                    <option value="0">Domingo</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label>Hora Inicio</label>
-                <input type="number" id="filter-start-hour" min="0" max="23" placeholder="Ej: 2" oninput="processData()">
-            </div>
-        </div>
-    </div>
-
-    <div class="stats-grid" id="stats-output"></div>
-
-    <div class="card">
-        <h3>📈 Curva de Profit (U)</h3>
-        <div class="chart-container" style="height: 350px;">
-            <canvas id="profitChart"></canvas>
-        </div>
-    </div>
-
-    <div class="grid-charts-row">
-        <div class="card">
-            <h3>🍯 Profit por Liga (Top 10)</h3>
-            <div class="chart-container">
-                <canvas id="leagueChart"></canvas>
-            </div>
-        </div>
-        <div class="card">
-            <h3>⭐ La Miel (Ligas más rentables)</h3>
-            <div class="table-wrapper">
-                <table id="league-analysis-table">
-                    <thead>
-                        <tr>
-                            <th>Liga</th>
-                            <th>Picks</th>
-                            <th>Yield</th>
-                            <th>Profit</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div class="grid-charts-row">
-        <div class="card">
-            <h3>⏱️ Tendencia por Minuto (Acumulado)</h3>
-            <div class="chart-container">
-                <canvas id="minuteChart"></canvas>
-            </div>
-        </div>
-        <div class="card">
-            <h3>📅 Profit por Día</h3>
-            <div class="chart-container">
-                <canvas id="dayChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <div class="card">
-        <h3>🕒 Profit por Franja Horaria</h3>
-        <div class="chart-container" style="height: 250px;">
-            <canvas id="hourChart"></canvas>
-        </div>
-    </div>
-
-    <div class="analysis-grid">
-        <div class="card">
-            <h3>⏱️ Análisis por Minuto</h3>
-            <div class="table-wrapper">
-                <table id="minute-analysis-table">
-                    <thead>
-                        <tr>
-                            <th>Minuto</th>
-                            <th>Picks</th>
-                            <th>Acierto</th>
-                            <th>Profit</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-        <div class="card">
-            <h3>📊 Historial Detallado</h3>
-            <div class="table-wrapper">
-                <table id="results-table">
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Min</th>
-                            <th>Liga</th>
-                            <th>Cuota</th>
-                            <th>Stake (U)</th>
-                            <th>Res</th>
-                            <th>Profit (U)</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
+<canvas id="profit"></canvas>
+<canvas id="drawdown"></canvas>
 
 <script>
-    let charts = {};
-    let selectedLeagues = new Set();
-    let leagueProfitCache = {};
 
-    // Lista Maestra de Ligas Top (Palabras clave para detección)
-    const TOP_LEAGUES_KEYWORDS = [
-        "premier league", "la liga", "bundesliga", "serie a", "ligue 1", 
-        "champions league", "europa league", "liga mx", "brasileirao", 
-        "eredivisie", "primeira liga", "mls", "argentina liga profesional",
-        "belgium jupiler", "turkey super lig", "championship", "copa libertadores",
-        "bundesliga 2", "scotland premiership", "denmark superligaen"
-    ];
+function run(){
+const raw=document.getElementById("data").value.trim().split("\n");
+let data=[];
 
-    function toggleLeagueModal() {
-        const modal = document.getElementById('league-modal');
-        const overlay = document.getElementById('overlay');
-        const display = modal.style.display === 'block' ? 'none' : 'block';
-        modal.style.display = display;
-        overlay.style.display = display;
-    }
+for(let i=1;i<raw.length;i++){
+let c=raw[i].split("\t");
+if(c.length<8)continue;
 
-    function rebuildLeagueSelector() {
-        const rawText = document.getElementById('raw-data').value;
-        const lines = rawText.trim().split('\n');
-        const container = document.getElementById('league-checkboxes-container');
-        const leaguesFound = new Set();
-        leagueProfitCache = {};
+let odd=parseFloat(c[5]);
+let stake=parseFloat(c[6]);
+if(odd<1.4||odd>3)continue;
 
-        const excludeKeywords = ["women", "femenil", "cup", "copa", "taca", "u19", "u20", "u21", "u23", "olympic"];
-        const excludeActive = document.getElementById('filter-exclude-cups-women').checked;
-        const topLeaguesActive = document.getElementById('filter-top-leagues').checked;
+let d=new Date(c[0]);
+data.push({
+liga:c[3],
+min:parseInt(c[1]),
+hora:d.getHours(),
+odd:odd,
+stake:stake,
+res:c[7]=="verde"
+});
+}
 
-        for(let i = 1; i < lines.length; i++) {
-            const cols = lines[i].split('\t');
-            if(cols.length < 8) continue;
-            
-            const liga = cols[3].trim();
-            const evento = cols[2].trim();
-            const ligaLower = liga.toLowerCase();
-            const eventoLower = evento.toLowerCase();
+if(data.length<20){
+document.getElementById("ai").innerHTML="❌ Muestra insuficiente";
+return;
+}
 
-            if (excludeActive) {
-                const isExcluded = excludeKeywords.some(key => ligaLower.includes(key) || eventoLower.includes(key));
-                if (isExcluded) continue;
-            }
+let profit=0,curve=[0],dd=[],peak=0,maxDD=0;
+let wins=0,staked=0;
 
-            if (topLeaguesActive) {
-                const isTop = TOP_LEAGUES_KEYWORDS.some(key => ligaLower.includes(key));
-                if (!isTop) continue;
-            }
+let map={};
 
-            const res = cols[7].trim().toLowerCase();
-            const odd = parseFloat(cols[5]);
-            const stake = parseFloat(cols[6].replace(',','.')) || 0;
-            const p = (res === 'verde') ? (stake * (odd - 1)) : -stake;
+data.forEach(d=>{
+let p=d.res?d.stake*(d.odd-1):-d.stake;
 
-            leaguesFound.add(liga);
-            leagueProfitCache[liga] = (leagueProfitCache[liga] || 0) + p;
-        }
+profit+=p;
+staked+=d.stake;
+if(d.res)wins++;
 
-        const sortedLeagues = Array.from(leaguesFound).sort();
-        container.innerHTML = sortedLeagues.map(liga => `
-            <div class="league-item-select">
-                <input type="checkbox" id="lg-${liga}" value="${liga}" checked onchange="updateLeagueSelection()">
-                <label for="lg-${liga}" style="font-size:13px;">${liga} <span style="color:var(--comment); font-size:11px;">(${leagueProfitCache[liga].toFixed(1)}U)</span></label>
-            </div>
-        `).join('');
+curve.push(profit);
 
-        sortedLeagues.forEach(l => selectedLeagues.add(l));
-    }
+if(profit>peak)peak=profit;
+let draw=profit-peak;
+dd.push(draw);
+if(draw<maxDD)maxDD=draw;
 
-    function updateLeagueSelection() {
-        const checkboxes = document.querySelectorAll('#league-checkboxes-container input');
-        selectedLeagues.clear();
-        checkboxes.forEach(cb => {
-            if(cb.checked) selectedLeagues.add(cb.value);
-        });
-        processData();
-    }
+let key=d.liga+"|"+d.min+"|"+d.hora;
 
-    function bulkSelectLeagues(state) {
-        const checkboxes = document.querySelectorAll('#league-checkboxes-container input');
-        checkboxes.forEach(cb => cb.checked = state);
-        updateLeagueSelection();
-    }
+if(!map[key]){
+map[key]={p:0,s:0,w:0,n:0,odds:[]};
+}
 
-    function selectProfitableLeagues() {
-        const checkboxes = document.querySelectorAll('#league-checkboxes-container input');
-        checkboxes.forEach(cb => {
-            cb.checked = leagueProfitCache[cb.value] > 0;
-        });
-        updateLeagueSelection();
-    }
+map[key].p+=p;
+map[key].s+=d.stake;
+map[key].n++;
+map[key].odds.push(d.odd);
+if(d.res)map[key].w++;
+});
 
-    function clearData() {
-        document.getElementById('raw-data').value = '';
-        rebuildLeagueSelector();
-        processData();
-    }
+let combos=[];
+let warn=[];
 
-    function processData() {
-        const rawText = document.getElementById('raw-data').value;
-        const lines = rawText.trim().split('\n');
-        
-        let rawData = [];
-        const filterLigaText = document.getElementById('filter-liga').value.toLowerCase();
-        const filterMinOdd = parseFloat(document.getElementById('filter-min-odd').value) || 0;
-        const filterMaxOdd = parseFloat(document.getElementById('filter-max-odd').value) || 999;
-        const filterDay = document.getElementById('filter-day').value;
-        const startHour = document.getElementById('filter-start-hour').value !== "" ? parseInt(document.getElementById('filter-start-hour').value) : null;
-        
-        const excludeActive = document.getElementById('filter-exclude-cups-women').checked;
-        const topLeaguesActive = document.getElementById('filter-top-leagues').checked;
-        const excludeKeywords = ["women", "femenil", "cup", "copa", "taca", "u19", "u20", "u21", "u23", "olympic"];
+Object.keys(map).forEach(k=>{
+let m=map[k];
 
-        for(let i = 1; i < lines.length; i++) {
-            const cols = lines[i].split('\t');
-            if(cols.length < 8) continue;
+if(m.n<10){
+warn.push("⚠️ baja muestra "+k);
+return;
+}
 
-            const liga = cols[3].trim();
-            const evento = cols[2].trim();
-            const ligaLower = liga.toLowerCase();
-            const eventoLower = evento.toLowerCase();
+let wr=m.w/m.n;
+let avg=m.odds.reduce((a,b)=>a+b)/m.odds.length;
 
-            // Filtro de Exclusión
-            if (excludeActive) {
-                const shouldExclude = excludeKeywords.some(key => ligaLower.includes(key) || eventoLower.includes(key));
-                if (shouldExclude) continue;
-            }
+let EV=(wr*(avg-1))-(1-wr);
+let edge=(wr*avg)-1;
 
-            // Filtro de Ligas Top
-            if (topLeaguesActive) {
-                const isTop = TOP_LEAGUES_KEYWORDS.some(key => ligaLower.includes(key));
-                if (!isTop) continue;
-            }
+if(m.p>0 && m.n<15) warn.push("❌ fake edge "+k);
 
-            if (selectedLeagues.size > 0 && !selectedLeagues.has(liga)) continue;
+if(EV>0.05){
+combos.push({k,EV,p:m.p,n:m.n});
+}
+});
 
-            const dateStr = cols[0].trim();
-            const dateObj = new Date(dateStr);
-            const hour = isNaN(dateObj.getHours()) ? null : dateObj.getHours();
-            
-            const row = {
-                fecha: dateStr,
-                ts: dateObj.getTime(),
-                diaSemana: isNaN(dateObj.getDay()) ? null : dateObj.getDay(),
-                hora: hour,
-                minuto: cols[1].trim(),
-                minNum: parseInt(cols[1].replace("'", "")) || 0,
-                evento: evento,
-                liga: liga,
-                odd: parseFloat(cols[5]),
-                stake: parseFloat(cols[6].replace(',','.')) || 0,
-                resultado: cols[7].trim().toLowerCase()
-            };
+combos.sort((a,b)=>b.EV-a.EV);
 
-            if (filterLigaText && !row.liga.toLowerCase().includes(filterLigaText)) continue;
-            if (row.odd < filterMinOdd || row.odd > filterMaxOdd) continue;
-            if (filterDay !== "" && row.diaSemana !== null && row.diaSemana != filterDay) continue;
-            if (startHour !== null && row.hora !== null && row.hora < startHour) continue;
+let strat="";
+let proj=0;
 
-            rawData.push(row);
-        }
+combos.slice(0,5).forEach(c=>{
+let stake=1;
+if(c.EV>0.1)stake=2;
+else if(c.EV<0.05)stake=0.5;
 
-        const chronologicalData = [...rawData].sort((a, b) => a.ts - b.ts);
-        
-        let minuteMap = {};
-        let leagueMap = {};
-        let dayStats = Array(7).fill(0);
-        let hourStats = Array(24).fill(0);
-        let profitCurve = [0];
-        let currentProfit = 0;
-        let totalStaked = 0;
-        let wins = 0;
+proj+=c.p*stake;
 
-        chronologicalData.forEach(d => {
-            const p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
-            currentProfit += p;
-            totalStaked += d.stake;
-            if(d.resultado === 'verde') wins++;
-            
-            profitCurve.push(parseFloat(currentProfit.toFixed(2)));
+strat+=`🔥 ${c.k} | EV ${c.EV.toFixed(2)} | Stake ${stake}U<br>`;
+});
 
-            if (!minuteMap[d.minuto]) minuteMap[d.minuto] = { picks: 0, wins: 0, profit: 0, minNum: d.minNum };
-            minuteMap[d.minuto].picks++;
-            minuteMap[d.minuto].profit += p;
-            if(d.resultado === 'verde') minuteMap[d.minuto].wins++;
+let wrTotal=wins/data.length;
+let yield=(profit/staked)*100;
 
-            if (!leagueMap[d.liga]) leagueMap[d.liga] = { picks: 0, profit: 0, staked: 0 };
-            leagueMap[d.liga].picks++;
-            leagueMap[d.liga].profit += p;
-            leagueMap[d.liga].staked += d.stake;
+// sharpe simple
+let avgR=profit/data.length;
+let std=Math.sqrt(curve.reduce((a,b)=>a+Math.pow(b-avgR,2),0)/curve.length);
+let sharpe=avgR/std;
 
-            if(d.diaSemana !== null) dayStats[d.diaSemana] += p;
-            if(d.hora !== null) hourStats[d.hora] += p;
-        });
+document.getElementById("stats").innerHTML=`
+Picks: ${data.length}<br>
+WinRate: ${(wrTotal*100).toFixed(1)}%<br>
+Profit: ${profit.toFixed(2)}U<br>
+Yield: ${yield.toFixed(2)}%<br>
+Drawdown: ${maxDD.toFixed(2)}U<br>
+Sharpe: ${sharpe.toFixed(2)}
+`;
 
-        renderDashboard(rawData, chronologicalData, minuteMap, leagueMap, dayStats, hourStats, profitCurve, wins, totalStaked, currentProfit);
-        runAIStrategyValidation(chronologicalData);
-    }
+document.getElementById("ai").innerHTML=`
+<h2>🧠 IA V7</h2>
+Combos válidos: ${combos.length}<br>
+<br>
+${strat}
+<br>
+💰 Profit proyectado: ${proj.toFixed(2)}U
+<br><br>
+${warn.slice(0,5).join("<br>")}
+`;
 
-    function runAIStrategyValidation(sortedData) {
-        const aiContainer = document.getElementById('ai-insights');
-        if (sortedData.length < 5) {
-            aiContainer.innerHTML = "Se requieren más datos para activar el Oráculo de IA...";
-            return;
-        }
+new Chart(document.getElementById("profit"),{
+type:"line",
+data:{labels:curve.map((_,i)=>i),datasets:[{data:curve}]}
+});
 
-        const trainIdx = Math.floor(sortedData.length * 0.7); 
-        const trainSet = sortedData.slice(0, trainIdx);
-        const testSet = sortedData.slice(trainIdx); 
+new Chart(document.getElementById("drawdown"),{
+type:"line",
+data:{labels:dd.map((_,i)=>i),datasets:[{data:dd}]}
+});
 
-        const analyzeSet = (data) => {
-            let ligaMap = {}, minuteMap = {}, hourMap = {};
-            data.forEach(d => {
-                const p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
-                if(!ligaMap[d.liga]) ligaMap[d.liga] = { profit: 0, staked: 0, picks: 0 };
-                ligaMap[d.liga].profit += p;
-                ligaMap[d.liga].staked += d.stake;
-                ligaMap[d.liga].picks++;
+}
 
-                minuteMap[d.minuto] = (minuteMap[d.minuto] || 0) + p;
-                hourMap[d.hora] = (hourMap[d.hora] || 0) + p;
-            });
-            return { ligaMap, minuteMap, hourMap };
-        };
-
-        const train = analyzeSet(trainSet);
-        const test = analyzeSet(testSet);
-
-        const bestLigaEntry = Object.entries(train.ligaMap).sort((a,b)=>b[1].profit-a[1].profit)[0];
-        const bestMinEntry = Object.entries(train.minuteMap).sort((a,b)=>b[1]-a[1])[0];
-
-        const isLigaRobust = (test.ligaMap[bestLigaEntry[0]]?.profit || 0) > 0;
-        const isMinRobust = (test.minuteMap[bestMinEntry[0]] || 0) > 0;
-
-        let oracleProfit = 0;
-        let oracleLigasCount = 0;
-        let detailsHtml = "";
-
-        Object.entries(train.ligaMap).forEach(([liga, stats]) => {
-            const testProfit = test.ligaMap[liga]?.profit || 0;
-            if(stats.profit > 0 && testProfit > 0) {
-                oracleLigasCount++;
-                const totalProfit = stats.profit + testProfit;
-                const totalStaked = stats.staked + (test.ligaMap[liga]?.staked || 0);
-                const yieldLiga = (totalProfit / totalStaked) * 100;
-
-                let suggestedStake = 1.0;
-                if(yieldLiga > 15) suggestedStake = 2.0;
-                else if(yieldLiga < 5) suggestedStake = 0.5;
-
-                oracleProfit += (totalProfit * suggestedStake); 
-                detailsHtml += `<div style="font-size:10px; color:var(--comment)">• ${liga}: Confianza ${yieldLiga.toFixed(0)}% → Stake ${suggestedStake}U</div>`;
-            }
-        });
-
-        aiContainer.innerHTML = `
-            <div class="insight-group">
-                <span class="insight-title">🛠️ Validación Cruzada (30% Test)</span>
-                <div class="insight-item">Liga Top: <b>${bestLigaEntry[0]}</b> ${isLigaRobust ? '<span class="badge-robust">ESTABLE</span>' : '<span class="badge-fragile">FRÁGIL</span>'}</div>
-                <div class="insight-item">Minuto Top: <b>${bestMinEntry[0]}</b> ${isMinRobust ? '<span class="badge-robust">ESTABLE</span>' : '<span class="badge-fragile">FRÁGIL</span>'}</div>
-            </div>
-            <div class="insight-group">
-                <span class="insight-title">🧪 Probabilidad de Éxito</span>
-                <div class="insight-item">Consistencia: <b>${(isLigaRobust && isMinRobust) ? 'Alta' : 'Moderada'}</b></div>
-                <div class="insight-item">Muestra Validada: <b>${testSet.length} picks</b></div>
-            </div>
-            <div class="oracle-box">
-                <span class="insight-title" style="color:var(--green)">✨ EL ORÁCULO: FILTRO MAESTRO CON STAKE VARIABLE</span>
-                <div style="font-size: 0.85rem; line-height: 1.4;">
-                    Operando solo <b style="color:var(--cyan)">${oracleLigasCount} Ligas Validadas</b> con Stake Variable según confianza, 
-                    tu Profit proyectado es de: 
-                    <b style="color:var(--green); font-size:1.1rem;">+${oracleProfit.toFixed(2)}U</b>
-                </div>
-                <div style="margin-top:10px; display:grid; grid-template-columns:1fr 1fr; gap:5px;">
-                    ${detailsHtml}
-                </div>
-            </div>
-        `;
-    }
-
-    function renderDashboard(originalData, chronologicalData, minuteMap, leagueMap, dayStats, hourStats, profitCurve, wins, totalStaked, currentProfit) {
-        const winRate = originalData.length > 0 ? (wins / originalData.length) * 100 : 0;
-        document.getElementById('stats-output').innerHTML = `
-            <div class="stat-box"><span>Picks</span><b>${originalData.length}</b></div>
-            <div class="stat-box"><span>Acierto</span><b>${winRate.toFixed(1)}%</b></div>
-            <div class="stat-box"><span>Profit</span><b style="color:var(--green)">${currentProfit.toFixed(2)}U</b></div>
-            <div class="stat-box"><span>Yield</span><b>${totalStaked > 0 ? ((currentProfit/totalStaked)*100).toFixed(1) : 0}%</b></div>
-        `;
-
-        updateChart('profitChart', 'line', {
-            labels: profitCurve.map((_, i) => i),
-            datasets: [{ label: 'Profit', data: profitCurve, borderColor: '#bd93f9', backgroundColor: 'rgba(189, 147, 249, 0.1)', fill: true, tension: 0.2 }]
-        });
-
-        const sortedLeagues = Object.entries(leagueMap).sort((a,b) => b[1].profit - a[1].profit);
-        const top10Leagues = sortedLeagues.slice(0, 10);
-        updateChart('leagueChart', 'bar', {
-            labels: top10Leagues.map(l => l[0].substring(0, 15)),
-            datasets: [{ data: top10Leagues.map(l => l[1].profit.toFixed(2)), backgroundColor: top10Leagues.map(l => l[1].profit >= 0 ? '#50fa7b' : '#ff5555'), indexAxis: 'y' }]
-        });
-
-        const leagueBody = document.querySelector('#league-analysis-table tbody');
-        leagueBody.innerHTML = sortedLeagues.map(l => {
-            const yieldVal = ((l[1].profit / l[1].staked) * 100).toFixed(1);
-            return `<tr><td><b>${l[0]}</b></td><td>${l[1].picks}</td><td style="color:${yieldVal >= 0 ? 'var(--cyan)' : 'var(--orange)'}">${yieldVal}%</td><td style="color:${l[1].profit >= 0 ? 'var(--green)' : 'var(--red)'}">${l[1].profit.toFixed(2)}U</td></tr>`;
-        }).join('');
-
-        const sortedMinLabels = Object.keys(minuteMap).sort((a, b) => minuteMap[a].minNum - minuteMap[b].minNum);
-        let accMinP = 0;
-        updateChart('minuteChart', 'line', {
-            labels: sortedMinLabels,
-            datasets: [{ data: sortedMinLabels.map(m => { accMinP += minuteMap[m].profit; return accMinP.toFixed(2); }), borderColor: '#ff79c6', tension: 0.4 }]
-        });
-
-        const dayLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-        updateChart('dayChart', 'bar', {
-            labels: dayLabels,
-            datasets: [{ data: [1, 2, 3, 4, 5, 6, 0].map(i => dayStats[i]), backgroundColor: [1, 2, 3, 4, 5, 6, 0].map(i => dayStats[i] >= 0 ? '#50fa7b' : '#ff5555') }]
-        });
-
-        updateChart('hourChart', 'bar', {
-            labels: Array.from({length: 24}, (_, i) => `${i}h`),
-            datasets: [{ data: hourStats, backgroundColor: hourStats.map(v => v >= 0 ? '#8be9fd' : '#ffb86c') }]
-        });
-
-        const minBody = document.querySelector('#minute-analysis-table tbody');
-        minBody.innerHTML = Object.keys(minuteMap).sort((a, b) => minuteMap[b].profit - minuteMap[a].profit).map(m => {
-            const row = minuteMap[m];
-            return `<tr><td><b>${m}</b></td><td>${row.picks}</td><td>${((row.wins/row.picks)*100).toFixed(1)}%</td><td style="color:${row.profit>=0?'var(--green)':'var(--red)'}">${row.profit.toFixed(2)}U</td></tr>`;
-        }).join('');
-
-        const resBody = document.querySelector('#results-table tbody');
-        resBody.innerHTML = chronologicalData.map(d => {
-            const p = (d.resultado === 'verde') ? (d.stake * (d.odd - 1)) : -d.stake;
-            return `<tr><td style="color:var(--comment)">${d.fecha}</td><td><b>${d.minuto}</b></td><td>${d.liga}</td><td>${d.odd.toFixed(2)}</td><td><b>${d.stake}U</b></td><td class="${d.resultado==='verde'?'status-win':'status-loss'}">${d.resultado.toUpperCase()}</td><td style="color:${p>=0?'var(--green)':'var(--red)'}">${p.toFixed(2)}</td></tr>`;
-        }).reverse().join('');
-    }
-
-    function updateChart(id, type, data) {
-        if (charts[id]) charts[id].destroy();
-        const ctx = document.getElementById(id).getContext('2d');
-        const isHorizontal = data.datasets[0].indexAxis === 'y';
-        charts[id] = new Chart(ctx, {
-            type: type,
-            data: data,
-            options: {
-                indexAxis: isHorizontal ? 'y' : 'x',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6272a4' } },
-                    x: { grid: { display: isHorizontal, color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6272a4' } }
-                }
-            }
-        });
-    }
-
-    window.onload = () => { rebuildLeagueSelector(); processData(); };
 </script>
+
 </body>
 </html>
