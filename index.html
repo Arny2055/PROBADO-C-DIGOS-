@@ -35,7 +35,7 @@
         td { padding: 8px 10px; border-bottom: 1px solid var(--current-line); }
         tr:hover { background: rgba(189, 147, 249, 0.1); }
 
-        input[type="number"] {
+        input {
             background: #1e1e2e;
             color: var(--cyan);
             border: 1px solid var(--comment);
@@ -57,7 +57,6 @@
 
         .opt-highlight { color: var(--green); font-weight: bold; }
 
-        /* Estilo para la Recomendación del Gurú */
         .recommendation-card {
             background: linear-gradient(45deg, #2b2b3b, #161621);
             border: 1px dashed var(--yellow);
@@ -102,7 +101,7 @@
     <div class="card">
         <h3>🧪 Laboratorio de Cuotas: Análisis de Cierre HT</h3>
         <p style="font-size: 11px; color: var(--comment); margin-top: -10px;">
-            * Los datos se guardan automáticamente. La cuota de cierre ahora permite decimales (ej: 1.85).
+            * Los datos se guardan automáticamente. Decimales permitidos en cuota (ej: 1.85 o 1,85).
         </p>
         <div class="table-wrapper">
             <table id="optimization-table">
@@ -128,7 +127,10 @@
     let database = JSON.parse(localStorage.getItem('ega_backtesting_db')) || [];
 
     window.onload = () => {
-        if (database.length > 0) renderTable();
+        if (database.length > 0) {
+            renderTable();
+            updateGuruRecommendation();
+        }
     };
 
     function processData() {
@@ -144,6 +146,7 @@
             const fecha = cols[0];
             const minAlerta = parseInt(cols[1]);
             const evento = cols[2];
+            // Aseguramos que la cuota pegada se entienda como decimal (punto o coma)
             const oddAlerta = parseFloat(cols[5].replace(',', '.'));
             const stake = parseFloat(cols[6]?.replace(',', '.') || 1);
             const res = cols[7]?.trim().toLowerCase() === 'verde';
@@ -181,8 +184,10 @@
 
         if(type === 'min') item.minCierre = value;
         if(type === 'odd') {
-            const val = parseFloat(value);
-            item.oddCierre = value;
+            // Reemplazamos coma por punto antes de convertir a número
+            const cleanVal = value.replace(',', '.');
+            const val = parseFloat(cleanVal);
+            item.oddCierre = value; // Guardamos lo que el usuario escribió (sea punto o coma)
             if(!isNaN(val)) {
                 item.profitOpt = item.res ? (item.stake * (val - 1)) : -item.stake;
             } else {
@@ -210,8 +215,8 @@
                 <td>${item.evento.substring(0,25)}</td>
                 <td>${item.minAlerta}'</td>
                 <td style="color: ${item.res ? 'var(--green)' : 'var(--red)'}; font-weight:bold">${item.res ? 'WIN' : 'LOSS'}</td>
-                <td><input type="number" value="${item.minCierre}" oninput="updateRow('${item.key}', 'min', this.value)"></td>
-                <td><input type="number" step="any" value="${item.oddCierre}" placeholder="---" oninput="updateRow('${item.key}', 'odd', this.value)"></td>
+                <td><input type="text" value="${item.minCierre}" oninput="updateRow('${item.key}', 'min', this.value)"></td>
+                <td><input type="text" value="${item.oddCierre}" placeholder="---" oninput="updateRow('${item.key}', 'odd', this.value)"></td>
                 <td>${item.profitActual.toFixed(2)}U</td>
                 <td class="${item.profitOpt > item.profitActual ? 'opt-highlight' : ''}">${item.profitOpt.toFixed(2)}U</td>
             `;
@@ -238,10 +243,9 @@
         const winsWithData = database.filter(i => i.res && i.minCierre && i.oddCierre);
         if (winsWithData.length < 3) return;
 
-        // Calcular minuto promedio de gol
         const avgMin = winsWithData.reduce((a, b) => a + parseInt(b.minCierre), 0) / winsWithData.length;
-        // Calcular cuota promedio de gol
-        const avgOdd = winsWithData.reduce((a, b) => a + parseFloat(b.oddCierre), 0) / winsWithData.length;
+        // Limpiamos las cuotas de posibles comas antes de promediar
+        const avgOdd = winsWithData.reduce((a, b) => a + parseFloat(b.oddCierre.toString().replace(',', '.')), 0) / winsWithData.length;
 
         document.getElementById('rec-content').innerHTML = `
             Basado en tus aciertos, el gol suele caer al minuto <b>${Math.round(avgMin)}'</b>. 
