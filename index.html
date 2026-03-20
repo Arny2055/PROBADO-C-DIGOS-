@@ -79,6 +79,20 @@
         .insight-box h4 { margin: 0 0 8px 0; font-size: 0.75rem; color: var(--comment); text-transform: uppercase; }
         .insight-box div { font-size: 0.85rem; font-weight: 400; line-height: 1.5; }
         .insight-box b { color: var(--green); }
+
+        /* Estilos para Selección Interactiva */
+        .selectable { cursor: pointer; transition: all 0.2s; border-radius: 4px; padding: 2px 5px; }
+        .selectable:hover { background: rgba(139, 233, 253, 0.2); }
+        .selected-item { background: var(--cyan) !important; color: var(--bg) !important; font-weight: bold; }
+
+        .synergy-panel {
+            background: #161621;
+            border: 1px dashed var(--yellow);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -108,6 +122,7 @@
 
     <div class="card">
         <h3>🌍 Análisis Global Estratégico</h3>
+        <p style="font-size: 11px; color: var(--comment); margin-top: -10px;">* Haz clic en minutos o cuotas para simular una combinación ganadora</p>
         <div id="global-insights" class="global-insight">
             <div class="insight-box">
                 <h4>⏱️ Minutos de Oro (Profit)</h4>
@@ -122,12 +137,17 @@
                 <div id="glob-odds">--</div>
             </div>
         </div>
+
+        <div id="synergy-panel" class="synergy-panel">
+            <h4 style="margin:0; color:var(--yellow); font-size:0.8rem;">🧪 RESULTADO DE SINERGIA (Filtro Combinado)</h4>
+            <div id="synergy-result" style="display:flex; gap:20px; margin-top:10px; font-size:0.9rem;">
+                </div>
+        </div>
     </div>
 
     <div class="grid-main">
         <div class="card">
             <h3>🏆 Ligas más Rentables (Profit DESC)</h3>
-            <p style="font-size: 11px; color: var(--comment);">* Haz clic en una liga para ver detalles específicos</p>
             <div class="table-wrapper">
                 <table id="league-table">
                     <thead>
@@ -176,11 +196,16 @@
 <script>
     let rawDatabase = [];
     let leagueData = {};
+    let selectedMinute = null;
+    let selectedOddRange = null;
 
     function clearAllData() {
         document.getElementById('raw-data').value = '';
         rawDatabase = [];
         leagueData = {};
+        selectedMinute = null;
+        selectedOddRange = null;
+        document.getElementById('synergy-panel').style.display = 'none';
         renderLeagueTable();
         renderGeneralStats();
         renderGlobalInsights();
@@ -234,6 +259,47 @@
         renderGlobalInsights();
     }
 
+    function toggleMinute(min) {
+        selectedMinute = (selectedMinute === min) ? null : min;
+        renderGlobalInsights();
+        calculateSynergy();
+    }
+
+    function toggleOddRange(avg) {
+        selectedOddRange = (selectedOddRange === avg) ? null : avg;
+        renderGlobalInsights();
+        calculateSynergy();
+    }
+
+    function calculateSynergy() {
+        const panel = document.getElementById('synergy-panel');
+        if(!selectedMinute && !selectedOddRange) {
+            panel.style.display = 'none';
+            return;
+        }
+        panel.style.display = 'block';
+
+        let filtered = rawDatabase;
+        if(selectedMinute) filtered = filtered.filter(r => r.minuto === selectedMinute);
+        if(selectedOddRange) {
+            // Filtramos cuotas cercanas al promedio seleccionado (+/- 0.20)
+            const target = parseFloat(selectedOddRange);
+            filtered = filtered.filter(r => Math.abs(r.odd - target) <= 0.20);
+        }
+
+        const pks = filtered.length;
+        const prof = filtered.reduce((a, b) => a + b.profit, 0);
+        const stk = filtered.reduce((a, b) => a + b.stake, 0);
+        const yld = stk > 0 ? (prof / stk * 100).toFixed(1) : 0;
+
+        document.getElementById('synergy-result').innerHTML = `
+            <div>Picks: <b>${pks}</b></div>
+            <div>Profit: <b style="color:var(--green)">${prof.toFixed(2)}U</b></div>
+            <div>Yield: <b style="color:var(--cyan)">${yld}%</b></div>
+            <div style="color:var(--comment); font-size:0.75rem;">(Filtrando por ${selectedMinute ? 'Min '+selectedMinute : ''} ${selectedOddRange ? 'Cuota ~'+selectedOddRange : ''})</div>
+        `;
+    }
+
     function renderGlobalInsights() {
         if(rawDatabase.length === 0) {
             document.getElementById('glob-min').innerText = '--';
@@ -242,15 +308,13 @@
             return;
         }
 
-        // Minutos Globales con Profit Individual
         const mins = {};
         rawDatabase.forEach(r => mins[r.minuto] = (mins[r.minuto] || 0) + r.profit);
         const topMins = Object.entries(mins).sort((a,b) => b[1] - a[1]).slice(0, 3);
         document.getElementById('glob-min').innerHTML = topMins.map(m => 
-            `<div>Min ${m[0]}: <b>${m[1].toFixed(2)}U</b></div>`
+            `<div class="selectable ${selectedMinute === m[0] ? 'selected-item' : ''}" onclick="toggleMinute('${m[0]}')">Min ${m[0]}: <b>${m[1].toFixed(2)}U</b></div>`
         ).join('');
 
-        // Equipos Globales con Profit Individual
         const teams = {};
         rawDatabase.forEach(r => teams[r.evento] = (teams[r.evento] || 0) + r.profit);
         const topTeams = Object.entries(teams).sort((a,b) => b[1] - a[1]).slice(0, 3);
@@ -258,14 +322,13 @@
             `<div title="${t[0]}">${t[0].substring(0, 18)}...: <b>${t[1].toFixed(2)}U</b></div>`
         ).join('');
 
-        // Cuotas Globales Desglosadas
         const odds = rawDatabase.map(r => r.odd);
         const avg = (odds.reduce((a,b) => a + b, 0) / odds.length).toFixed(2);
-        const minO = Math.min(...odds).toFixed(2);
-        const maxO = Math.max(...odds).toFixed(2);
         document.getElementById('glob-odds').innerHTML = `
-            <div>Min: <span style="color:var(--orange)">${minO}</span> | Max: <span style="color:var(--orange)">${maxO}</span></div>
-            <div>Promedio: <b style="color:var(--cyan)">${avg}</b></div>
+            <div class="selectable ${selectedOddRange === avg ? 'selected-item' : ''}" onclick="toggleOddRange('${avg}')">
+                Promedio: <b style="color:var(--cyan)">${avg}</b>
+                <div style="font-size:0.7rem; color:var(--comment)">Haz clic para filtrar cuotas similares</div>
+            </div>
         `;
     }
 
