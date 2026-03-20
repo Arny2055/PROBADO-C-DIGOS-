@@ -146,7 +146,6 @@
             const fecha = cols[0];
             const minAlerta = parseInt(cols[1]);
             const evento = cols[2];
-            // Aseguramos que la cuota pegada se entienda como decimal (punto o coma)
             const oddAlerta = parseFloat(cols[5].replace(',', '.'));
             const stake = parseFloat(cols[6]?.replace(',', '.') || 1);
             const res = cols[7]?.trim().toLowerCase() === 'verde';
@@ -184,17 +183,27 @@
 
         if(type === 'min') item.minCierre = value;
         if(type === 'odd') {
-            // Reemplazamos coma por punto antes de convertir a número
             const cleanVal = value.replace(',', '.');
             const val = parseFloat(cleanVal);
-            item.oddCierre = value; // Guardamos lo que el usuario escribió (sea punto o coma)
+            item.oddCierre = value; 
             if(!isNaN(val)) {
                 item.profitOpt = item.res ? (item.stake * (val - 1)) : -item.stake;
             } else {
                 item.profitOpt = item.profitActual;
             }
+            
+            // Actualizar solo el profit de la celda específica sin redibujar tabla
+            const cell = document.getElementById(`opt-cell-${key}`);
+            if(cell) {
+                cell.innerText = item.profitOpt.toFixed(2) + "U";
+                cell.className = item.profitOpt > item.profitActual ? 'opt-highlight' : '';
+            }
         }
-        saveAndRender();
+        
+        // Guardar datos y actualizar totales/consejo sin redibujar el HTML de la tabla
+        localStorage.setItem('ega_backtesting_db', JSON.stringify(database));
+        calculateTotals();
+        updateGuruRecommendation();
     }
 
     function saveAndRender() {
@@ -218,7 +227,7 @@
                 <td><input type="text" value="${item.minCierre}" oninput="updateRow('${item.key}', 'min', this.value)"></td>
                 <td><input type="text" value="${item.oddCierre}" placeholder="---" oninput="updateRow('${item.key}', 'odd', this.value)"></td>
                 <td>${item.profitActual.toFixed(2)}U</td>
-                <td class="${item.profitOpt > item.profitActual ? 'opt-highlight' : ''}">${item.profitOpt.toFixed(2)}U</td>
+                <td id="opt-cell-${item.key}" class="${item.profitOpt > item.profitActual ? 'opt-highlight' : ''}">${item.profitOpt.toFixed(2)}U</td>
             `;
             tbody.appendChild(tr);
         });
@@ -226,9 +235,9 @@
     }
 
     function calculateTotals() {
-        const currentTotal = database.reduce((a, b) => a + b.profitActual, 0);
-        const optTotal = database.reduce((a, b) => a + b.profitOpt, 0);
-        const totalStake = database.reduce((a, b) => a + b.stake, 0);
+        const currentTotal = database.reduce((a, b) => a + (b.profitActual || 0), 0);
+        const optTotal = database.reduce((a, b) => a + (b.profitOpt || 0), 0);
+        const totalStake = database.reduce((a, b) => a + (b.stake || 0), 0);
         const diff = optTotal - currentTotal;
         const roi = totalStake > 0 ? (optTotal / totalStake * 100).toFixed(2) : 0;
 
@@ -240,11 +249,10 @@
     }
 
     function updateGuruRecommendation() {
-        const winsWithData = database.filter(i => i.res && i.minCierre && i.oddCierre);
+        const winsWithData = database.filter(i => i.res && i.minCierre && i.oddCierre && i.oddCierre !== "");
         if (winsWithData.length < 3) return;
 
         const avgMin = winsWithData.reduce((a, b) => a + parseInt(b.minCierre), 0) / winsWithData.length;
-        // Limpiamos las cuotas de posibles comas antes de promediar
         const avgOdd = winsWithData.reduce((a, b) => a + parseFloat(b.oddCierre.toString().replace(',', '.')), 0) / winsWithData.length;
 
         document.getElementById('rec-content').innerHTML = `
