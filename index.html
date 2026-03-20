@@ -56,6 +56,20 @@
         .stat-box b { font-size: 1.3rem; color: var(--cyan); }
 
         .opt-highlight { color: var(--green); font-weight: bold; }
+
+        /* Estilo para la Recomendación del Gurú */
+        .recommendation-card {
+            background: linear-gradient(45deg, #2b2b3b, #161621);
+            border: 1px dashed var(--yellow);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .rec-icon { font-size: 2rem; }
+        .rec-text b { color: var(--yellow); }
     </style>
 </head>
 <body>
@@ -63,6 +77,14 @@
 <div class="container">
     <button class="btn-clear" onclick="clearDatabase()">🗑️ BORRAR MEMORIA</button>
     <h1>🚀 E.G.A - Backtesting & Optimization</h1>
+
+    <div class="recommendation-card" id="guru-rec">
+        <div class="rec-icon">🎯</div>
+        <div class="rec-text">
+            <h4 style="margin:0; color:var(--yellow)">CONSEJO DEL GURÚ:</h4>
+            <div id="rec-content">Sincroniza datos para recibir tu estrategia optimizada.</div>
+        </div>
+    </div>
 
     <div class="card">
         <h3>📥 Entrada de Datos (Nuevos o Historial)</h3>
@@ -80,7 +102,7 @@
     <div class="card">
         <h3>🧪 Laboratorio de Cuotas: Análisis de Cierre HT</h3>
         <p style="font-size: 11px; color: var(--comment); margin-top: -10px;">
-            * Los datos se guardan automáticamente. Solo añade el <b>Minuto y Cuota de Cierre</b> en los nuevos partidos.
+            * Los datos se guardan automáticamente. La cuota de cierre ahora permite decimales (ej: 1.85).
         </p>
         <div class="table-wrapper">
             <table id="optimization-table">
@@ -103,10 +125,8 @@
 </div>
 
 <script>
-    // Cargar base de datos desde el almacenamiento local al iniciar
     let database = JSON.parse(localStorage.getItem('ega_backtesting_db')) || [];
 
-    // Mostrar datos guardados al cargar la página
     window.onload = () => {
         if (database.length > 0) renderTable();
     };
@@ -129,14 +149,10 @@
             const res = cols[7]?.trim().toLowerCase() === 'verde';
             const profitActual = res ? (stake * (oddAlerta - 1)) : -stake;
 
-            // Creamos una llave única para no duplicar (Fecha + Evento + Minuto)
             const uniqueKey = `${fecha}_${evento}_${minAlerta}`;
-
-            // Verificamos si ya existe en la base de datos
             const existingIndex = database.findIndex(item => item.key === uniqueKey);
 
             if (existingIndex === -1) {
-                // Si no existe, lo agregamos como nuevo
                 database.push({
                     key: uniqueKey,
                     fecha,
@@ -146,19 +162,17 @@
                     stake,
                     res,
                     profitActual,
-                    minCierre: res ? '' : '45', // Por defecto 45 si es rojo
+                    minCierre: res ? '' : '45',
                     oddCierre: '',
                     profitOpt: profitActual
                 });
             } else {
-                // Si ya existe, actualizamos solo los datos básicos por si cambiaron (profit, etc)
-                // Pero NO tocamos minCierre ni oddCierre porque ya los trabajó el usuario
                 database[existingIndex].profitActual = profitActual;
             }
         });
 
         saveAndRender();
-        document.getElementById('raw-data').value = ''; // Limpiar para la próxima pegada
+        document.getElementById('raw-data').value = '';
     }
 
     function updateRow(key, type, value) {
@@ -181,13 +195,12 @@
     function saveAndRender() {
         localStorage.setItem('ega_backtesting_db', JSON.stringify(database));
         renderTable();
+        updateGuruRecommendation();
     }
 
     function renderTable() {
         const tbody = document.querySelector('#optimization-table tbody');
         tbody.innerHTML = '';
-
-        // Ordenar por fecha (más reciente arriba)
         const sortedDb = [...database].reverse();
 
         sortedDb.forEach((item) => {
@@ -198,7 +211,7 @@
                 <td>${item.minAlerta}'</td>
                 <td style="color: ${item.res ? 'var(--green)' : 'var(--red)'}; font-weight:bold">${item.res ? 'WIN' : 'LOSS'}</td>
                 <td><input type="number" value="${item.minCierre}" oninput="updateRow('${item.key}', 'min', this.value)"></td>
-                <td><input type="number" step="0.01" value="${item.oddCierre}" placeholder="---" oninput="updateRow('${item.key}', 'odd', this.value)"></td>
+                <td><input type="number" step="any" value="${item.oddCierre}" placeholder="---" oninput="updateRow('${item.key}', 'odd', this.value)"></td>
                 <td>${item.profitActual.toFixed(2)}U</td>
                 <td class="${item.profitOpt > item.profitActual ? 'opt-highlight' : ''}">${item.profitOpt.toFixed(2)}U</td>
             `;
@@ -221,11 +234,27 @@
         document.getElementById('diff-profit').style.color = diff > 0 ? 'var(--green)' : 'var(--red)';
     }
 
+    function updateGuruRecommendation() {
+        const winsWithData = database.filter(i => i.res && i.minCierre && i.oddCierre);
+        if (winsWithData.length < 3) return;
+
+        // Calcular minuto promedio de gol
+        const avgMin = winsWithData.reduce((a, b) => a + parseInt(b.minCierre), 0) / winsWithData.length;
+        // Calcular cuota promedio de gol
+        const avgOdd = winsWithData.reduce((a, b) => a + parseFloat(b.oddCierre), 0) / winsWithData.length;
+
+        document.getElementById('rec-content').innerHTML = `
+            Basado en tus aciertos, el gol suele caer al minuto <b>${Math.round(avgMin)}'</b>. 
+            Te sugiero buscar una entrada promedio a cuota <b>${avgOdd.toFixed(2)}</b> para maximizar tu profit.
+        `;
+    }
+
     function clearDatabase() {
         if(confirm("⚠️ ¿Seguro que quieres borrar todo el historial guardado?")) {
             database = [];
             localStorage.removeItem('ega_backtesting_db');
             renderTable();
+            document.getElementById('rec-content').innerText = "Sincroniza datos para recibir tu estrategia optimizada.";
         }
     }
 </script>
