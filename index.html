@@ -52,6 +52,7 @@
         .badge { padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; }
         .bg-green { background: var(--green); color: var(--bg); }
         .bg-cyan { background: var(--cyan); color: var(--bg); }
+        .bg-purple { background: var(--purple); color: var(--fg); }
 
         .btn-analyze { background: var(--green); color: var(--bg); border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; font-size: 1.1rem; }
         .btn-analyze:hover { filter: brightness(1.1); }
@@ -65,6 +66,18 @@
         .stat-box b { font-size: 1.4rem; color: var(--cyan); }
 
         .top-row { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
+
+        .global-insight {
+            background: rgba(189, 147, 249, 0.05);
+            border-left: 4px solid var(--purple);
+            padding: 15px;
+            margin-bottom: 15px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .insight-box h4 { margin: 0 0 5px 0; font-size: 0.75rem; color: var(--comment); }
+        .insight-box div { font-size: 0.85rem; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -89,6 +102,24 @@
                 <div class="stat-box"><span>Yield</span><b>0%</b></div>
             </div>
             <div style="height: 180px;"><canvas id="mainProfitChart"></canvas></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>🌍 Análisis Global Estratégico</h3>
+        <div id="global-insights" class="global-insight">
+            <div class="insight-box">
+                <h4>⏱️ Minutos de Oro (Global)</h4>
+                <div id="glob-min">--</div>
+            </div>
+            <div class="insight-box">
+                <h4>⚽ Equipos Top (Global)</h4>
+                <div id="glob-team">--</div>
+            </div>
+            <div class="insight-box">
+                <h4>🎯 Cuotas Ideales</h4>
+                <div id="glob-odds">--</div>
+            </div>
         </div>
     </div>
 
@@ -151,6 +182,7 @@
         leagueData = {};
         renderLeagueTable();
         renderGeneralStats();
+        renderGlobalInsights();
         document.getElementById('detail-panel').style.display = 'none';
         document.getElementById('no-selection').style.display = 'block';
     }
@@ -198,6 +230,33 @@
 
         renderLeagueTable();
         renderGeneralStats();
+        renderGlobalInsights();
+    }
+
+    function renderGlobalInsights() {
+        if(rawDatabase.length === 0) {
+            document.getElementById('glob-min').innerText = '--';
+            document.getElementById('glob-team').innerText = '--';
+            document.getElementById('glob-odds').innerText = '--';
+            return;
+        }
+
+        // Minutos Globales
+        const mins = {};
+        rawDatabase.forEach(r => mins[r.minuto] = (mins[r.minuto] || 0) + r.profit);
+        const topMins = Object.entries(mins).sort((a,b) => b[1] - a[1]).slice(0, 3);
+        document.getElementById('glob-min').innerHTML = topMins.map(m => `<span class="badge bg-purple">${m[0]}</span>`).join(' ');
+
+        // Equipos Globales
+        const teams = {};
+        rawDatabase.forEach(r => teams[r.evento] = (teams[r.evento] || 0) + r.profit);
+        const topTeams = Object.entries(teams).sort((a,b) => b[1] - a[1]).slice(0, 2);
+        document.getElementById('glob-team').innerHTML = topTeams.map(t => `<div style="color:var(--green)">${t[0].substring(0, 20)}</div>`).join('');
+
+        // Cuotas Globales
+        const odds = rawDatabase.map(r => r.odd);
+        const avg = (odds.reduce((a,b) => a + b, 0) / odds.length).toFixed(2);
+        document.getElementById('glob-odds').innerHTML = `Promedio: <b style="color:var(--cyan)">${avg}</b>`;
     }
 
     function renderGeneralStats() {
