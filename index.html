@@ -29,9 +29,7 @@
         
         textarea { width: 100%; height: 100px; background: #161621; color: var(--green); border: 1px solid var(--purple); border-radius: 8px; padding: 10px; font-family: 'Fira Code', monospace; font-size: 11px; box-sizing: border-box; }
 
-        .grid-main { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        
-        .table-wrapper { overflow-y: auto; max-height: 450px; background: #161621; border-radius: 8px; }
+        .table-wrapper { overflow-y: auto; max-height: 500px; background: #161621; border-radius: 8px; }
         table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
         th { background: var(--purple); color: var(--bg); padding: 10px; position: sticky; top: 0; text-align: left; z-index: 10; }
         td { padding: 8px 10px; border-bottom: 1px solid var(--current-line); }
@@ -42,7 +40,7 @@
             color: var(--cyan);
             border: 1px solid var(--comment);
             border-radius: 4px;
-            width: 60px;
+            width: 65px;
             padding: 4px;
             font-family: 'Fira Code', monospace;
         }
@@ -50,24 +48,26 @@
         .btn-analyze { background: var(--green); color: var(--bg); border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; font-size: 1.1rem; }
         .btn-analyze:hover { filter: brightness(1.1); }
         
+        .btn-clear { background: transparent; color: var(--red); border: 1px solid var(--red); padding: 5px 15px; border-radius: 6px; cursor: pointer; float: right; font-size: 0.7rem; }
+
         .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
         .stat-box { background: #161621; padding: 15px; border-radius: 10px; text-align: center; border-bottom: 3px solid var(--purple); }
         .stat-box span { display: block; font-size: 10px; color: var(--comment); text-transform: uppercase; }
         .stat-box b { font-size: 1.3rem; color: var(--cyan); }
 
         .opt-highlight { color: var(--green); font-weight: bold; }
-        .loss-highlight { color: var(--red); font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <button class="btn-clear" onclick="clearDatabase()">🗑️ BORRAR MEMORIA</button>
     <h1>🚀 E.G.A - Backtesting & Optimization</h1>
 
     <div class="card">
-        <h3>📥 Entrada de Datos (Paste de Telegram/Excel)</h3>
-        <textarea id="raw-data" placeholder="Pega los datos aquí (Minuto | Evento | Liga | Cuota | Stake | Resultado)..."></textarea>
-        <button class="btn-analyze" onclick="processData()">⚡ GENERAR TABLA DE OPTIMIZACIÓN</button>
+        <h3>📥 Entrada de Datos (Nuevos o Historial)</h3>
+        <textarea id="raw-data" placeholder="Pega los datos aquí (Fecha | Minuto | Evento | Liga | Mercado | Odd | Stake | Resultado)..."></textarea>
+        <button class="btn-analyze" onclick="processData()">⚡ SINCRONIZAR Y ANALIZAR</button>
     </div>
 
     <div class="stats-grid" id="optimization-stats">
@@ -80,46 +80,48 @@
     <div class="card">
         <h3>🧪 Laboratorio de Cuotas: Análisis de Cierre HT</h3>
         <p style="font-size: 11px; color: var(--comment); margin-top: -10px;">
-            * Completa el <b>Minuto de Cierre</b> (minuto del gol o 45 si no hubo) y la <b>Cuota de Cierre</b> para ver la mejora de ROI.
+            * Los datos se guardan automáticamente. Solo añade el <b>Minuto y Cuota de Cierre</b> en los nuevos partidos.
         </p>
         <div class="table-wrapper">
             <table id="optimization-table">
                 <thead>
                     <tr>
+                        <th>Fecha</th>
                         <th>Evento</th>
                         <th>Min. Alerta</th>
-                        <th>Cuota Alerta</th>
                         <th>Resultado</th>
                         <th>Min. Cierre (Gol/45)</th>
                         <th>Cuota Cierre</th>
                         <th>Profit Actual</th>
-                        <th>Profit Optimizado</th>
+                        <th>Profit Opt.</th>
                     </tr>
                 </thead>
-                <tbody>
-                    </tbody>
+                <tbody></tbody>
             </table>
         </div>
     </div>
 </div>
 
 <script>
-    let database = [];
+    // Cargar base de datos desde el almacenamiento local al iniciar
+    let database = JSON.parse(localStorage.getItem('ega_backtesting_db')) || [];
+
+    // Mostrar datos guardados al cargar la página
+    window.onload = () => {
+        if (database.length > 0) renderTable();
+    };
 
     function processData() {
         const text = document.getElementById('raw-data').value.trim();
         if(!text) return alert("Pega los datos para analizar.");
         
         const lines = text.split('\n');
-        database = [];
-        const tbody = document.querySelector('#optimization-table tbody');
-        tbody.innerHTML = '';
-
-        lines.forEach((line, index) => {
+        
+        lines.forEach((line) => {
             const cols = line.split('\t');
-            if(cols.length < 6) return;
+            if(cols.length < 8) return;
 
-            // Limpieza de datos básica
+            const fecha = cols[0];
             const minAlerta = parseInt(cols[1]);
             const evento = cols[2];
             const oddAlerta = parseFloat(cols[5].replace(',', '.'));
@@ -127,37 +129,81 @@
             const res = cols[7]?.trim().toLowerCase() === 'verde';
             const profitActual = res ? (stake * (oddAlerta - 1)) : -stake;
 
-            const entry = { id: index, evento, minAlerta, oddAlerta, stake, res, profitActual, profitOpt: profitActual };
-            database.push(entry);
+            // Creamos una llave única para no duplicar (Fecha + Evento + Minuto)
+            const uniqueKey = `${fecha}_${evento}_${minAlerta}`;
 
+            // Verificamos si ya existe en la base de datos
+            const existingIndex = database.findIndex(item => item.key === uniqueKey);
+
+            if (existingIndex === -1) {
+                // Si no existe, lo agregamos como nuevo
+                database.push({
+                    key: uniqueKey,
+                    fecha,
+                    evento,
+                    minAlerta,
+                    oddAlerta,
+                    stake,
+                    res,
+                    profitActual,
+                    minCierre: res ? '' : '45', // Por defecto 45 si es rojo
+                    oddCierre: '',
+                    profitOpt: profitActual
+                });
+            } else {
+                // Si ya existe, actualizamos solo los datos básicos por si cambiaron (profit, etc)
+                // Pero NO tocamos minCierre ni oddCierre porque ya los trabajó el usuario
+                database[existingIndex].profitActual = profitActual;
+            }
+        });
+
+        saveAndRender();
+        document.getElementById('raw-data').value = ''; // Limpiar para la próxima pegada
+    }
+
+    function updateRow(key, type, value) {
+        const item = database.find(i => i.key === key);
+        if(!item) return;
+
+        if(type === 'min') item.minCierre = value;
+        if(type === 'odd') {
+            const val = parseFloat(value);
+            item.oddCierre = value;
+            if(!isNaN(val)) {
+                item.profitOpt = item.res ? (item.stake * (val - 1)) : -item.stake;
+            } else {
+                item.profitOpt = item.profitActual;
+            }
+        }
+        saveAndRender();
+    }
+
+    function saveAndRender() {
+        localStorage.setItem('ega_backtesting_db', JSON.stringify(database));
+        renderTable();
+    }
+
+    function renderTable() {
+        const tbody = document.querySelector('#optimization-table tbody');
+        tbody.innerHTML = '';
+
+        // Ordenar por fecha (más reciente arriba)
+        const sortedDb = [...database].reverse();
+
+        sortedDb.forEach((item) => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>${evento.substring(0,20)}</td>
-                <td>${minAlerta}'</td>
-                <td>${oddAlerta.toFixed(2)}</td>
-                <td style="color: ${res ? 'var(--green)' : 'var(--red)'}">${res ? 'WIN' : 'LOSS'}</td>
-                <td><input type="number" value="${res ? '' : '45'}" oninput="updateRow(${index}, 'min', this.value)"></td>
-                <td><input type="number" step="0.01" placeholder="Ej: 1.90" oninput="updateRow(${index}, 'odd', this.value)"></td>
-                <td class="curr-p">${profitActual.toFixed(2)}U</td>
-                <td class="opt-p" id="opt-${index}">${profitActual.toFixed(2)}U</td>
+                <td style="font-size: 9px; color: var(--comment)">${item.fecha}</td>
+                <td>${item.evento.substring(0,25)}</td>
+                <td>${item.minAlerta}'</td>
+                <td style="color: ${item.res ? 'var(--green)' : 'var(--red)'}; font-weight:bold">${item.res ? 'WIN' : 'LOSS'}</td>
+                <td><input type="number" value="${item.minCierre}" oninput="updateRow('${item.key}', 'min', this.value)"></td>
+                <td><input type="number" step="0.01" value="${item.oddCierre}" placeholder="---" oninput="updateRow('${item.key}', 'odd', this.value)"></td>
+                <td>${item.profitActual.toFixed(2)}U</td>
+                <td class="${item.profitOpt > item.profitActual ? 'opt-highlight' : ''}">${item.profitOpt.toFixed(2)}U</td>
             `;
             tbody.appendChild(tr);
         });
-        calculateTotals();
-    }
-
-    function updateRow(id, type, value) {
-        const val = parseFloat(value);
-        if(isNaN(val)) return;
-
-        const item = database[id];
-        if(type === 'odd') {
-            // Si hubo gol (WIN), calculamos el profit con la cuota de cierre
-            // Si no hubo gol (LOSS), el profit sigue siendo -stake
-            item.profitOpt = item.res ? (item.stake * (val - 1)) : -item.stake;
-            document.getElementById(`opt-${id}`).innerText = item.profitOpt.toFixed(2) + "U";
-            document.getElementById(`opt-${id}`).className = item.profitOpt > item.profitActual ? 'opt-highlight' : '';
-        }
         calculateTotals();
     }
 
@@ -172,8 +218,15 @@
         document.getElementById('opt-profit').innerText = optTotal.toFixed(2) + "U";
         document.getElementById('diff-profit').innerText = (diff >= 0 ? "+" : "") + diff.toFixed(2) + "U";
         document.getElementById('proj-roi').innerText = roi + "%";
-        
         document.getElementById('diff-profit').style.color = diff > 0 ? 'var(--green)' : 'var(--red)';
+    }
+
+    function clearDatabase() {
+        if(confirm("⚠️ ¿Seguro que quieres borrar todo el historial guardado?")) {
+            database = [];
+            localStorage.removeItem('ega_backtesting_db');
+            renderTable();
+        }
     }
 </script>
 
