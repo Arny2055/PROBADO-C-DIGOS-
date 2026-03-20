@@ -55,6 +55,9 @@
 
         .btn-analyze { background: var(--green); color: var(--bg); border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; font-size: 1.1rem; }
         .btn-analyze:hover { filter: brightness(1.1); }
+        
+        .btn-clear { background: transparent; color: var(--red); border: 1px solid var(--red); padding: 8px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; font-size: 0.9rem; transition: all 0.2s; }
+        .btn-clear:hover { background: var(--red); color: white; }
 
         .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
         .stat-box { background: var(--current-line); padding: 15px; border-radius: 10px; text-align: center; border-bottom: 3px solid var(--purple); }
@@ -72,17 +75,9 @@
     <div class="top-row">
         <div class="card">
             <h3>📥 Entrada de Datos</h3>
-            <textarea id="raw-data" placeholder="Pega los datos aquí...">
-Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
-3/18/26 17:30	14'	Dvo. La Guaira x Caracas	Venezuela Primera Division	Gol	1.61	1	verde
-3/18/26 17:20	14'	Millonarios x Junior	Colombia Liga BetPlay	Gol	1.62	1.5	verde
-3/18/26 16:00	17'	Independencia x Rio Branco	Brazil Acreano	Gol	1.60	0.5	verde
-3/18/26 15:00	14'	Juventus SP x Oeste	Brazil Paulista A2	Gol	1.65	1	rojo
-3/18/26 14:00	15'	Metapan x Aguila	El Salvador Reserve League	Gol	1.60	2	verde
-3/18/26 14:00	17'	Bayern x Arsenal	UEFA Champions League	Gol	1.60	1	verde
-3/18/26 14:00	24'	Man City x Real Madrid	UEFA Champions League	Gol	1.60	1	verde
-3/18/26 13:45	14'	Glasgow City x Hearts	Scotland SWPL 1	Gol	1.60	0.5	rojo</textarea>
+            <textarea id="raw-data" placeholder="Pega los datos aquí (Fecha | Minuto | Evento | Liga | Mercado | Odd | Stake | Resultado)..."></textarea>
             <button class="btn-analyze" onclick="processData()">⚡ ANALIZAR ESTRATEGIA</button>
+            <button class="btn-clear" onclick="clearAllData()">🧹 LIMPIAR TODO</button>
         </div>
 
         <div class="card">
@@ -149,10 +144,24 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
 <script>
     let rawDatabase = [];
     let leagueData = {};
-    let charts = {};
+
+    function clearAllData() {
+        document.getElementById('raw-data').value = '';
+        rawDatabase = [];
+        leagueData = {};
+        renderLeagueTable();
+        renderGeneralStats();
+        document.getElementById('detail-panel').style.display = 'none';
+        document.getElementById('no-selection').style.display = 'block';
+    }
 
     function processData() {
         const text = document.getElementById('raw-data').value.trim();
+        if(!text) {
+            alert("⚠️ Coño, pega algunos datos primero.");
+            return;
+        }
+        
         const lines = text.split('\n');
         rawDatabase = [];
         leagueData = {};
@@ -234,7 +243,6 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
         const data = leagueData[leagueName];
         document.getElementById('det-league-name').innerText = leagueName;
 
-        // 1. Equipos más rentables
         const teams = {};
         data.items.forEach(i => {
             teams[i.evento] = (teams[i.evento] || 0) + i.profit;
@@ -244,7 +252,6 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             `<div><span class="badge ${t[1] >= 0 ? 'bg-green' : ''}">${t[1].toFixed(2)}U</span> ${t[0]}</div>`
         ).join('');
 
-        // 2. Minutos más rentables
         const mins = {};
         data.items.forEach(i => {
             mins[i.minuto] = (mins[i.minuto] || 0) + i.profit;
@@ -254,7 +261,6 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             `<div><span class="badge bg-cyan">${m[0]}</span> Profit: <b>${m[1].toFixed(2)}U</b></div>`
         ).join('');
 
-        // 3. Rango de Cuotas
         const odds = data.items.map(i => i.odd);
         const minOdd = Math.min(...odds).toFixed(2);
         const maxOdd = Math.max(...odds).toFixed(2);
@@ -265,9 +271,6 @@ Fecha	Minuto	Evento	Liga	Mercado	Odd	Stake	Resultado
             El promedio de entrada es cuota <b style="color:var(--cyan)">${avgOdd}</b>.
         `;
     }
-
-    // Inicialización
-    window.onload = processData;
 </script>
 
 </body>
