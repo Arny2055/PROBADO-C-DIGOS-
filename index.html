@@ -70,7 +70,7 @@
         <div class="stat-card"><h3>Picks</h3><p id="stat-total">0</p></div>
         <div class="stat-card"><h3>Efectividad</h3><p id="stat-accuracy">0%</p></div>
         <div class="stat-card"><h3>Profit (u)</h3><p id="stat-profit">0.00</p></div>
-        <div class="stat-card)<h3>Yield</h3><p id="stat-yield">0%</p></div>
+        <div class="stat-card"><h3>Yield</h3><p id="stat-yield">0%</p></div>
     </div>
     
     <div class="config-section">
@@ -126,70 +126,89 @@
         if(wins.length >= 3) {
             currentBestPatterns.min = wins.reduce((s, x) => s + x.minuto, 0) / wins.length;
             const avgProb = wins.reduce((s, x) => s + x.probHT, 0) / wins.length;
-            currentBestPatterns.prob = avgProb > 75 ? 75 : avgProb;
+            currentBestPatterns.prob = avgProb > 70 ? 75 : avgProb;
         }
     }
 
     function parseAlert(text) {
         const get = (regex, index = 1) => { 
             const m = text.match(regex); 
-            return m ? m[index].trim() : '0'; 
+            return m ? m[index].trim() : 'N/A'; 
         };
 
-        return {
-            partido: get(/Game: (.*?)\n/),
-            liga: get(/🏆 League: (.*?)\n/),
-            minuto: parseInt(get(/🕛 Time: (\d+)/)) || 0,
-            ap: get(/⚔ Dangerous Attacks: (\d+ - \d+)/),
-            ap5: get(/Last 5': (.*?) /),
-            ap10: get(/Last 10': (.*?) /),
-            corners: get(/⛳ Corners: (\d+ - \d+)/),
-            pos: parseInt(get(/⚖ Possession: (\d+)/)) || 0,
-            son: get(/🥅 Shots on: (\d+ - \d+)/),
-            soff: get(/➡ Shots off: (\d+ - \d+)/),
-            heatmap: get(/heatmapFull:(.*?)\n/),
-            probHT: parseInt(get(/Medio Tiempo:(\d+)/)) || 0,
-            cuota: parseFloat(get(/Goal Live Line Odd:([\d.]+)/)) || 1.60
-        };
+        // Extracción flexible para soportar variaciones en el texto
+        const partido = get(/Game: (.*?)\n/);
+        const liga = get(/🏆 League: (.*?)\n/);
+        const minuto = parseInt(get(/🕛 Time: (\d+)/)) || 0;
+        const ap = get(/⚔ Dangerous Attacks: (\d+ - \d+)/);
+        const ap5 = get(/Last 5': ([\d. ]+)/);
+        const ap10 = get(/Last 10': ([\d. ]+)/);
+        const corners = get(/⛳ Corners: (\d+ - \d+)/);
+        const pos = parseInt(get(/⚖ Possession: (\d+)/)) || 0;
+        const son = get(/🥅 Shots on: (\d+ - \d+)/);
+        const soff = get(/➡ Shots off: (\d+ - \d+)/);
+        const heatmap = get(/heatmapFull:(.*?)(?:\n|$)/);
+        const probHT = parseInt(get(/Medio Tiempo:(\d+)/)) || 0;
+        const cuota = parseFloat(get(/Goal Live Line Odd:([\d.]+)/)) || 1.60;
+
+        return { partido, liga, minuto, ap, ap5, ap10, corners, pos, son, soff, heatmap, probHT, cuota };
     }
 
     async function fetchMessages() {
         const token = document.getElementById('botToken').value;
-        if(!token) return alert("Falta Token");
+        if(!token) return alert("Falta Token del Bot");
+        
         try {
             const res = await fetch(`https://api.telegram.org/bot${token}/getUpdates`);
             const data = await res.json();
+            
             if (data.ok && data.result.length > 0) {
+                let nuevos = 0;
                 data.result.forEach(item => {
                     const msg = item.channel_post || item.message;
                     if(msg && msg.text && !db.find(x => x.id === msg.message_id)) {
                         const info = parseAlert(msg.text);
-                        db.unshift({
-                            id: msg.message_id,
-                            fecha: new Date(msg.date * 1000).toLocaleString('es-MX'),
-                            ...info,
-                            status: 'PENDIENTE',
-                            profit: 0
-                        });
+                        // Solo agregamos si logramos parsear al menos el nombre del partido
+                        if(info.partido !== 'N/A') {
+                            db.unshift({
+                                id: msg.message_id,
+                                fecha: new Date(msg.date * 1000).toLocaleString('es-MX'),
+                                ...info,
+                                status: 'PENDIENTE',
+                                profit: 0
+                            });
+                            nuevos++;
+                        }
                     }
                 });
-                updateGlobalPatterns();
-                saveDB();
-                const lastId = data.result[data.result.length - 1].update_id;
-                fetch(`https://api.telegram.org/bot${token}/getUpdates?offset=${lastId + 1}`);
+                
+                if(nuevos > 0) {
+                    updateGlobalPatterns();
+                    saveDB();
+                    alert(`Se cargaron ${nuevos} nuevas alertas.`);
+                } else {
+                    alert("No hay alertas nuevas en el canal.");
+                }
+
+                const lastUpdateId = data.result[data.result.length - 1].update_id;
+                fetch(`https://api.telegram.org/bot${token}/getUpdates?offset=${lastUpdateId + 1}`);
+            } else {
+                alert("No se recibieron mensajes nuevos de la API.");
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { 
+            console.error(e); 
+            alert("Error al conectar con Telegram. Revisa el Token.");
+        }
     }
 
     function render() {
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
         db.forEach((d, i) => {
-            // LÓGICA DE APUESTA REAL BASADA EN PATRONES
             const isIdeal = (d.status === 'PENDIENTE') && 
                             (d.probHT >= currentBestPatterns.prob) && 
                             (d.pos >= currentBestPatterns.pos) &&
-                            (d.minuto >= currentBestPatterns.min - 3);
+                            (d.minuto >= currentBestPatterns.min - 5);
 
             tbody.innerHTML += `
                 <tr class="${isIdeal ? 'recommended-row' : ''}">
@@ -199,7 +218,7 @@
                         ${isIdeal ? '<span class="badge-real">🔥 APUESTA REAL</span>' : ''}
                     </td>
                     <td class="data-hl">${d.minuto}'</td>
-                    <td><span class="win">${d.ap5}</span> / ${d.ap10}<br><span class="small-text">Total: ${d.ap}</span></td>
+                    <td>L5: <span class="win">${d.ap5}</span><br>L10: ${d.ap10}</td>
                     <td>${d.corners}</td>
                     <td>${d.pos}%</td>
                     <td>${d.son} / ${d.soff}</td>
@@ -226,7 +245,7 @@
         modal.style.display = 'block';
         
         if(resolved.length < 3) {
-            resultsDiv.innerHTML = '<p>Se necesitan al menos 3 picks resueltos para calcular tendencias reales.</p>';
+            resultsDiv.innerHTML = '<p>Se necesitan al menos 3 picks resueltos para analizar patrones de éxito.</p>';
             return;
         }
 
@@ -234,9 +253,9 @@
         const effHT = ((wins.filter(x => x.probHT >= 80).length / (resolved.filter(x => x.probHT >= 80).length || 1)) * 100).toFixed(1);
 
         resultsDiv.innerHTML = `
-            <div class="pattern-item"><strong>🎯 Filtro El Gurú:</strong> Buscando picks con >${currentBestPatterns.prob}% HT y min ${currentBestPatterns.min.toFixed(0)}.</div>
-            <div class="pattern-item"><strong>🔥 Efectividad con HT 80%+:</strong> ${effHT}% de éxito detectado.</div>
-            <div class="pattern-item"><strong>📊 Stats Promedio WINs:</strong> Los verdes suelen tener más de 50% posesión.</div>
+            <div class="pattern-item"><strong>🎯 Algoritmo El Gurú:</strong> Filtrando por >${currentBestPatterns.prob}% HT Prob.</div>
+            <div class="pattern-item"><strong>🔥 Win Rate en Alertas Top:</strong> ${effHT}% en picks de HT 80%+.</div>
+            <div class="pattern-item"><strong>🕒 Timing Ideal:</strong> Los aciertos se concentran a partir del minuto ${currentBestPatterns.min.toFixed(0)}.</div>
         `;
     }
 
@@ -267,14 +286,15 @@
 
     function closeAnalysis() { document.getElementById('analysisModal').style.display = 'none'; }
     function deleteRow(i) { db.splice(i, 1); saveDB(); }
-    function clearData() { if(confirm("¿Borrar historial?")) { db = []; saveDB(); } }
+    function clearData() { if(confirm("¿Borrar historial de backtesting?")) { db = []; saveDB(); } }
+    
     function exportCSV() {
-        let csv = "Fecha,Partido,Liga,Min,AP_L5,Posesion,HT_Prob,Cuota,Status,Profit\n";
-        db.forEach(d => { csv += `"${d.fecha}","${d.partido}","${d.liga}",${d.minuto},"${d.ap5}",${d.pos},${d.probHT},${d.cuota},${d.status},${d.profit}\n`; });
+        let csv = "Fecha,Partido,Liga,Min,Posesion,HT_Prob,Cuota,Status,Profit\n";
+        db.forEach(d => { csv += `"${d.fecha}","${d.partido}","${d.liga}",${d.minuto},${d.pos},${d.probHT},${d.cuota},${d.status},${d.profit}\n`; });
         const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", "Backtesting_Guru_AI.csv");
+        link.setAttribute("download", "Guru_Analytics_Export.csv");
         link.click();
     }
 </script>
