@@ -19,7 +19,7 @@
         .stat-card p { margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: var(--primary); }
 
         .config-section { 
-            display: grid; grid-template-columns: 1fr 1fr auto auto auto auto; gap: 10px; 
+            display: grid; grid-template-columns: 1fr 1fr auto auto auto auto auto; gap: 10px; 
             margin-bottom: 20px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px;
         }
         input, select { background: #0f172a; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 5px; }
@@ -68,7 +68,7 @@
     <h1>Estrategia Live: HT Goal Tracker Pro</h1>
 
     <div class="stats-grid">
-        <div class="stat-card"><h3>Picks</h3><p id="stat-total">0</p></div>
+        <div class="stat-card"><h3>Picks Totales</h3><p id="stat-total">0</p></div>
         <div class="stat-card"><h3>Efectividad</h3><p id="stat-accuracy">0%</p></div>
         <div class="stat-card"><h3>Profit (u)</h3><p id="stat-profit">0.00</p></div>
         <div class="stat-card"><h3>Yield</h3><p id="stat-yield">0%</p></div>
@@ -79,6 +79,7 @@
         <input type="text" id="chatId" placeholder="ID Canal" oninput="saveConfig()">
         <button class="btn-load" onclick="fetchMessages()">Cargar Alertas</button>
         <button class="btn-analyze" onclick="analyzePatterns()">Ver Análisis</button>
+        <a href="apuestasreales.html" style="text-decoration: none;"><button style="background:var(--accent); color:black">Ver Apuestas Reales 🔥</button></a>
         <button style="background:var(--success);color:white" onclick="exportCSV()">CSV</button>
         <button style="background:var(--danger);color:white" onclick="clearData()">Reset</button>
     </div>
@@ -107,7 +108,6 @@
 
 <script>
     let db = JSON.parse(localStorage.getItem('cornerpro_db')) || [];
-    // Umbrales base para el entrenamiento
     let currentBestPatterns = { min: 25, prob: 80, pos: 52 };
     const MIN_TRAINING_SAMPLES = 30;
 
@@ -127,8 +127,6 @@
     function updateGlobalPatterns() {
         const settled = db.filter(x => x.status !== 'PENDIENTE');
         const wins = settled.filter(x => x.status === 'WIN');
-        
-        // Solo recalcular patrones si ya pasamos la fase de entrenamiento
         if(wins.length >= 5) {
             currentBestPatterns.min = wins.reduce((s, x) => s + x.minuto, 0) / wins.length;
             const avgProb = wins.reduce((s, x) => s + x.probHT, 0) / wins.length;
@@ -141,7 +139,6 @@
             const m = text.match(regex); 
             return m ? m[index].trim() : 'N/A'; 
         };
-
         const partido = get(/Game: (.*?)\n/);
         const liga = get(/🏆 League: (.*?)\n/);
         const minuto = parseInt(get(/🕛 Time: (\d+)/)) || 0;
@@ -162,11 +159,9 @@
     async function fetchMessages() {
         const token = document.getElementById('botToken').value;
         if(!token) return alert("Falta Token del Bot");
-        
         try {
             const res = await fetch(`https://api.telegram.org/bot${token}/getUpdates`);
             const data = await res.json();
-            
             if (data.ok && data.result.length > 0) {
                 let nuevos = 0;
                 data.result.forEach(item => {
@@ -174,53 +169,62 @@
                     if(msg && msg.text && !db.find(x => x.id === msg.message_id)) {
                         const info = parseAlert(msg.text);
                         if(info.partido !== 'N/A') {
-                            db.unshift({
+                            const newPick = {
                                 id: msg.message_id,
                                 fecha: new Date(msg.date * 1000).toLocaleString('es-MX'),
                                 ...info,
                                 status: 'PENDIENTE',
-                                profit: 0
-                            });
+                                profit: 0,
+                                sentToReal: false
+                            };
+                            db.unshift(newPick);
                             nuevos++;
                         }
                     }
                 });
-                
                 if(nuevos > 0) {
                     updateGlobalPatterns();
                     saveDB();
-                    alert(`Se cargaron ${nuevos} alertas.`);
-                } else {
-                    alert("No hay alertas nuevas.");
                 }
-
                 const lastUpdateId = data.result[data.result.length - 1].update_id;
                 fetch(`https://api.telegram.org/bot${token}/getUpdates?offset=${lastUpdateId + 1}`);
             }
         } catch (e) { console.error(e); }
     }
 
+    function sendToRealBets(pick) {
+        let realBets = JSON.parse(localStorage.getItem('cornerpro_real_bets')) || [];
+        if (!realBets.find(x => x.id === pick.id)) {
+            realBets.unshift({...pick, status: 'PENDIENTE'});
+            localStorage.setItem('cornerpro_real_bets', JSON.stringify(realBets));
+        }
+    }
+
     function render() {
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
-        
         const settledCount = db.filter(x => x.status !== 'PENDIENTE').length;
         const isTrained = settledCount >= MIN_TRAINING_SAMPLES;
 
         db.forEach((d, i) => {
-            // Lógica de recomendación: Solo si el sistema está entrenado y cumple parámetros
             const meetsCriteria = (d.probHT >= currentBestPatterns.prob) && 
                                   (d.pos >= currentBestPatterns.pos) &&
                                   (d.minuto >= currentBestPatterns.min - 5);
 
-            const showBadge = d.status === 'PENDIENTE' && meetsCriteria;
+            const isReal = isTrained && meetsCriteria;
+
+            if(isReal && !d.sentToReal) {
+                sendToRealBets(d);
+                d.sentToReal = true;
+                localStorage.setItem('cornerpro_db', JSON.stringify(db));
+            }
 
             tbody.innerHTML += `
-                <tr class="${showBadge && isTrained ? 'recommended-row' : ''}">
+                <tr class="${isReal ? 'recommended-row' : ''}">
                     <td class="small-text">${d.fecha}</td>
                     <td>
                         <b>${d.partido}</b><span class="small-text">${d.liga}</span>
-                        ${showBadge ? (isTrained ? '<span class="badge-real">🔥 APUESTA REAL</span>' : '<span class="badge-training">⏳ MODO APRENDIZAJE</span>') : ''}
+                        ${meetsCriteria ? (isTrained ? '<span class="badge-real">🔥 APUESTA REAL</span>' : '<span class="badge-training">⏳ MODO APRENDIZAJE</span>') : ''}
                     </td>
                     <td class="data-hl">${d.minuto}'</td>
                     <td>L5: <span class="win">${d.ap5}</span><br>L10: ${d.ap10}</td>
@@ -243,29 +247,20 @@
         });
     }
 
-    function analyzePatterns() {
-        const settled = db.filter(x => x.status !== 'PENDIENTE');
-        const modal = document.getElementById('analysisModal');
-        const resultsDiv = document.getElementById('analysisResults');
-        modal.style.display = 'block';
-        
-        const progress = Math.min((settled.length / MIN_TRAINING_SAMPLES) * 100, 100).toFixed(0);
-
-        resultsDiv.innerHTML = `
-            <div class="pattern-item" style="border-left-color: ${progress < 100 ? 'var(--danger)' : 'var(--success)'}">
-                <strong>📈 Estado del Entrenamiento:</strong> ${progress}% (${settled.length}/${MIN_TRAINING_SAMPLES} picks resueltos).
-                ${progress < 100 ? '<p class="small-text">La IA no sugerirá "Apuestas Reales" hasta completar los 30 picks de base.</p>' : ''}
-            </div>
-            <div class="pattern-item">
-                <strong>🎯 Filtros Actuales:</strong> Minuto >${currentBestPatterns.min.toFixed(0)}, Probabilidad >${currentBestPatterns.prob}% y Posesión >${currentBestPatterns.pos}%.
-            </div>
-        `;
-    }
-
     function setStatus(index, status) {
         const item = db[index];
         item.status = status;
         item.profit = status === 'WIN' ? parseFloat((item.cuota - 1).toFixed(2)) : (status === 'LOSS' ? -1 : 0);
+        
+        // Sincronizar estado con la tabla de Apuestas Reales si existe allí
+        let realBets = JSON.parse(localStorage.getItem('cornerpro_real_bets')) || [];
+        const realIdx = realBets.findIndex(x => x.id === item.id);
+        if(realIdx !== -1) {
+            realBets[realIdx].status = status;
+            realBets[realIdx].profit = item.profit;
+            localStorage.setItem('cornerpro_real_bets', JSON.stringify(realBets));
+        }
+
         updateGlobalPatterns();
         saveDB();
     }
@@ -287,9 +282,25 @@
         document.getElementById('stat-yield').innerText = settled.length ? ((totalProfit/settled.length)*100).toFixed(1) + '%' : '0%';
     }
 
+    function analyzePatterns() {
+        const settled = db.filter(x => x.status !== 'PENDIENTE');
+        const modal = document.getElementById('analysisModal');
+        const resultsDiv = document.getElementById('analysisResults');
+        modal.style.display = 'block';
+        const progress = Math.min((settled.length / MIN_TRAINING_SAMPLES) * 100, 100).toFixed(0);
+        resultsDiv.innerHTML = `
+            <div class="pattern-item" style="border-left-color: ${progress < 100 ? 'var(--danger)' : 'var(--success)'}">
+                <strong>📈 Estado del Entrenamiento:</strong> ${progress}% (${settled.length}/${MIN_TRAINING_SAMPLES} picks).
+            </div>
+            <div class="pattern-item">
+                <strong>🎯 Filtros:</strong> Min >${currentBestPatterns.min.toFixed(0)}, Prob >${currentBestPatterns.prob}% y Pos >${currentBestPatterns.pos}%.
+            </div>
+        `;
+    }
+
     function closeAnalysis() { document.getElementById('analysisModal').style.display = 'none'; }
     function deleteRow(i) { db.splice(i, 1); saveDB(); }
-    function clearData() { if(confirm("¿Borrar todo el historial?")) { db = []; saveDB(); } }
+    function clearData() { if(confirm("¿Borrar todo?")) { db = []; localStorage.removeItem('cornerpro_real_bets'); saveDB(); } }
     
     function exportCSV() {
         let csv = "Fecha,Partido,Min,Posesion,HT_Prob,Cuota,Status,Profit\n";
