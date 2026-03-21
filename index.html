@@ -29,7 +29,7 @@
         .btn-load { background: var(--primary); color: #0f172a; }
         .btn-analyze { background: var(--accent); color: #000; }
         
-        table { width: 100%; border-collapse: collapse; font-size: 0.75em; min-width: 1300px; }
+        table { width: 100%; border-collapse: colspan; font-size: 0.75em; min-width: 1300px; border-collapse: collapse; }
         th { background: #0f172a; color: var(--primary); position: sticky; top: 0; padding: 10px; }
         td { padding: 8px; border-bottom: 1px solid var(--border); text-align: center; }
         
@@ -108,7 +108,6 @@
 
 <script>
     let db = JSON.parse(localStorage.getItem('cornerpro_db')) || [];
-    // Umbrales iniciales que irán cambiando
     let currentBestPatterns = { min: 25, prob: 78, pos: 50 };
     const MIN_TRAINING_SAMPLES = 30;
 
@@ -125,22 +124,17 @@
         localStorage.setItem('tg_chatId', document.getElementById('chatId').value);
     }
 
-    // --- MEJORA: MOTOR DE ACTUALIZACIÓN DE PATRONES ---
     function updateGlobalPatterns() {
-        const wins = db.filter(x => x.status === 'WIN').slice(0, 10); // Analiza los últimos 10 éxitos
-        
+        const wins = db.filter(x => x.status === 'WIN').slice(0, 10);
         if(wins.length >= 3) {
-            // Calcula el promedio de lo que está funcionando actualmente
             const avgMin = wins.reduce((s, x) => s + x.minuto, 0) / wins.length;
             const avgProb = wins.reduce((s, x) => s + x.probHT, 0) / wins.length;
             const avgPos = wins.reduce((s, x) => s + x.pos, 0) / wins.length;
 
-            // Ajusta los patrones dinámicamente (usa un pequeño margen de seguridad)
             currentBestPatterns.min = Math.floor(avgMin - 2); 
             currentBestPatterns.prob = Math.floor(avgProb - 3);
             currentBestPatterns.pos = Math.floor(avgPos - 2);
 
-            // Límites de seguridad para que la IA no se vuelva "demasiado loca"
             if(currentBestPatterns.prob < 70) currentBestPatterns.prob = 75;
             if(currentBestPatterns.min < 20) currentBestPatterns.min = 25;
         }
@@ -221,7 +215,8 @@
 
             const isReal = isTrained && meetsCriteria;
 
-            if(isReal && !d.sentToReal) {
+            // MEJORA: Solo enviar si es Real, está PENDIENTE y no se ha enviado antes
+            if(isReal && d.status === 'PENDIENTE' && !d.sentToReal) {
                 sendToRealBets(d);
                 d.sentToReal = true;
                 localStorage.setItem('cornerpro_db', JSON.stringify(db));
@@ -260,7 +255,6 @@
         item.status = status;
         item.profit = status === 'WIN' ? parseFloat((item.cuota - 1).toFixed(2)) : (status === 'LOSS' ? -1 : 0);
         
-        // Sincronizar con apuestasreales.html
         let realBets = JSON.parse(localStorage.getItem('cornerpro_real_bets')) || [];
         const realIdx = realBets.findIndex(x => x.id === item.id);
         if(realIdx !== -1) {
@@ -298,23 +292,20 @@
         const progress = Math.min((settled.length / MIN_TRAINING_SAMPLES) * 100, 100).toFixed(0);
         resultsDiv.innerHTML = `
             <div class="pattern-item" style="border-left-color: var(--success)">
-                <strong>🧬 IA Evolutiva Activada:</strong> El sistema está analizando tus victorias para ajustar los filtros de las próximas alertas.
+                <strong>🧬 IA Evolutiva Activada:</strong> El sistema analiza victorias para ajustar filtros.
             </div>
             <div class="pattern-item">
-                <strong>📊 Filtros Optimizados (Basado en historial):</strong> 
+                <strong>📊 Filtros Optimizados:</strong> 
                 <br>• Minuto mínimo: <span class="data-hl">${currentBestPatterns.min}'</span>
                 <br>• Probabilidad mínima: <span class="data-hl">${currentBestPatterns.prob}%</span>
                 <br>• Posesión mínima: <span class="data-hl">${currentBestPatterns.pos}%</span>
-            </div>
-            <div class="pattern-item" style="font-size: 0.9em; opacity: 0.8;">
-                Estado del entrenamiento general: ${progress}% (${settled.length}/${MIN_TRAINING_SAMPLES})
             </div>
         `;
     }
 
     function closeAnalysis() { document.getElementById('analysisModal').style.display = 'none'; }
     function deleteRow(i) { if(confirm("¿Eliminar este registro?")) { db.splice(i, 1); saveDB(); } }
-    function clearData() { if(confirm("¿Borrar todo el historial y reiniciar aprendizaje?")) { db = []; localStorage.removeItem('cornerpro_real_bets'); saveDB(); } }
+    function clearData() { if(confirm("¿Reiniciar aprendizaje?")) { db = []; localStorage.removeItem('cornerpro_real_bets'); saveDB(); } }
     
     function exportCSV() {
         let csv = "Fecha,Partido,Min,Posesion,HT_Prob,Cuota,Status,Profit\n";
