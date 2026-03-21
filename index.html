@@ -35,6 +35,7 @@
         
         .recommended-row { background: rgba(234, 179, 8, 0.15) !important; border-left: 4px solid var(--accent); }
         .badge-real { background: var(--accent); color: #000; padding: 3px 6px; border-radius: 4px; font-weight: bold; font-size: 0.85em; display: inline-block; margin-top: 5px; }
+        .badge-training { background: #475569; color: white; padding: 3px 6px; border-radius: 4px; font-size: 0.85em; display: inline-block; margin-top: 5px; }
 
         .win { color: var(--success); font-weight: bold; }
         .loss { color: var(--danger); font-weight: bold; }
@@ -106,7 +107,9 @@
 
 <script>
     let db = JSON.parse(localStorage.getItem('cornerpro_db')) || [];
-    let currentBestPatterns = { min: 20, prob: 75, pos: 50 };
+    // Umbrales base para el entrenamiento
+    let currentBestPatterns = { min: 25, prob: 80, pos: 52 };
+    const MIN_TRAINING_SAMPLES = 30;
 
     window.onload = () => {
         document.getElementById('botToken').value = localStorage.getItem('tg_token') || '';
@@ -122,11 +125,14 @@
     }
 
     function updateGlobalPatterns() {
-        const wins = db.filter(x => x.status === 'WIN');
-        if(wins.length >= 3) {
+        const settled = db.filter(x => x.status !== 'PENDIENTE');
+        const wins = settled.filter(x => x.status === 'WIN');
+        
+        // Solo recalcular patrones si ya pasamos la fase de entrenamiento
+        if(wins.length >= 5) {
             currentBestPatterns.min = wins.reduce((s, x) => s + x.minuto, 0) / wins.length;
             const avgProb = wins.reduce((s, x) => s + x.probHT, 0) / wins.length;
-            currentBestPatterns.prob = avgProb > 70 ? 75 : avgProb;
+            currentBestPatterns.prob = avgProb > 75 ? 80 : avgProb;
         }
     }
 
@@ -136,7 +142,6 @@
             return m ? m[index].trim() : 'N/A'; 
         };
 
-        // Extracción flexible para soportar variaciones en el texto
         const partido = get(/Game: (.*?)\n/);
         const liga = get(/🏆 League: (.*?)\n/);
         const minuto = parseInt(get(/🕛 Time: (\d+)/)) || 0;
@@ -168,7 +173,6 @@
                     const msg = item.channel_post || item.message;
                     if(msg && msg.text && !db.find(x => x.id === msg.message_id)) {
                         const info = parseAlert(msg.text);
-                        // Solo agregamos si logramos parsear al menos el nombre del partido
                         if(info.partido !== 'N/A') {
                             db.unshift({
                                 id: msg.message_id,
@@ -185,37 +189,38 @@
                 if(nuevos > 0) {
                     updateGlobalPatterns();
                     saveDB();
-                    alert(`Se cargaron ${nuevos} nuevas alertas.`);
+                    alert(`Se cargaron ${nuevos} alertas.`);
                 } else {
-                    alert("No hay alertas nuevas en el canal.");
+                    alert("No hay alertas nuevas.");
                 }
 
                 const lastUpdateId = data.result[data.result.length - 1].update_id;
                 fetch(`https://api.telegram.org/bot${token}/getUpdates?offset=${lastUpdateId + 1}`);
-            } else {
-                alert("No se recibieron mensajes nuevos de la API.");
             }
-        } catch (e) { 
-            console.error(e); 
-            alert("Error al conectar con Telegram. Revisa el Token.");
-        }
+        } catch (e) { console.error(e); }
     }
 
     function render() {
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
+        
+        const settledCount = db.filter(x => x.status !== 'PENDIENTE').length;
+        const isTrained = settledCount >= MIN_TRAINING_SAMPLES;
+
         db.forEach((d, i) => {
-            const isIdeal = (d.status === 'PENDIENTE') && 
-                            (d.probHT >= currentBestPatterns.prob) && 
-                            (d.pos >= currentBestPatterns.pos) &&
-                            (d.minuto >= currentBestPatterns.min - 5);
+            // Lógica de recomendación: Solo si el sistema está entrenado y cumple parámetros
+            const meetsCriteria = (d.probHT >= currentBestPatterns.prob) && 
+                                  (d.pos >= currentBestPatterns.pos) &&
+                                  (d.minuto >= currentBestPatterns.min - 5);
+
+            const showBadge = d.status === 'PENDIENTE' && meetsCriteria;
 
             tbody.innerHTML += `
-                <tr class="${isIdeal ? 'recommended-row' : ''}">
+                <tr class="${showBadge && isTrained ? 'recommended-row' : ''}">
                     <td class="small-text">${d.fecha}</td>
                     <td>
                         <b>${d.partido}</b><span class="small-text">${d.liga}</span>
-                        ${isIdeal ? '<span class="badge-real">🔥 APUESTA REAL</span>' : ''}
+                        ${showBadge ? (isTrained ? '<span class="badge-real">🔥 APUESTA REAL</span>' : '<span class="badge-training">⏳ MODO APRENDIZAJE</span>') : ''}
                     </td>
                     <td class="data-hl">${d.minuto}'</td>
                     <td>L5: <span class="win">${d.ap5}</span><br>L10: ${d.ap10}</td>
@@ -239,23 +244,21 @@
     }
 
     function analyzePatterns() {
-        const resolved = db.filter(x => x.status !== 'PENDIENTE');
+        const settled = db.filter(x => x.status !== 'PENDIENTE');
         const modal = document.getElementById('analysisModal');
         const resultsDiv = document.getElementById('analysisResults');
         modal.style.display = 'block';
         
-        if(resolved.length < 3) {
-            resultsDiv.innerHTML = '<p>Se necesitan al menos 3 picks resueltos para analizar patrones de éxito.</p>';
-            return;
-        }
-
-        const wins = resolved.filter(x => x.status === 'WIN');
-        const effHT = ((wins.filter(x => x.probHT >= 80).length / (resolved.filter(x => x.probHT >= 80).length || 1)) * 100).toFixed(1);
+        const progress = Math.min((settled.length / MIN_TRAINING_SAMPLES) * 100, 100).toFixed(0);
 
         resultsDiv.innerHTML = `
-            <div class="pattern-item"><strong>🎯 Algoritmo El Gurú:</strong> Filtrando por >${currentBestPatterns.prob}% HT Prob.</div>
-            <div class="pattern-item"><strong>🔥 Win Rate en Alertas Top:</strong> ${effHT}% en picks de HT 80%+.</div>
-            <div class="pattern-item"><strong>🕒 Timing Ideal:</strong> Los aciertos se concentran a partir del minuto ${currentBestPatterns.min.toFixed(0)}.</div>
+            <div class="pattern-item" style="border-left-color: ${progress < 100 ? 'var(--danger)' : 'var(--success)'}">
+                <strong>📈 Estado del Entrenamiento:</strong> ${progress}% (${settled.length}/${MIN_TRAINING_SAMPLES} picks resueltos).
+                ${progress < 100 ? '<p class="small-text">La IA no sugerirá "Apuestas Reales" hasta completar los 30 picks de base.</p>' : ''}
+            </div>
+            <div class="pattern-item">
+                <strong>🎯 Filtros Actuales:</strong> Minuto >${currentBestPatterns.min.toFixed(0)}, Probabilidad >${currentBestPatterns.prob}% y Posesión >${currentBestPatterns.pos}%.
+            </div>
         `;
     }
 
@@ -286,15 +289,15 @@
 
     function closeAnalysis() { document.getElementById('analysisModal').style.display = 'none'; }
     function deleteRow(i) { db.splice(i, 1); saveDB(); }
-    function clearData() { if(confirm("¿Borrar historial de backtesting?")) { db = []; saveDB(); } }
+    function clearData() { if(confirm("¿Borrar todo el historial?")) { db = []; saveDB(); } }
     
     function exportCSV() {
-        let csv = "Fecha,Partido,Liga,Min,Posesion,HT_Prob,Cuota,Status,Profit\n";
-        db.forEach(d => { csv += `"${d.fecha}","${d.partido}","${d.liga}",${d.minuto},${d.pos},${d.probHT},${d.cuota},${d.status},${d.profit}\n`; });
+        let csv = "Fecha,Partido,Min,Posesion,HT_Prob,Cuota,Status,Profit\n";
+        db.forEach(d => { csv += `"${d.fecha}","${d.partido}",${d.minuto},${d.pos},${d.probHT},${d.cuota},${d.status},${d.profit}\n`; });
         const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", "Guru_Analytics_Export.csv");
+        link.setAttribute("download", "Backtesting_Guru.csv");
         link.click();
     }
 </script>
