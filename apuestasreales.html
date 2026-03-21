@@ -12,81 +12,111 @@
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 15px; }
         .container { width: 100%; max-width: 1400px; margin: auto; background: var(--card); padding: 20px; border-radius: 15px; }
         
+        .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        
         .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
         .stat-card { background: #0f172a; padding: 15px; border-radius: 10px; text-align: center; border: 1px solid var(--border); border-top: 3px solid var(--primary); }
         .stat-card h3 { margin: 0; font-size: 0.8em; color: #94a3b8; text-transform: uppercase; }
         .stat-card p { margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: var(--primary); }
 
         table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
-        th { background: #0f172a; color: var(--primary); padding: 12px; text-align: center; }
-        td { padding: 10px; border-bottom: 1px solid var(--border); text-align: center; }
+        th { background: #0f172a; color: var(--primary); padding: 12px; text-align: center; border-bottom: 2px solid var(--border); }
+        td { padding: 12px; border-bottom: 1px solid var(--border); text-align: center; }
         
         .win { color: var(--success); font-weight: bold; }
         .loss { color: var(--danger); font-weight: bold; }
-        .btn-back { background: #334155; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; display: inline-block; margin-bottom: 20px; font-weight: bold; }
-        .btn-back:hover { background: #475569; }
+        
+        .btn { border: none; padding: 10px 18px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; text-decoration: none; display: inline-block; }
+        .btn-back { background: #334155; color: white; }
+        .btn-clear { background: var(--danger); color: white; }
+        .btn:hover { filter: brightness(1.2); transform: translateY(-1px); }
+        
+        .empty-msg { text-align: center; padding: 40px; color: #64748b; font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <a href="index.html" class="btn-back">⬅ Volver al Analizador</a>
-    <h1 style="color: var(--primary);">🔥 Registro de Apuestas Reales</h1>
-    <p>Solo se muestran picks que cumplen los parámetros de la IA tras el entrenamiento.</p>
+    <div class="header-actions">
+        <a href="index.html" class="btn btn-back">⬅ Volver al Analizador</a>
+        <button onclick="clearRealHistory()" class="btn btn-clear">🗑 Reiniciar Historial Real</button>
+    </div>
+
+    <h1 style="color: var(--primary); margin-top: 0;">🔥 Registro de Apuestas Reales</h1>
+    <p style="color: #94a3b8; margin-bottom: 25px;">Monitoreo exclusivo de picks filtrados por los patrones optimizados de la IA.</p>
 
     <div class="stats-grid">
-        <div class="stat-card"><h3>Apuestas Reales</h3><p id="real-total">0</p></div>
-        <div class="stat-card"><h3>Efectividad Real</h3><p id="real-accuracy">0%</p></div>
-        <div class="stat-card"><h3>Profit Real (u)</h3><p id="real-profit">0.00</p></div>
-        <div class="stat-card"><h3>Yield Real</h3><p id="real-yield">0%</p></div>
+        <div class="stat-card"><h3>Picks Reales</h3><p id="real-total">0</p></div>
+        <div class="stat-card"><h3>Efectividad</h3><p id="real-accuracy">0%</p></div>
+        <div class="stat-card"><h3>Profit Total</h3><p id="real-profit">0.00</p></div>
+        <div class="stat-card"><h3>Yield</h3><p id="real-yield">0%</p></div>
     </div>
 
     <table>
         <thead>
             <tr>
                 <th>Fecha</th>
-                <th>Partido</th>
+                <th>Partido / Liga</th>
                 <th>Minuto</th>
-                <th>% HT</th>
+                <th>HT Prob</th>
                 <th>Cuota</th>
                 <th>Resultado</th>
-                <th>Profit</th>
+                <th>Profit (u)</th>
             </tr>
         </thead>
         <tbody id="realTableBody"></tbody>
     </table>
+    <div id="emptyMessage" class="empty-msg" style="display: none;">No hay apuestas reales registradas aún.</div>
 </div>
 
 <script>
     function renderReal() {
         const realBets = JSON.parse(localStorage.getItem('cornerpro_real_bets')) || [];
         const tbody = document.getElementById('realTableBody');
+        const emptyMsg = document.getElementById('emptyMessage');
+        
         tbody.innerHTML = '';
+        
+        if (realBets.length === 0) {
+            emptyMsg.style.display = 'block';
+            resetStats();
+            return;
+        } else {
+            emptyMsg.style.display = 'none';
+        }
 
         let totalProfit = 0;
         let wins = 0;
         let settled = 0;
 
         realBets.forEach(d => {
-            if(d.status !== 'PENDIENTE') {
+            const isSettled = d.status !== 'PENDIENTE';
+            if(isSettled) {
                 settled++;
-                totalProfit += d.profit;
+                totalProfit += (d.profit || 0);
                 if(d.status === 'WIN') wins++;
             }
 
             tbody.innerHTML += `
                 <tr>
-                    <td style="font-size: 0.8em; color: #94a3b8;">${d.fecha}</td>
-                    <td><b>${d.partido}</b><br><small>${d.liga}</small></td>
-                    <td>${d.minuto}'</td>
+                    <td style="font-size: 0.85em; color: #94a3b8;">${d.fecha}</td>
+                    <td>
+                        <div style="font-weight: bold;">${d.partido}</div>
+                        <div style="font-size: 0.85em; color: #64748b;">${d.liga}</div>
+                    </td>
+                    <td style="color: var(--primary); font-weight: bold;">${d.minuto}'</td>
                     <td style="color: #00d4ff; font-weight: bold;">${d.probHT}%</td>
-                    <td>${d.cuota}</td>
-                    <td class="${d.status === 'WIN' ? 'win' : (d.status === 'LOSS' ? 'loss' : '')}">${d.status}</td>
-                    <td class="${d.profit > 0 ? 'win' : (d.profit < 0 ? 'loss' : '')}">${d.profit.toFixed(2)}</td>
+                    <td style="font-family: monospace;">${d.cuota.toFixed(2)}</td>
+                    <td class="${d.status === 'WIN' ? 'win' : (d.status === 'LOSS' ? 'loss' : '')}">
+                        ${d.status === 'PENDIENTE' ? '⏳ PENDIENTE' : d.status}
+                    </td>
+                    <td class="${(d.profit || 0) > 0 ? 'win' : ((d.profit || 0) < 0 ? 'loss' : '')}">
+                        ${isSettled ? (d.profit > 0 ? '+' : '') + d.profit.toFixed(2) : '-'}
+                    </td>
                 </tr>`;
         });
 
-        // Actualizar Stats
+        // Actualizar Estadísticas
         document.getElementById('real-total').innerText = settled;
         document.getElementById('real-accuracy').innerText = settled ? ((wins/settled)*100).toFixed(1) + '%' : '0%';
         document.getElementById('real-profit').innerText = totalProfit.toFixed(2);
@@ -94,9 +124,33 @@
         document.getElementById('real-yield').innerText = settled ? ((totalProfit/settled)*100).toFixed(1) + '%' : '0%';
     }
 
-    // Actualizar automáticamente si se cambia algo en index.html
+    function resetStats() {
+        document.getElementById('real-total').innerText = '0';
+        document.getElementById('real-accuracy').innerText = '0%';
+        document.getElementById('real-profit').innerText = '0.00';
+        document.getElementById('real-profit').style.color = 'var(--primary)';
+        document.getElementById('real-yield').innerText = '0%';
+    }
+
+    function clearRealHistory() {
+        if(confirm("¿Estás seguro de que deseas borrar TODAS las apuestas reales? Esta acción no se puede deshacer.")) {
+            localStorage.removeItem('cornerpro_real_bets');
+            
+            // También marcamos en la DB principal que esos registros ya no están "enviados" 
+            // por si quieres que la IA vuelva a detectarlos si sigues en la misma sesión.
+            const mainDb = JSON.parse(localStorage.getItem('cornerpro_db')) || [];
+            const updatedDb = mainDb.map(item => ({...item, sentToReal: false}));
+            localStorage.setItem('cornerpro_db', JSON.stringify(updatedDb));
+            
+            renderReal();
+        }
+    }
+
+    // Inicialización y escucha de cambios en tiempo real
     window.onload = renderReal;
-    window.addEventListener('storage', renderReal);
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'cornerpro_real_bets') renderReal();
+    });
 </script>
 </body>
 </html>
