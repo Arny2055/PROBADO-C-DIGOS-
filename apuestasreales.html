@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Apuestas Reales - El Gurú</title>
+    <style>
+        :root {
+            --primary: #eab308; --danger: #ff4b4b; --success: #10b981;
+            --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --border: #334155;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 15px; }
+        .container { width: 100%; max-width: 1400px; margin: auto; background: var(--card); padding: 20px; border-radius: 15px; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: #0f172a; padding: 15px; border-radius: 10px; text-align: center; border: 1px solid var(--border); border-top: 3px solid var(--primary); }
+        .stat-card h3 { margin: 0; font-size: 0.8em; color: #94a3b8; text-transform: uppercase; }
+        .stat-card p { margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: var(--primary); }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+        th { background: #0f172a; color: var(--primary); padding: 12px; text-align: center; }
+        td { padding: 10px; border-bottom: 1px solid var(--border); text-align: center; }
+        
+        .win { color: var(--success); font-weight: bold; }
+        .loss { color: var(--danger); font-weight: bold; }
+        .btn-back { background: #334155; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; display: inline-block; margin-bottom: 20px; font-weight: bold; }
+        .btn-back:hover { background: #475569; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="index.html" class="btn-back">⬅ Volver al Analizador</a>
+    <h1 style="color: var(--primary);">🔥 Registro de Apuestas Reales</h1>
+    <p>Solo se muestran picks que cumplen los parámetros de la IA tras el entrenamiento.</p>
+
+    <div class="stats-grid">
+        <div class="stat-card"><h3>Apuestas Reales</h3><p id="real-total">0</p></div>
+        <div class="stat-card"><h3>Efectividad Real</h3><p id="real-accuracy">0%</p></div>
+        <div class="stat-card"><h3>Profit Real (u)</h3><p id="real-profit">0.00</p></div>
+        <div class="stat-card"><h3>Yield Real</h3><p id="real-yield">0%</p></div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Partido</th>
+                <th>Minuto</th>
+                <th>% HT</th>
+                <th>Cuota</th>
+                <th>Resultado</th>
+                <th>Profit</th>
+            </tr>
+        </thead>
+        <tbody id="realTableBody"></tbody>
+    </table>
+</div>
+
+<script>
+    function renderReal() {
+        const realBets = JSON.parse(localStorage.getItem('cornerpro_real_bets')) || [];
+        const tbody = document.getElementById('realTableBody');
+        tbody.innerHTML = '';
+
+        let totalProfit = 0;
+        let wins = 0;
+        let settled = 0;
+
+        realBets.forEach(d => {
+            if(d.status !== 'PENDIENTE') {
+                settled++;
+                totalProfit += d.profit;
+                if(d.status === 'WIN') wins++;
+            }
+
+            tbody.innerHTML += `
+                <tr>
+                    <td style="font-size: 0.8em; color: #94a3b8;">${d.fecha}</td>
+                    <td><b>${d.partido}</b><br><small>${d.liga}</small></td>
+                    <td>${d.minuto}'</td>
+                    <td style="color: #00d4ff; font-weight: bold;">${d.probHT}%</td>
+                    <td>${d.cuota}</td>
+                    <td class="${d.status === 'WIN' ? 'win' : (d.status === 'LOSS' ? 'loss' : '')}">${d.status}</td>
+                    <td class="${d.profit > 0 ? 'win' : (d.profit < 0 ? 'loss' : '')}">${d.profit.toFixed(2)}</td>
+                </tr>`;
+        });
+
+        // Actualizar Stats
+        document.getElementById('real-total').innerText = settled;
+        document.getElementById('real-accuracy').innerText = settled ? ((wins/settled)*100).toFixed(1) + '%' : '0%';
+        document.getElementById('real-profit').innerText = totalProfit.toFixed(2);
+        document.getElementById('real-profit').style.color = totalProfit >= 0 ? 'var(--success)' : 'var(--danger)';
+        document.getElementById('real-yield').innerText = settled ? ((totalProfit/settled)*100).toFixed(1) + '%' : '0%';
+    }
+
+    // Actualizar automáticamente si se cambia algo en index.html
+    window.onload = renderReal;
+    window.addEventListener('storage', renderReal);
+</script>
+</body>
+</html>
