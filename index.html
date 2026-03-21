@@ -29,12 +29,11 @@
         .btn-load { background: var(--primary); color: #0f172a; }
         .btn-analyze { background: var(--accent); color: #000; }
         
-        table { width: 100%; border-collapse: collapse; font-size: 0.75em; min-width: 1200px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.75em; min-width: 1300px; }
         th { background: #0f172a; color: var(--primary); position: sticky; top: 0; padding: 10px; }
         td { padding: 8px; border-bottom: 1px solid var(--border); text-align: center; }
         
-        /* Estilo para Fila Recomendada */
-        .recommended-row { background: rgba(234, 179, 8, 0.1) !important; border-left: 4px solid var(--accent); }
+        .recommended-row { background: rgba(234, 179, 8, 0.15) !important; border-left: 4px solid var(--accent); }
         .badge-real { background: var(--accent); color: #000; padding: 3px 6px; border-radius: 4px; font-weight: bold; font-size: 0.85em; display: inline-block; margin-top: 5px; }
 
         .win { color: var(--success); font-weight: bold; }
@@ -59,7 +58,7 @@
 <div id="analysisModal">
     <div class="modal-content">
         <span class="close-modal" onclick="closeAnalysis()">&times;</span>
-        <h2 style="color: var(--primary);">🎯 Inteligencia de Patrones</h2>
+        <h2 style="color: var(--primary);">🎯 Inteligencia de Patrones El Gurú</h2>
         <div id="analysisResults"></div>
     </div>
 </div>
@@ -71,7 +70,7 @@
         <div class="stat-card"><h3>Picks</h3><p id="stat-total">0</p></div>
         <div class="stat-card"><h3>Efectividad</h3><p id="stat-accuracy">0%</p></div>
         <div class="stat-card"><h3>Profit (u)</h3><p id="stat-profit">0.00</p></div>
-        <div class="stat-card"><h3>Yield</h3><p id="stat-yield">0%</p></div>
+        <div class="stat-card)<h3>Yield</h3><p id="stat-yield">0%</p></div>
     </div>
     
     <div class="config-section">
@@ -86,13 +85,14 @@
     <table id="mainTable">
         <thead>
             <tr>
-                <th>Fecha</th>
+                <th>Fecha/Hora</th>
                 <th>Partido/Liga</th>
                 <th>Min</th>
-                <th>AP (L/V)</th>
+                <th>AP (L5/L10)</th>
                 <th>Córners</th>
                 <th>Posesión</th>
-                <th>Shots (O/O)</th>
+                <th>Shots (On/Off)</th>
+                <th>Heatmap</th>
                 <th>% HT</th>
                 <th>Cuota</th>
                 <th>Resultado</th>
@@ -106,7 +106,7 @@
 
 <script>
     let db = JSON.parse(localStorage.getItem('cornerpro_db')) || [];
-    let currentBestPatterns = { min: 25, prob: 80, pos: 55 };
+    let currentBestPatterns = { min: 20, prob: 75, pos: 50 };
 
     window.onload = () => {
         document.getElementById('botToken').value = localStorage.getItem('tg_token') || '';
@@ -121,31 +121,35 @@
         localStorage.setItem('tg_chatId', document.getElementById('chatId').value);
     }
 
-    // --- ACTUALIZA PATRONES EN SEGUNDO PLANO ---
     function updateGlobalPatterns() {
         const wins = db.filter(x => x.status === 'WIN');
-        if(wins.length > 3) {
+        if(wins.length >= 3) {
             currentBestPatterns.min = wins.reduce((s, x) => s + x.minuto, 0) / wins.length;
-            currentBestPatterns.prob = 80; // Umbral base
-            currentBestPatterns.pos = 54;  // Umbral base
+            const avgProb = wins.reduce((s, x) => s + x.probHT, 0) / wins.length;
+            currentBestPatterns.prob = avgProb > 75 ? 75 : avgProb;
         }
     }
 
     function parseAlert(text) {
-        const get = (regex, index = 1) => { const m = text.match(regex); return m ? m[index] : '0'; };
+        const get = (regex, index = 1) => { 
+            const m = text.match(regex); 
+            return m ? m[index].trim() : '0'; 
+        };
+
         return {
-            partido: get(/🏟 Game: (.*?)\n/),
+            partido: get(/Game: (.*?)\n/),
             liga: get(/🏆 League: (.*?)\n/),
             minuto: parseInt(get(/🕛 Time: (\d+)/)) || 0,
             ap: get(/⚔ Dangerous Attacks: (\d+ - \d+)/),
-            ap5: get(/Last 5': (.*?)\n/),
+            ap5: get(/Last 5': (.*?) /),
+            ap10: get(/Last 10': (.*?) /),
             corners: get(/⛳ Corners: (\d+ - \d+)/),
             pos: parseInt(get(/⚖ Possession: (\d+)/)) || 0,
             son: get(/🥅 Shots on: (\d+ - \d+)/),
             soff: get(/➡ Shots off: (\d+ - \d+)/),
-            cards: get(/🟡 Yellow Cards: (\d+ - \d+)/),
-            probHT: parseInt(get(/Medio Tiempo:(\d+)%/)) || 0,
-            cuota: parseFloat(get(/Goal Live Line Odd:([\d.]+)/)) || 1.50
+            heatmap: get(/heatmapFull:(.*?)\n/),
+            probHT: parseInt(get(/Medio Tiempo:(\d+)/)) || 0,
+            cuota: parseFloat(get(/Goal Live Line Odd:([\d.]+)/)) || 1.60
         };
     }
 
@@ -181,11 +185,11 @@
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
         db.forEach((d, i) => {
-            // LÓGICA DE SELECCIÓN AUTOMÁTICA
+            // LÓGICA DE APUESTA REAL BASADA EN PATRONES
             const isIdeal = (d.status === 'PENDIENTE') && 
                             (d.probHT >= currentBestPatterns.prob) && 
                             (d.pos >= currentBestPatterns.pos) &&
-                            (d.minuto >= currentBestPatterns.min - 5);
+                            (d.minuto >= currentBestPatterns.min - 3);
 
             tbody.innerHTML += `
                 <tr class="${isIdeal ? 'recommended-row' : ''}">
@@ -195,10 +199,11 @@
                         ${isIdeal ? '<span class="badge-real">🔥 APUESTA REAL</span>' : ''}
                     </td>
                     <td class="data-hl">${d.minuto}'</td>
-                    <td>${d.ap}<br><span class="small-text">L5: ${d.ap5}</span></td>
+                    <td><span class="win">${d.ap5}</span> / ${d.ap10}<br><span class="small-text">Total: ${d.ap}</span></td>
                     <td>${d.corners}</td>
                     <td>${d.pos}%</td>
                     <td>${d.son} / ${d.soff}</td>
+                    <td class="small-text">${d.heatmap}</td>
                     <td class="data-hl">${d.probHT}%</td>
                     <td>${d.cuota}</td>
                     <td>
@@ -221,17 +226,17 @@
         modal.style.display = 'block';
         
         if(resolved.length < 3) {
-            resultsDiv.innerHTML = '<p>Necesitas más datos para un análisis profundo.</p>';
+            resultsDiv.innerHTML = '<p>Se necesitan al menos 3 picks resueltos para calcular tendencias reales.</p>';
             return;
         }
 
         const wins = resolved.filter(x => x.status === 'WIN');
-        const winRateHT = ((wins.filter(x => x.probHT >= 80).length / resolved.filter(x => x.probHT >= 80).length || 0) * 100).toFixed(1);
+        const effHT = ((wins.filter(x => x.probHT >= 80).length / (resolved.filter(x => x.probHT >= 80).length || 1)) * 100).toFixed(1);
 
         resultsDiv.innerHTML = `
-            <div class="pattern-item"><strong>🎯 Configuración de Apuesta Real:</strong> Actualmente el sistema busca picks con >${currentBestPatterns.prob}% HT y >${currentBestPatterns.pos}% Posesión.</div>
-            <div class="pattern-item"><strong>📊 Rendimiento HT 80%+:</strong> Tu acierto en alertas de alta probabilidad es del ${winRateHT}%.</div>
-            <div class="pattern-item"><strong>🕒 Minuto Recomendado:</strong> La mayoría de tus aciertos ocurren después del minuto ${currentBestPatterns.min.toFixed(0)}.</div>
+            <div class="pattern-item"><strong>🎯 Filtro El Gurú:</strong> Buscando picks con >${currentBestPatterns.prob}% HT y min ${currentBestPatterns.min.toFixed(0)}.</div>
+            <div class="pattern-item"><strong>🔥 Efectividad con HT 80%+:</strong> ${effHT}% de éxito detectado.</div>
+            <div class="pattern-item"><strong>📊 Stats Promedio WINs:</strong> Los verdes suelen tener más de 50% posesión.</div>
         `;
     }
 
@@ -264,8 +269,8 @@
     function deleteRow(i) { db.splice(i, 1); saveDB(); }
     function clearData() { if(confirm("¿Borrar historial?")) { db = []; saveDB(); } }
     function exportCSV() {
-        let csv = "Fecha,Partido,Liga,Min,AP,HT_Prob,Cuota,Status,Profit\n";
-        db.forEach(d => { csv += `"${d.fecha}","${d.partido}","${d.liga}",${d.minuto},"${d.ap}",${d.probHT},${d.cuota},${d.status},${d.profit}\n`; });
+        let csv = "Fecha,Partido,Liga,Min,AP_L5,Posesion,HT_Prob,Cuota,Status,Profit\n";
+        db.forEach(d => { csv += `"${d.fecha}","${d.partido}","${d.liga}",${d.minuto},"${d.ap5}",${d.pos},${d.probHT},${d.cuota},${d.status},${d.profit}\n`; });
         const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
