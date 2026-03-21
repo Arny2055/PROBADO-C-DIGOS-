@@ -59,7 +59,7 @@
 <div id="analysisModal">
     <div class="modal-content">
         <span class="close-modal" onclick="closeAnalysis()">&times;</span>
-        <h2 style="color: var(--primary);">🎯 Inteligencia de Patrones El Gurú</h2>
+        <h2 style="color: var(--primary);">🎯 Inteligencia Adaptativa: El Gurú</h2>
         <div id="analysisResults"></div>
     </div>
 </div>
@@ -78,7 +78,7 @@
         <input type="password" id="botToken" placeholder="Token Bot" oninput="saveConfig()">
         <input type="text" id="chatId" placeholder="ID Canal" oninput="saveConfig()">
         <button class="btn-load" onclick="fetchMessages()">Cargar Alertas</button>
-        <button class="btn-analyze" onclick="analyzePatterns()">Ver Análisis</button>
+        <button class="btn-analyze" onclick="analyzePatterns()">Patrones Actualizados</button>
         <a href="apuestasreales.html" style="text-decoration: none;"><button style="background:var(--accent); color:black">Ver Apuestas Reales 🔥</button></a>
         <button style="background:var(--success);color:white" onclick="exportCSV()">CSV</button>
         <button style="background:var(--danger);color:white" onclick="clearData()">Reset</button>
@@ -108,7 +108,8 @@
 
 <script>
     let db = JSON.parse(localStorage.getItem('cornerpro_db')) || [];
-    let currentBestPatterns = { min: 25, prob: 80, pos: 52 };
+    // Umbrales iniciales que irán cambiando
+    let currentBestPatterns = { min: 25, prob: 78, pos: 50 };
     const MIN_TRAINING_SAMPLES = 30;
 
     window.onload = () => {
@@ -124,13 +125,24 @@
         localStorage.setItem('tg_chatId', document.getElementById('chatId').value);
     }
 
+    // --- MEJORA: MOTOR DE ACTUALIZACIÓN DE PATRONES ---
     function updateGlobalPatterns() {
-        const settled = db.filter(x => x.status !== 'PENDIENTE');
-        const wins = settled.filter(x => x.status === 'WIN');
-        if(wins.length >= 5) {
-            currentBestPatterns.min = wins.reduce((s, x) => s + x.minuto, 0) / wins.length;
+        const wins = db.filter(x => x.status === 'WIN').slice(0, 10); // Analiza los últimos 10 éxitos
+        
+        if(wins.length >= 3) {
+            // Calcula el promedio de lo que está funcionando actualmente
+            const avgMin = wins.reduce((s, x) => s + x.minuto, 0) / wins.length;
             const avgProb = wins.reduce((s, x) => s + x.probHT, 0) / wins.length;
-            currentBestPatterns.prob = avgProb > 75 ? 80 : avgProb;
+            const avgPos = wins.reduce((s, x) => s + x.pos, 0) / wins.length;
+
+            // Ajusta los patrones dinámicamente (usa un pequeño margen de seguridad)
+            currentBestPatterns.min = Math.floor(avgMin - 2); 
+            currentBestPatterns.prob = Math.floor(avgProb - 3);
+            currentBestPatterns.pos = Math.floor(avgPos - 2);
+
+            // Límites de seguridad para que la IA no se vuelva "demasiado loca"
+            if(currentBestPatterns.prob < 70) currentBestPatterns.prob = 75;
+            if(currentBestPatterns.min < 20) currentBestPatterns.min = 25;
         }
     }
 
@@ -164,29 +176,25 @@
             const data = await res.json();
             if (data.ok && data.result.length > 0) {
                 let nuevos = 0;
-                data.result.forEach(item => {
+                data.result.reverse().forEach(item => {
                     const msg = item.channel_post || item.message;
                     if(msg && msg.text && !db.find(x => x.id === msg.message_id)) {
                         const info = parseAlert(msg.text);
                         if(info.partido !== 'N/A') {
-                            const newPick = {
+                            db.unshift({
                                 id: msg.message_id,
                                 fecha: new Date(msg.date * 1000).toLocaleString('es-MX'),
                                 ...info,
                                 status: 'PENDIENTE',
                                 profit: 0,
                                 sentToReal: false
-                            };
-                            db.unshift(newPick);
+                            });
                             nuevos++;
                         }
                     }
                 });
-                if(nuevos > 0) {
-                    updateGlobalPatterns();
-                    saveDB();
-                }
-                const lastUpdateId = data.result[data.result.length - 1].update_id;
+                if(nuevos > 0) saveDB();
+                const lastUpdateId = data.result[0].update_id;
                 fetch(`https://api.telegram.org/bot${token}/getUpdates?offset=${lastUpdateId + 1}`);
             }
         } catch (e) { console.error(e); }
@@ -209,7 +217,7 @@
         db.forEach((d, i) => {
             const meetsCriteria = (d.probHT >= currentBestPatterns.prob) && 
                                   (d.pos >= currentBestPatterns.pos) &&
-                                  (d.minuto >= currentBestPatterns.min - 5);
+                                  (d.minuto >= currentBestPatterns.min);
 
             const isReal = isTrained && meetsCriteria;
 
@@ -252,7 +260,7 @@
         item.status = status;
         item.profit = status === 'WIN' ? parseFloat((item.cuota - 1).toFixed(2)) : (status === 'LOSS' ? -1 : 0);
         
-        // Sincronizar estado con la tabla de Apuestas Reales si existe allí
+        // Sincronizar con apuestasreales.html
         let realBets = JSON.parse(localStorage.getItem('cornerpro_real_bets')) || [];
         const realIdx = realBets.findIndex(x => x.id === item.id);
         if(realIdx !== -1) {
@@ -289,18 +297,24 @@
         modal.style.display = 'block';
         const progress = Math.min((settled.length / MIN_TRAINING_SAMPLES) * 100, 100).toFixed(0);
         resultsDiv.innerHTML = `
-            <div class="pattern-item" style="border-left-color: ${progress < 100 ? 'var(--danger)' : 'var(--success)'}">
-                <strong>📈 Estado del Entrenamiento:</strong> ${progress}% (${settled.length}/${MIN_TRAINING_SAMPLES} picks).
+            <div class="pattern-item" style="border-left-color: var(--success)">
+                <strong>🧬 IA Evolutiva Activada:</strong> El sistema está analizando tus victorias para ajustar los filtros de las próximas alertas.
             </div>
             <div class="pattern-item">
-                <strong>🎯 Filtros:</strong> Min >${currentBestPatterns.min.toFixed(0)}, Prob >${currentBestPatterns.prob}% y Pos >${currentBestPatterns.pos}%.
+                <strong>📊 Filtros Optimizados (Basado en historial):</strong> 
+                <br>• Minuto mínimo: <span class="data-hl">${currentBestPatterns.min}'</span>
+                <br>• Probabilidad mínima: <span class="data-hl">${currentBestPatterns.prob}%</span>
+                <br>• Posesión mínima: <span class="data-hl">${currentBestPatterns.pos}%</span>
+            </div>
+            <div class="pattern-item" style="font-size: 0.9em; opacity: 0.8;">
+                Estado del entrenamiento general: ${progress}% (${settled.length}/${MIN_TRAINING_SAMPLES})
             </div>
         `;
     }
 
     function closeAnalysis() { document.getElementById('analysisModal').style.display = 'none'; }
-    function deleteRow(i) { db.splice(i, 1); saveDB(); }
-    function clearData() { if(confirm("¿Borrar todo?")) { db = []; localStorage.removeItem('cornerpro_real_bets'); saveDB(); } }
+    function deleteRow(i) { if(confirm("¿Eliminar este registro?")) { db.splice(i, 1); saveDB(); } }
+    function clearData() { if(confirm("¿Borrar todo el historial y reiniciar aprendizaje?")) { db = []; localStorage.removeItem('cornerpro_real_bets'); saveDB(); } }
     
     function exportCSV() {
         let csv = "Fecha,Partido,Min,Posesion,HT_Prob,Cuota,Status,Profit\n";
@@ -308,7 +322,7 @@
         const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", "Backtesting_Guru.csv");
+        link.setAttribute("download", "Guru_Evolutivo.csv");
         link.click();
     }
 </script>
