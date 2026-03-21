@@ -3,262 +3,208 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Backtesting Suite - El Gurú</title>
+    <title>CornerPro Analysis - El Gurú</title>
     <style>
         :root {
-            --primary: #00d4ff;
-            --danger: #ff4b4b;
-            --success: #10b981;
-            --bg: #0f172a;
-            --card: #1e293b;
-            --text: #f8fafc;
-            --border: #334155;
+            --primary: #00d4ff; --danger: #ff4b4b; --success: #10b981;
+            --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --border: #334155;
         }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .container { width: 98%; max-width: 1400px; margin: auto; background: var(--card); padding: 20px; border-radius: 15px; }
+        
+        /* Panel de Estadísticas */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: #0f172a; padding: 15px; border-radius: 10px; text-align: center; border: 1px solid var(--border); }
+        .stat-card h3 { margin: 0; font-size: 0.8em; color: #94a3b8; text-transform: uppercase; }
+        .stat-card p { margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: var(--primary); }
 
-        body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
+        .config-section { 
+            display: grid; grid-template-columns: 1fr 1fr auto auto auto; gap: 10px; 
+            margin-bottom: 20px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px;
         }
-
-        .container {
-            width: 100%;
-            max-width: 1100px;
-            background: var(--card);
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-
-        h1 { 
-            text-align: center; 
-            color: var(--primary);
-            margin-bottom: 30px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .config-section {
-            display: grid;
-            grid-template-columns: 1fr 1fr auto auto;
-            gap: 12px;
-            margin-bottom: 25px;
-            padding: 20px;
-            background: rgba(15, 23, 42, 0.5);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-        }
-
-        input {
-            background: #0f172a;
-            border: 1px solid var(--border);
-            color: white;
-            padding: 12px;
-            border-radius: 6px;
-            outline: none;
-        }
-
-        input:focus { border-color: var(--primary); }
-
-        button {
-            border: none;
-            padding: 12px 20px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
+        input, select { background: #0f172a; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 5px; }
+        button { border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        
         .btn-load { background: var(--primary); color: #0f172a; }
-        .btn-clear-server { background: var(--danger); color: white; }
-
-        button:hover { opacity: 0.9; transform: translateY(-1px); }
-        button:active { transform: translateY(0); }
-
-        .status { 
-            font-size: 0.85em; 
-            color: #94a3b8; 
-            text-align: center; 
-            margin-bottom: 15px;
-            padding: 10px;
-            border-radius: 5px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            background: #1e293b;
-        }
-
-        th, td {
-            padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid var(--border);
-        }
-
-        th { 
-            background-color: #0f172a; 
-            color: var(--primary);
-            font-size: 0.9em;
-            text-transform: uppercase;
-        }
-
-        tr:hover { background-color: rgba(255, 255, 255, 0.03); }
-
-        .btn-delete {
-            background: transparent;
-            color: var(--danger);
-            border: 1px solid var(--danger);
-            padding: 5px 10px;
-            font-size: 0.75em;
-        }
-
-        .btn-delete:hover { background: var(--danger); color: white; }
-
-        .msg-cell { 
-            max-width: 450px; 
-            word-wrap: break-word; 
-            line-height: 1.5;
-        }
-
-        .empty-row { text-align: center; color: #64748b; padding: 40px; }
+        .btn-export { background: var(--success); color: white; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+        th { background: #0f172a; color: var(--primary); position: sticky; top: 0; }
+        th, td { padding: 10px; border-bottom: 1px solid var(--border); text-align: center; }
+        
+        .win { color: var(--success); font-weight: bold; }
+        .loss { color: var(--danger); font-weight: bold; }
+        .pending { color: #eab308; }
+        
+        .data-cell { font-size: 0.9em; color: #cbd5e1; }
+        .small-text { font-size: 0.75em; color: #64748b; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Backtesting Suite Telegram</h1>
+    <h1>Estrategia Live: HT Goal Tracker</h1>
+
+    <div class="stats-grid">
+        <div class="stat-card"><h3>Picks Totales</h3><p id="stat-total">0</p></div>
+        <div class="stat-card"><h3>% Acierto</h3><p id="stat-accuracy">0%</p></div>
+        <div class="stat-card"><h3>Profit (u)</h3><p id="stat-profit">0.00</p></div>
+        <div class="stat-card"><h3>Yield</h3><p id="stat-yield">0%</p></div>
+    </div>
     
     <div class="config-section">
-        <input type="password" id="botToken" placeholder="Token del Bot (BotFather)" oninput="saveConfig()">
-        <input type="text" id="chatId" placeholder="ID del Canal (ej: @canal)" oninput="saveConfig()">
-        <button class="btn-load" onclick="fetchMessages()">Cargar Mensajes</button>
-        <button class="btn-clear-server" onclick="clearTelegramQueue()">Limpiar Servidor</button>
+        <input type="password" id="botToken" placeholder="Token Bot" oninput="saveConfig()">
+        <input type="text" id="chatId" placeholder="ID Canal" oninput="saveConfig()">
+        <button class="btn-load" onclick="fetchMessages()">Cargar Alertas</button>
+        <button class="btn-export" onclick="exportCSV()">Exportar Backtesting</button>
+        <button style="background:var(--danger);color:white" onclick="clearData()">Reset</button>
     </div>
 
-    <div id="statusText" class="status">Configuración cargada localmente.</div>
-
-    <table id="resultsTable">
+    <table id="mainTable">
         <thead>
             <tr>
-                <th style="width: 20%;">Fecha</th>
-                <th>Mensaje / Pronóstico</th>
-                <th style="width: 10%;">ID</th>
-                <th style="width: 10%;">Acción</th>
+                <th>Fecha/Hora</th>
+                <th>Partido / Liga</th>
+                <th>Min</th>
+                <th>AP (L/V)</th>
+                <th>% HT</th>
+                <th>Cuota</th>
+                <th>Resultado</th>
+                <th>Profit</th>
+                <th>Acción</th>
             </tr>
         </thead>
-        <tbody id="tableBody">
-            <tr>
-                <td colspan="4" class="empty-row">Presiona "Cargar Mensajes" para comenzar.</td>
-            </tr>
-        </tbody>
+        <tbody id="tableBody"></tbody>
     </table>
 </div>
 
 <script>
-    // 1. Cargar configuración guardada al abrir la herramienta
-    window.onload = function() {
-        const savedToken = localStorage.getItem('tg_token');
-        const savedChat = localStorage.getItem('tg_chatId');
-        
-        if(savedToken) document.getElementById('botToken').value = savedToken;
-        if(savedChat) document.getElementById('chatId').value = savedChat;
+    let db = JSON.parse(localStorage.getItem('cornerpro_db')) || [];
+
+    window.onload = () => {
+        document.getElementById('botToken').value = localStorage.getItem('tg_token') || '';
+        document.getElementById('chatId').value = localStorage.getItem('tg_chatId') || '';
+        calculateStats();
+        render();
     };
 
-    // 2. Guardar automáticamente en el navegador cada vez que se escribe
     function saveConfig() {
         localStorage.setItem('tg_token', document.getElementById('botToken').value);
         localStorage.setItem('tg_chatId', document.getElementById('chatId').value);
     }
 
-    // 3. Eliminar una fila individual de la tabla (Vista local)
-    function deleteRow(btn) {
-        const row = btn.closest('tr');
-        row.remove();
+    // --- PARSER ESPECÍFICO PARA TU MENSAJE ---
+    function parseAlert(text) {
+        const gameMatch = text.match(/🏟 Game: (.*?)\n/);
+        const leagueMatch = text.match(/🏆 League: (.*?)\n/);
+        const timeMatch = text.match(/🕛 Time: (\d+)/);
+        const apMatch = text.match(/⚔ Dangerous Attacks: (\d+) - (\d+)/);
+        const htProbMatch = text.match(/Medio Tiempo:(\d+)%/);
+        const liveOddMatch = text.match(/Goal Live Line Odd:([\d.]+)/);
+
+        return {
+            partido: gameMatch ? gameMatch[1] : 'Desconocido',
+            liga: leagueMatch ? leagueMatch[1] : 'Desc',
+            minuto: timeMatch ? timeMatch[1] : '?',
+            ap: apMatch ? `${apMatch[1]}-${apMatch[2]}` : '0-0',
+            probHT: htProbMatch ? htProbMatch[1] : '0',
+            cuota: liveOddMatch ? parseFloat(liveOddMatch[1]) : 1.50
+        };
     }
 
-    // 4. Limpiar los mensajes del servidor de Telegram (Reset de Offset)
-    async function clearTelegramQueue() {
-        const token = document.getElementById('botToken').value;
-        const status = document.getElementById('statusText');
-
-        if(!token) return alert("Ingresa el Token primero.");
-
-        status.innerText = "Limpiando cola de mensajes en el servidor...";
-        status.style.color = "var(--danger)";
-
-        try {
-            const response = await fetch(`https://api.telegram.org/bot${token}/getUpdates`);
-            const data = await response.json();
-
-            if (data.ok && data.result.length > 0) {
-                // Obtenemos el ID del último mensaje y le sumamos 1 para confirmar recepción
-                const lastUpdateId = data.result[data.result.length - 1].update_id;
-                await fetch(`https://api.telegram.org/bot${token}/getUpdates?offset=${lastUpdateId + 1}`);
-                
-                document.getElementById('tableBody').innerHTML = '<tr><td colspan="4" class="empty-row">Servidor limpio. Los mensajes anteriores fueron ignorados.</td></tr>';
-                status.innerText = "¡Servidor de Telegram vaciado con éxito!";
-            } else {
-                status.innerText = "No hay mensajes pendientes por limpiar en el servidor.";
-            }
-        } catch (error) {
-            status.innerText = "Error al intentar limpiar el servidor.";
-            console.error(error);
-        }
-    }
-
-    // 5. Obtener los mensajes más recientes
     async function fetchMessages() {
         const token = document.getElementById('botToken').value;
-        const status = document.getElementById('statusText');
-        const tableBody = document.getElementById('tableBody');
-
-        if(!token) return alert("Por favor ingresa el Token de BotFather.");
-
-        status.innerText = "Consultando mensajes nuevos...";
-        status.style.color = "var(--primary)";
-
         try {
-            const response = await fetch(`https://api.telegram.org/bot${token}/getUpdates`);
-            const data = await response.json();
-
+            const res = await fetch(`https://api.telegram.org/bot${token}/getUpdates`);
+            const data = await res.json();
             if (data.ok && data.result.length > 0) {
-                tableBody.innerHTML = "";
-                // Mostramos primero los más nuevos
-                const updates = data.result.reverse(); 
-
-                updates.forEach(item => {
+                data.result.forEach(item => {
                     const msg = item.channel_post || item.message;
-                    
-                    if(msg) {
-                        const date = new Date(msg.date * 1000).toLocaleString('es-MX');
-                        const text = msg.text || `<span style="color:#64748b; font-style:italic;">[Multimedia o Sin Texto]</span>`;
-                        
-                        const row = `<tr>
-                            <td>${date}</td>
-                            <td class="msg-cell">${text}</td>
-                            <td>${msg.message_id}</td>
-                            <td><button class="btn-delete" onclick="deleteRow(this)">Borrar</button></td>
-                        </tr>`;
-                        tableBody.innerHTML += row;
+                    if(msg && msg.text && !db.find(x => x.id === msg.message_id)) {
+                        const info = parseAlert(msg.text);
+                        db.unshift({
+                            id: msg.message_id,
+                            fecha: new Date(msg.date * 1000).toLocaleString(),
+                            ...info,
+                            status: 'PENDIENTE',
+                            profit: 0
+                        });
                     }
                 });
-                status.innerText = `Se encontraron ${data.result.length} mensajes en la cola del servidor.`;
-            } else {
-                status.innerText = "No hay mensajes nuevos en el servidor.";
-                tableBody.innerHTML = '<tr><td colspan="4" class="empty-row">Sin mensajes nuevos. Publica algo en el canal y vuelve a intentar.</td></tr>';
+                saveDB();
+                // Limpiar servidor
+                const lastId = data.result[data.result.length - 1].update_id;
+                fetch(`https://api.telegram.org/bot${token}/getUpdates?offset=${lastId + 1}`);
             }
-        } catch (error) {
-            status.innerText = "Error de conexión. Revisa el Token.";
-            status.style.color = "var(--danger)";
-        }
+        } catch (e) { console.error(e); }
+    }
+
+    function setStatus(index, status) {
+        const item = db[index];
+        item.status = status;
+        if(status === 'WIN') item.profit = parseFloat((item.cuota - 1).toFixed(2));
+        else if(status === 'LOSS') item.profit = -1;
+        else item.profit = 0;
+        saveDB();
+    }
+
+    function saveDB() {
+        localStorage.setItem('cornerpro_db', JSON.stringify(db));
+        calculateStats();
+        render();
+    }
+
+    function calculateStats() {
+        const settled = db.filter(x => x.status !== 'PENDIENTE');
+        const wins = settled.filter(x => x.status === 'WIN').length;
+        const totalProfit = settled.reduce((acc, curr) => acc + curr.profit, 0);
+        
+        document.getElementById('stat-total').innerText = settled.length;
+        document.getElementById('stat-accuracy').innerText = settled.length ? ((wins/settled.length)*100).toFixed(1) + '%' : '0%';
+        document.getElementById('stat-profit').innerText = totalProfit.toFixed(2);
+        document.getElementById('stat-profit').style.color = totalProfit >= 0 ? 'var(--success)' : 'var(--danger)';
+        document.getElementById('stat-yield').innerText = settled.length ? ((totalProfit/settled.length)*100).toFixed(1) + '%' : '0%';
+    }
+
+    function render() {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        db.forEach((d, i) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td class="small-text">${d.fecha}</td>
+                    <td><b>${d.partido}</b><br><span class="small-text">${d.liga}</span></td>
+                    <td>${d.minuto}'</td>
+                    <td class="data-cell">${d.ap}</td>
+                    <td>${d.probHT}%</td>
+                    <td>${d.cuota}</td>
+                    <td>
+                        <select onchange="setStatus(${i}, this.value)" style="color:${d.status === 'WIN' ? 'var(--success)' : (d.status === 'LOSS' ? 'var(--danger)' : 'white')}">
+                            <option value="PENDIENTE" ${d.status === 'PENDIENTE' ? 'selected' : ''}>⏳ Pendiente</option>
+                            <option value="WIN" ${d.status === 'WIN' ? 'selected' : ''}>✅ WIN</option>
+                            <option value="LOSS" ${d.status === 'LOSS' ? 'selected' : ''}>❌ LOSS</option>
+                        </select>
+                    </td>
+                    <td class="${d.profit > 0 ? 'win' : (d.profit < 0 ? 'loss' : '')}">${d.profit.toFixed(2)}</td>
+                    <td><button onclick="deleteRow(${i})" style="background:none; color:var(--danger)">🗑</button></td>
+                </tr>`;
+        });
+    }
+
+    function deleteRow(i) { db.splice(i, 1); saveDB(); }
+    function clearData() { if(confirm("¿Borrar historial?")) { db = []; saveDB(); } }
+
+    function exportCSV() {
+        let csv = "Fecha,Partido,Liga,Min,AP,HT_Prob,Cuota,Status,Profit\n";
+        db.forEach(d => {
+            csv += `"${d.fecha}","${d.partido}","${d.liga}",${d.minuto},"${d.ap}",${d.probHT},${d.cuota},${d.status},${d.profit}\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute("download", "Backtesting_CornerPro.csv");
+        link.click();
     }
 </script>
-
 </body>
 </html>
