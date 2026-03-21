@@ -8,6 +8,7 @@
         :root {
             --primary: #00d4ff; --danger: #ff4b4b; --success: #10b981;
             --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --border: #334155;
+            --accent: #eab308;
         }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 15px; }
         .container { width: 100%; max-width: 1600px; margin: auto; background: var(--card); padding: 20px; border-radius: 15px; overflow-x: auto; }
@@ -18,13 +19,15 @@
         .stat-card p { margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: var(--primary); }
 
         .config-section { 
-            display: grid; grid-template-columns: 1fr 1fr auto auto auto; gap: 10px; 
+            display: grid; grid-template-columns: 1fr 1fr auto auto auto auto; gap: 10px; 
             margin-bottom: 20px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px;
         }
         input, select { background: #0f172a; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 5px; }
-        button { border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        button { border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { filter: brightness(1.2); }
         
         .btn-load { background: var(--primary); color: #0f172a; }
+        .btn-analyze { background: var(--accent); color: #000; }
         .btn-export { background: var(--success); color: white; }
         
         table { width: 100%; border-collapse: collapse; font-size: 0.75em; min-width: 1200px; }
@@ -35,12 +38,29 @@
         .loss { color: var(--danger); font-weight: bold; }
         .data-hl { color: var(--primary); font-weight: bold; }
         .small-text { font-size: 0.85em; color: #64748b; display: block; }
-        
-        /* Tooltip para ver mensaje original rápido */
-        .msg-pop { cursor: help; text-decoration: underline dotted; }
+
+        /* Estilos del Modal de Análisis */
+        #analysisModal {
+            display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: var(--card); margin: 5% auto; padding: 25px; border-radius: 15px;
+            width: 80%; max-width: 800px; border: 1px solid var(--primary); max-height: 80vh; overflow-y: auto;
+        }
+        .pattern-item { background: #0f172a; padding: 15px; border-left: 4px solid var(--primary); margin-bottom: 10px; border-radius: 5px; }
+        .close-modal { float: right; cursor: pointer; font-size: 24px; color: var(--danger); }
     </style>
 </head>
 <body>
+
+<div id="analysisModal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeAnalysis()">&times;</span>
+        <h2 style="color: var(--primary);">🎯 Patrones de Rentabilidad Detectados</h2>
+        <div id="analysisResults"></div>
+    </div>
+</div>
 
 <div class="container">
     <h1>Estrategia Live: HT Goal Tracker Pro</h1>
@@ -56,7 +76,8 @@
         <input type="password" id="botToken" placeholder="Token Bot" oninput="saveConfig()">
         <input type="text" id="chatId" placeholder="ID Canal" oninput="saveConfig()">
         <button class="btn-load" onclick="fetchMessages()">Cargar Alertas</button>
-        <button class="btn-export" onclick="exportCSV()">Exportar CSV (Excel)</button>
+        <button class="btn-analyze" onclick="analyzePatterns()">Analizar Picks</button>
+        <button class="btn-export" onclick="exportCSV()">Exportar CSV</button>
         <button style="background:var(--danger);color:white" onclick="clearData()">Reset</button>
     </div>
 
@@ -97,22 +118,20 @@
         localStorage.setItem('tg_chatId', document.getElementById('chatId').value);
     }
 
-    // --- PARSER MEJORADO PARA DATOS PROFUNDOS ---
     function parseAlert(text) {
         const get = (regex, index = 1) => { const m = text.match(regex); return m ? m[index] : '0'; };
-
         return {
             partido: get(/🏟 Game: (.*?)\n/),
             liga: get(/🏆 League: (.*?)\n/),
-            minuto: get(/🕛 Time: (\d+)/),
+            minuto: parseInt(get(/🕛 Time: (\d+)/)) || 0,
             ap: get(/⚔ Dangerous Attacks: (\d+ - \d+)/),
             ap5: get(/Last 5': (.*?)\n/),
             corners: get(/⛳ Corners: (\d+ - \d+)/),
-            pos: get(/⚖ Possession: (\d+ - \d+)/),
+            pos: parseInt(get(/⚖ Possession: (\d+)/)) || 0,
             son: get(/🥅 Shots on: (\d+ - \d+)/),
             soff: get(/➡ Shots off: (\d+ - \d+)/),
             cards: get(/🟡 Yellow Cards: (\d+ - \d+)/),
-            probHT: get(/Medio Tiempo:(\d+)%/),
+            probHT: parseInt(get(/Medio Tiempo:(\d+)%/)) || 0,
             cuota: parseFloat(get(/Goal Live Line Odd:([\d.]+)/)) || 1.50
         };
     }
@@ -143,6 +162,48 @@
             }
         } catch (e) { console.error(e); }
     }
+
+    function analyzePatterns() {
+        const resolved = db.filter(x => x.status !== 'PENDIENTE');
+        if(resolved.length < 5) return alert("Necesitas al menos 5 picks resueltos para analizar patrones.");
+        
+        const modal = document.getElementById('analysisModal');
+        const resultsDiv = document.getElementById('analysisResults');
+        modal.style.display = 'block';
+        resultsDiv.innerHTML = '<p>Analizando variables de éxito...</p>';
+
+        const wins = resolved.filter(x => x.status === 'WIN');
+        
+        // 1. Análisis de Minutos
+        const avgMinWin = (wins.reduce((s, x) => s + x.minuto, 0) / wins.length).toFixed(0);
+        
+        // 2. Análisis de Probabilidad HT
+        const bestProb = wins.filter(x => x.probHT >= 80).length;
+        const totalProb = resolved.filter(x => x.probHT >= 80).length;
+        const rateProb = totalProb > 0 ? ((bestProb/totalProb)*100).toFixed(1) : 0;
+
+        // 3. Análisis de Posesión
+        const highPosWins = wins.filter(x => x.pos >= 55).length;
+        const totalHighPos = resolved.filter(x => x.pos >= 55).length;
+        const ratePos = totalHighPos > 0 ? ((highPosWins/totalHighPos)*100).toFixed(1) : 0;
+
+        resultsDiv.innerHTML = `
+            <div class="pattern-item">
+                <strong>⏰ Minuto de Oro:</strong> Los picks ganadores suelen darse cerca del minuto <b>${avgMinWin}</b>.
+            </div>
+            <div class="pattern-item">
+                <strong>📈 Filtro de Probabilidad:</strong> Cuando el bot marca <b>80% o más</b>, tu efectividad es del <b>${rateProb}%</b>.
+            </div>
+            <div class="pattern-item">
+                <strong>⚖ Dominio de Posesión:</strong> Con posesión <b>>= 55%</b>, el acierto es del <b>${ratePos}%</b>.
+            </div>
+            <div class="pattern-item" style="border-color: var(--accent);">
+                <strong>💡 Recomendación:</strong> ${rateProb > 70 ? "Sigue priorizando alertas con HT Prob > 80%." : "Busca partidos con mayor presión en los últimos 5 minutos."}
+            </div>
+        `;
+    }
+
+    function closeAnalysis() { document.getElementById('analysisModal').style.display = 'none'; }
 
     function setStatus(index, status) {
         const item = db[index];
@@ -202,10 +263,8 @@
     function clearData() { if(confirm("¿Borrar historial?")) { db = []; saveDB(); } }
 
     function exportCSV() {
-        let csv = "Fecha,Partido,Liga,Min,AP,AP_L5,Corners,Posesion,ShotsOn,ShotsOff,Cards,HT_Prob,Cuota,Status,Profit\n";
-        db.forEach(d => {
-            csv += `"${d.fecha}","${d.partido}","${d.liga}",${d.minuto},"${d.ap}","${d.ap5}","${d.corners}","${d.pos}","${d.son}","${d.soff}","${d.cards}",${d.probHT},${d.cuota},${d.status},${d.profit}\n`;
-        });
+        let csv = "Fecha,Partido,Liga,Min,AP,Posesion,HT_Prob,Cuota,Status,Profit\n";
+        db.forEach(d => { csv += `"${d.fecha}","${d.partido}","${d.liga}",${d.minuto},"${d.ap}",${d.pos},${d.probHT},${d.cuota},${d.status},${d.profit}\n`; });
         const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
