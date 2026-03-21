@@ -29,7 +29,7 @@
         .btn-load { background: var(--primary); color: #0f172a; }
         .btn-analyze { background: var(--accent); color: #000; }
         
-        table { width: 100%; border-collapse: colspan; font-size: 0.75em; min-width: 1300px; border-collapse: collapse; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.75em; min-width: 1300px; }
         th { background: #0f172a; color: var(--primary); position: sticky; top: 0; padding: 10px; }
         td { padding: 8px; border-bottom: 1px solid var(--border); text-align: center; }
         
@@ -59,7 +59,7 @@
 <div id="analysisModal">
     <div class="modal-content">
         <span class="close-modal" onclick="closeAnalysis()">&times;</span>
-        <h2 style="color: var(--primary);">🎯 Inteligencia Adaptativa: El Gurú</h2>
+        <h2 style="color: var(--primary);">🎯 Inteligencia Adaptativa: El Gurú (Muestra 50W)</h2>
         <div id="analysisResults"></div>
     </div>
 </div>
@@ -124,19 +124,25 @@
         localStorage.setItem('tg_chatId', document.getElementById('chatId').value);
     }
 
+    // --- MEJORA: MOTOR BASADO EN ÚLTIMOS 50 GANADOS ---
     function updateGlobalPatterns() {
-        const wins = db.filter(x => x.status === 'WIN').slice(0, 10);
-        if(wins.length >= 3) {
+        // Buscamos todos los WIN y tomamos los últimos 50 para una estadística robusta
+        const wins = db.filter(x => x.status === 'WIN').slice(0, 50);
+        
+        if(wins.length >= 5) { // Se requieren al menos 5 para empezar a ajustar
             const avgMin = wins.reduce((s, x) => s + x.minuto, 0) / wins.length;
             const avgProb = wins.reduce((s, x) => s + x.probHT, 0) / wins.length;
             const avgPos = wins.reduce((s, x) => s + x.pos, 0) / wins.length;
 
-            currentBestPatterns.min = Math.floor(avgMin - 2); 
-            currentBestPatterns.prob = Math.floor(avgProb - 3);
+            // Ajuste fino con margen de seguridad
+            currentBestPatterns.min = Math.floor(avgMin - 1); 
+            currentBestPatterns.prob = Math.floor(avgProb - 2);
             currentBestPatterns.pos = Math.floor(avgPos - 2);
 
-            if(currentBestPatterns.prob < 70) currentBestPatterns.prob = 75;
-            if(currentBestPatterns.min < 20) currentBestPatterns.min = 25;
+            // Filtros mínimos de seguridad global
+            if(currentBestPatterns.prob < 72) currentBestPatterns.prob = 75;
+            if(currentBestPatterns.min < 20) currentBestPatterns.min = 22;
+            if(currentBestPatterns.pos < 45) currentBestPatterns.pos = 48;
         }
     }
 
@@ -215,7 +221,6 @@
 
             const isReal = isTrained && meetsCriteria;
 
-            // MEJORA: Solo enviar si es Real, está PENDIENTE y no se ha enviado antes
             if(isReal && d.status === 'PENDIENTE' && !d.sentToReal) {
                 sendToRealBets(d);
                 d.sentToReal = true;
@@ -285,27 +290,30 @@
     }
 
     function analyzePatterns() {
-        const settled = db.filter(x => x.status !== 'PENDIENTE');
+        const winsCount = db.filter(x => x.status === 'WIN').length;
         const modal = document.getElementById('analysisModal');
         const resultsDiv = document.getElementById('analysisResults');
         modal.style.display = 'block';
-        const progress = Math.min((settled.length / MIN_TRAINING_SAMPLES) * 100, 100).toFixed(0);
+        
         resultsDiv.innerHTML = `
-            <div class="pattern-item" style="border-left-color: var(--success)">
-                <strong>🧬 IA Evolutiva Activada:</strong> El sistema analiza victorias para ajustar filtros.
+            <div class="pattern-item" style="border-left-color: var(--primary)">
+                <strong>🧬 Análisis de Éxito Profundo:</strong> El Gurú está cruzando datos de los últimos <span class="data-hl">${Math.min(winsCount, 50)}</span> partidos ganados.
             </div>
             <div class="pattern-item">
-                <strong>📊 Filtros Optimizados:</strong> 
-                <br>• Minuto mínimo: <span class="data-hl">${currentBestPatterns.min}'</span>
-                <br>• Probabilidad mínima: <span class="data-hl">${currentBestPatterns.prob}%</span>
-                <br>• Posesión mínima: <span class="data-hl">${currentBestPatterns.pos}%</span>
+                <strong>📊 Patrón de Oro Actual:</strong> 
+                <br>• Minuto ideal: <span class="data-hl">≥ ${currentBestPatterns.min}'</span>
+                <br>• Probabilidad HT: <span class="data-hl">≥ ${currentBestPatterns.prob}%</span>
+                <br>• Dominio Posesión: <span class="data-hl">≥ ${currentBestPatterns.pos}%</span>
+            </div>
+            <div class="pattern-item" style="font-size: 0.85em; color: #94a3b8;">
+                *Los patrones se recalculan automáticamente con cada nuevo WIN para mantener la estrategia actualizada a las tendencias del mercado.
             </div>
         `;
     }
 
     function closeAnalysis() { document.getElementById('analysisModal').style.display = 'none'; }
     function deleteRow(i) { if(confirm("¿Eliminar este registro?")) { db.splice(i, 1); saveDB(); } }
-    function clearData() { if(confirm("¿Reiniciar aprendizaje?")) { db = []; localStorage.removeItem('cornerpro_real_bets'); saveDB(); } }
+    function clearData() { if(confirm("¿Reiniciar aprendizaje y base de datos?")) { db = []; localStorage.removeItem('cornerpro_real_bets'); saveDB(); } }
     
     function exportCSV() {
         let csv = "Fecha,Partido,Min,Posesion,HT_Prob,Cuota,Status,Profit\n";
@@ -313,7 +321,7 @@
         const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", "Guru_Evolutivo.csv");
+        link.setAttribute("download", "Guru_Evolutivo_50W.csv");
         link.click();
     }
 </script>
