@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CornerPro Analytics Pro - El Gurú</title>
+    <title>CornerPro Analytics AI - El Gurú</title>
     <style>
         :root {
             --primary: #00d4ff; --danger: #ff4b4b; --success: #10b981;
@@ -28,18 +28,20 @@
         
         .btn-load { background: var(--primary); color: #0f172a; }
         .btn-analyze { background: var(--accent); color: #000; }
-        .btn-export { background: var(--success); color: white; }
         
         table { width: 100%; border-collapse: collapse; font-size: 0.75em; min-width: 1200px; }
         th { background: #0f172a; color: var(--primary); position: sticky; top: 0; padding: 10px; }
         td { padding: 8px; border-bottom: 1px solid var(--border); text-align: center; }
         
+        /* Estilo para Fila Recomendada */
+        .recommended-row { background: rgba(234, 179, 8, 0.1) !important; border-left: 4px solid var(--accent); }
+        .badge-real { background: var(--accent); color: #000; padding: 3px 6px; border-radius: 4px; font-weight: bold; font-size: 0.85em; display: inline-block; margin-top: 5px; }
+
         .win { color: var(--success); font-weight: bold; }
         .loss { color: var(--danger); font-weight: bold; }
         .data-hl { color: var(--primary); font-weight: bold; }
         .small-text { font-size: 0.85em; color: #64748b; display: block; }
 
-        /* Estilos del Modal de Análisis */
         #analysisModal {
             display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
@@ -57,7 +59,7 @@
 <div id="analysisModal">
     <div class="modal-content">
         <span class="close-modal" onclick="closeAnalysis()">&times;</span>
-        <h2 style="color: var(--primary);">🎯 Patrones de Rentabilidad Detectados</h2>
+        <h2 style="color: var(--primary);">🎯 Inteligencia de Patrones</h2>
         <div id="analysisResults"></div>
     </div>
 </div>
@@ -76,8 +78,8 @@
         <input type="password" id="botToken" placeholder="Token Bot" oninput="saveConfig()">
         <input type="text" id="chatId" placeholder="ID Canal" oninput="saveConfig()">
         <button class="btn-load" onclick="fetchMessages()">Cargar Alertas</button>
-        <button class="btn-analyze" onclick="analyzePatterns()">Analizar Picks</button>
-        <button class="btn-export" onclick="exportCSV()">Exportar CSV</button>
+        <button class="btn-analyze" onclick="analyzePatterns()">Ver Análisis</button>
+        <button style="background:var(--success);color:white" onclick="exportCSV()">CSV</button>
         <button style="background:var(--danger);color:white" onclick="clearData()">Reset</button>
     </div>
 
@@ -90,8 +92,7 @@
                 <th>AP (L/V)</th>
                 <th>Córners</th>
                 <th>Posesión</th>
-                <th>Shots (On/Off)</th>
-                <th>Tarjetas</th>
+                <th>Shots (O/O)</th>
                 <th>% HT</th>
                 <th>Cuota</th>
                 <th>Resultado</th>
@@ -105,10 +106,12 @@
 
 <script>
     let db = JSON.parse(localStorage.getItem('cornerpro_db')) || [];
+    let currentBestPatterns = { min: 25, prob: 80, pos: 55 };
 
     window.onload = () => {
         document.getElementById('botToken').value = localStorage.getItem('tg_token') || '';
         document.getElementById('chatId').value = localStorage.getItem('tg_chatId') || '';
+        updateGlobalPatterns();
         calculateStats();
         render();
     };
@@ -116,6 +119,16 @@
     function saveConfig() {
         localStorage.setItem('tg_token', document.getElementById('botToken').value);
         localStorage.setItem('tg_chatId', document.getElementById('chatId').value);
+    }
+
+    // --- ACTUALIZA PATRONES EN SEGUNDO PLANO ---
+    function updateGlobalPatterns() {
+        const wins = db.filter(x => x.status === 'WIN');
+        if(wins.length > 3) {
+            currentBestPatterns.min = wins.reduce((s, x) => s + x.minuto, 0) / wins.length;
+            currentBestPatterns.prob = 80; // Umbral base
+            currentBestPatterns.pos = 54;  // Umbral base
+        }
     }
 
     function parseAlert(text) {
@@ -156,6 +169,7 @@
                         });
                     }
                 });
+                updateGlobalPatterns();
                 saveDB();
                 const lastId = data.result[data.result.length - 1].update_id;
                 fetch(`https://api.telegram.org/bot${token}/getUpdates?offset=${lastId + 1}`);
@@ -163,87 +177,28 @@
         } catch (e) { console.error(e); }
     }
 
-    function analyzePatterns() {
-        const resolved = db.filter(x => x.status !== 'PENDIENTE');
-        if(resolved.length < 5) return alert("Necesitas al menos 5 picks resueltos para analizar patrones.");
-        
-        const modal = document.getElementById('analysisModal');
-        const resultsDiv = document.getElementById('analysisResults');
-        modal.style.display = 'block';
-        resultsDiv.innerHTML = '<p>Analizando variables de éxito...</p>';
-
-        const wins = resolved.filter(x => x.status === 'WIN');
-        
-        // 1. Análisis de Minutos
-        const avgMinWin = (wins.reduce((s, x) => s + x.minuto, 0) / wins.length).toFixed(0);
-        
-        // 2. Análisis de Probabilidad HT
-        const bestProb = wins.filter(x => x.probHT >= 80).length;
-        const totalProb = resolved.filter(x => x.probHT >= 80).length;
-        const rateProb = totalProb > 0 ? ((bestProb/totalProb)*100).toFixed(1) : 0;
-
-        // 3. Análisis de Posesión
-        const highPosWins = wins.filter(x => x.pos >= 55).length;
-        const totalHighPos = resolved.filter(x => x.pos >= 55).length;
-        const ratePos = totalHighPos > 0 ? ((highPosWins/totalHighPos)*100).toFixed(1) : 0;
-
-        resultsDiv.innerHTML = `
-            <div class="pattern-item">
-                <strong>⏰ Minuto de Oro:</strong> Los picks ganadores suelen darse cerca del minuto <b>${avgMinWin}</b>.
-            </div>
-            <div class="pattern-item">
-                <strong>📈 Filtro de Probabilidad:</strong> Cuando el bot marca <b>80% o más</b>, tu efectividad es del <b>${rateProb}%</b>.
-            </div>
-            <div class="pattern-item">
-                <strong>⚖ Dominio de Posesión:</strong> Con posesión <b>>= 55%</b>, el acierto es del <b>${ratePos}%</b>.
-            </div>
-            <div class="pattern-item" style="border-color: var(--accent);">
-                <strong>💡 Recomendación:</strong> ${rateProb > 70 ? "Sigue priorizando alertas con HT Prob > 80%." : "Busca partidos con mayor presión en los últimos 5 minutos."}
-            </div>
-        `;
-    }
-
-    function closeAnalysis() { document.getElementById('analysisModal').style.display = 'none'; }
-
-    function setStatus(index, status) {
-        const item = db[index];
-        item.status = status;
-        item.profit = status === 'WIN' ? parseFloat((item.cuota - 1).toFixed(2)) : (status === 'LOSS' ? -1 : 0);
-        saveDB();
-    }
-
-    function saveDB() {
-        localStorage.setItem('cornerpro_db', JSON.stringify(db));
-        calculateStats();
-        render();
-    }
-
-    function calculateStats() {
-        const settled = db.filter(x => x.status !== 'PENDIENTE');
-        const wins = settled.filter(x => x.status === 'WIN').length;
-        const totalProfit = settled.reduce((acc, curr) => acc + curr.profit, 0);
-        
-        document.getElementById('stat-total').innerText = settled.length;
-        document.getElementById('stat-accuracy').innerText = settled.length ? ((wins/settled.length)*100).toFixed(1) + '%' : '0%';
-        document.getElementById('stat-profit').innerText = totalProfit.toFixed(2);
-        document.getElementById('stat-profit').style.color = totalProfit >= 0 ? 'var(--success)' : 'var(--danger)';
-        document.getElementById('stat-yield').innerText = settled.length ? ((totalProfit/settled.length)*100).toFixed(1) + '%' : '0%';
-    }
-
     function render() {
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
         db.forEach((d, i) => {
+            // LÓGICA DE SELECCIÓN AUTOMÁTICA
+            const isIdeal = (d.status === 'PENDIENTE') && 
+                            (d.probHT >= currentBestPatterns.prob) && 
+                            (d.pos >= currentBestPatterns.pos) &&
+                            (d.minuto >= currentBestPatterns.min - 5);
+
             tbody.innerHTML += `
-                <tr>
+                <tr class="${isIdeal ? 'recommended-row' : ''}">
                     <td class="small-text">${d.fecha}</td>
-                    <td><b>${d.partido}</b><span class="small-text">${d.liga}</span></td>
+                    <td>
+                        <b>${d.partido}</b><span class="small-text">${d.liga}</span>
+                        ${isIdeal ? '<span class="badge-real">🔥 APUESTA REAL</span>' : ''}
+                    </td>
                     <td class="data-hl">${d.minuto}'</td>
                     <td>${d.ap}<br><span class="small-text">L5: ${d.ap5}</span></td>
                     <td>${d.corners}</td>
                     <td>${d.pos}%</td>
                     <td>${d.son} / ${d.soff}</td>
-                    <td>Y:${d.cards}</td>
                     <td class="data-hl">${d.probHT}%</td>
                     <td>${d.cuota}</td>
                     <td>
@@ -259,16 +214,62 @@
         });
     }
 
+    function analyzePatterns() {
+        const resolved = db.filter(x => x.status !== 'PENDIENTE');
+        const modal = document.getElementById('analysisModal');
+        const resultsDiv = document.getElementById('analysisResults');
+        modal.style.display = 'block';
+        
+        if(resolved.length < 3) {
+            resultsDiv.innerHTML = '<p>Necesitas más datos para un análisis profundo.</p>';
+            return;
+        }
+
+        const wins = resolved.filter(x => x.status === 'WIN');
+        const winRateHT = ((wins.filter(x => x.probHT >= 80).length / resolved.filter(x => x.probHT >= 80).length || 0) * 100).toFixed(1);
+
+        resultsDiv.innerHTML = `
+            <div class="pattern-item"><strong>🎯 Configuración de Apuesta Real:</strong> Actualmente el sistema busca picks con >${currentBestPatterns.prob}% HT y >${currentBestPatterns.pos}% Posesión.</div>
+            <div class="pattern-item"><strong>📊 Rendimiento HT 80%+:</strong> Tu acierto en alertas de alta probabilidad es del ${winRateHT}%.</div>
+            <div class="pattern-item"><strong>🕒 Minuto Recomendado:</strong> La mayoría de tus aciertos ocurren después del minuto ${currentBestPatterns.min.toFixed(0)}.</div>
+        `;
+    }
+
+    function setStatus(index, status) {
+        const item = db[index];
+        item.status = status;
+        item.profit = status === 'WIN' ? parseFloat((item.cuota - 1).toFixed(2)) : (status === 'LOSS' ? -1 : 0);
+        updateGlobalPatterns();
+        saveDB();
+    }
+
+    function saveDB() {
+        localStorage.setItem('cornerpro_db', JSON.stringify(db));
+        calculateStats();
+        render();
+    }
+
+    function calculateStats() {
+        const settled = db.filter(x => x.status !== 'PENDIENTE');
+        const wins = settled.filter(x => x.status === 'WIN').length;
+        const totalProfit = settled.reduce((acc, curr) => acc + curr.profit, 0);
+        document.getElementById('stat-total').innerText = settled.length;
+        document.getElementById('stat-accuracy').innerText = settled.length ? ((wins/settled.length)*100).toFixed(1) + '%' : '0%';
+        document.getElementById('stat-profit').innerText = totalProfit.toFixed(2);
+        document.getElementById('stat-profit').style.color = totalProfit >= 0 ? 'var(--success)' : 'var(--danger)';
+        document.getElementById('stat-yield').innerText = settled.length ? ((totalProfit/settled.length)*100).toFixed(1) + '%' : '0%';
+    }
+
+    function closeAnalysis() { document.getElementById('analysisModal').style.display = 'none'; }
     function deleteRow(i) { db.splice(i, 1); saveDB(); }
     function clearData() { if(confirm("¿Borrar historial?")) { db = []; saveDB(); } }
-
     function exportCSV() {
-        let csv = "Fecha,Partido,Liga,Min,AP,Posesion,HT_Prob,Cuota,Status,Profit\n";
-        db.forEach(d => { csv += `"${d.fecha}","${d.partido}","${d.liga}",${d.minuto},"${d.ap}",${d.pos},${d.probHT},${d.cuota},${d.status},${d.profit}\n`; });
+        let csv = "Fecha,Partido,Liga,Min,AP,HT_Prob,Cuota,Status,Profit\n";
+        db.forEach(d => { csv += `"${d.fecha}","${d.partido}","${d.liga}",${d.minuto},"${d.ap}",${d.probHT},${d.cuota},${d.status},${d.profit}\n`; });
         const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", "Backtesting_Guru_Pro.csv");
+        link.setAttribute("download", "Backtesting_Guru_AI.csv");
         link.click();
     }
 </script>
