@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CornerPro Analytics AI - Profit Positivo por Liga</title>
+    <title>CornerPro Analytics AI - Profit Total Histórico</title>
     <style>
         :root {
             --primary: #00d4ff; --danger: #ff4b4b; --success: #10b981;
@@ -19,7 +19,7 @@
         .stat-card p { margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: var(--primary); }
 
         .config-section { 
-            display: grid; grid-template-columns: 1fr 1fr 120px auto auto auto auto auto; gap: 10px; 
+            display: grid; grid-template-columns: 1fr 1fr auto auto auto auto auto; gap: 10px; 
             margin-bottom: 20px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; align-items: end;
         }
         .config-group { display: flex; flex-direction: column; gap: 5px; }
@@ -62,7 +62,7 @@
 <div id="analysisModal">
     <div class="modal-content">
         <span class="close-modal" onclick="closeAnalysis()">&times;</span>
-        <h2 style="color: var(--primary);">🏆 Filtro: Ligas con Profit Positivo</h2>
+        <h2 style="color: var(--primary);">🏆 Auditoría Total de Ligas</h2>
         <div id="analysisResults"></div>
     </div>
 </div>
@@ -71,9 +71,9 @@
     <h1>Estrategia Live: HT Goal Tracker Pro</h1>
 
     <div class="stats-grid">
-        <div class="stat-card"><h3>Total Registros</h3><p id="stat-total">0</p></div>
-        <div class="stat-card"><h3>Profit Total</h3><p id="stat-profit">0.00</p></div>
-        <div class="stat-card"><h3>Ligas en Verde</h3><p id="stat-leagues">0</p></div>
+        <div class="stat-card"><h3>Registros Totales</h3><p id="stat-total">0</p></div>
+        <div class="stat-card"><h3>Profit Histórico</h3><p id="stat-profit">0.00</p></div>
+        <div class="stat-card"><h3>Ligas en Profit (>0)</h3><p id="stat-leagues">0</p></div>
         <div class="stat-card"><h3>Efectividad Global</h3><p id="stat-accuracy">0%</p></div>
     </div>
     
@@ -85,10 +85,6 @@
         <div class="config-group">
             <label>ID CANAL</label>
             <input type="text" id="chatId" placeholder="ID" oninput="saveConfig()">
-        </div>
-        <div class="config-group">
-            <label>RANGO HISTÓRICO (N)</label>
-            <input type="number" id="matchRange" value="100" min="10" oninput="saveConfig(); updateLeagues(); render();">
         </div>
         
         <button class="btn-load" onclick="fetchMessages()">Cargar Alertas</button>
@@ -127,7 +123,6 @@
     window.onload = () => {
         document.getElementById('botToken').value = localStorage.getItem('tg_token') || '';
         document.getElementById('chatId').value = localStorage.getItem('tg_chatId') || '';
-        document.getElementById('matchRange').value = localStorage.getItem('guru_range') || '100';
         updateLeagues();
         calculateStats();
         render();
@@ -136,15 +131,14 @@
     function saveConfig() {
         localStorage.setItem('tg_token', document.getElementById('botToken').value);
         localStorage.setItem('tg_chatId', document.getElementById('chatId').value);
-        localStorage.setItem('guru_range', document.getElementById('matchRange').value);
     }
 
+    // AHORA PROCESA TODOS LOS PARTIDOS DESIGNADOS DE LA TABLA SIN EXCEPCIÓN
     function updateLeagues() {
-        const range = parseInt(document.getElementById('matchRange').value) || 100;
-        const recentSettled = db.filter(x => x.status !== 'PENDIENTE').slice(0, range);
+        const allSettled = db.filter(x => x.status !== 'PENDIENTE');
         
         leagueStats = {};
-        recentSettled.forEach(m => {
+        allSettled.forEach(m => {
             if(!leagueStats[m.liga]) leagueStats[m.liga] = { total: 0, wins: 0, profit: 0 };
             leagueStats[m.liga].total++;
             if(m.status === 'WIN') leagueStats[m.liga].wins++;
@@ -208,7 +202,7 @@
         db.forEach((d, i) => {
             const stats = leagueStats[d.liga] || { total: 0, wins: 0, profit: 0 };
             
-            // NUEVA REGLA: MÍNIMO 3 PARTIDOS Y PROFIT > 0
+            // FILTRO DE ORO: Mínimo 3 partidos en el historial total de la tabla Y Profit acumulado positivo
             const isProfitable = stats.total >= 3 && stats.profit > 0;
 
             if(isProfitable && d.status === 'PENDIENTE' && !d.sentToReal) {
@@ -262,12 +256,10 @@
     }
 
     function calculateStats() {
-        const range = parseInt(document.getElementById('matchRange').value) || 100;
-        const settled = db.filter(x => x.status !== 'PENDIENTE').slice(0, range);
+        const settled = db.filter(x => x.status !== 'PENDIENTE');
         const wins = settled.filter(x => x.status === 'WIN').length;
         const totalProfit = settled.reduce((acc, curr) => acc + curr.profit, 0);
         
-        // Contamos solo ligas con Profit > 0
         const countRentables = Object.values(leagueStats).filter(l => l.total >= 3 && l.profit > 0).length;
 
         document.getElementById('stat-total').innerText = db.length;
@@ -281,7 +273,7 @@
         const results = document.getElementById('analysisResults');
         modal.style.display = 'block';
         
-        let html = '<p style="color:#94a3b8; font-size:0.9em; margin-bottom:15px;">Filtro: Ligas con al menos 3 partidos y Profit positivo neto.</p>';
+        let html = '<p style="color:#94a3b8; font-size:0.9em; margin-bottom:15px;">Estadísticas basadas en todos los partidos registrados en la tabla con resultado.</p>';
         
         const sortedLeagues = Object.keys(leagueStats)
             .filter(name => leagueStats[name].total >= 3)
@@ -294,7 +286,7 @@
                 <div class="league-item" style="border-left: 4px solid ${isGood ? 'var(--success)' : 'var(--danger)'}">
                     <div>
                         <strong style="color:${isGood ? 'var(--success)' : 'white'}">${name}</strong>
-                        <div class="small-text">Partidos: ${l.total} | Wins: ${l.wins}</div>
+                        <div class="small-text">Partidos Históricos: ${l.total} | Wins: ${l.wins}</div>
                     </div>
                     <div style="text-align:right">
                         <span style="font-size:1.2em; font-weight:bold; color:${isGood ? 'var(--success)' : 'var(--danger)'}">
@@ -306,12 +298,12 @@
             `;
         });
 
-        results.innerHTML = html || '<p>No hay suficientes datos históricos para auditar ligas.</p>';
+        results.innerHTML = html || '<p>Aún no hay ligas con al menos 3 partidos finalizados.</p>';
     }
 
     function closeAnalysis() { document.getElementById('analysisModal').style.display = 'none'; }
     function deleteRow(i) { if(confirm("¿Eliminar registro?")) { db.splice(i, 1); saveDB(); } }
-    function clearData() { if(confirm("¿Reiniciar base de datos completa?")) { db = []; localStorage.clear(); location.reload(); } }
+    function clearData() { if(confirm("¿Borrar base de datos y configuraciones?")) { db = []; localStorage.clear(); location.reload(); } }
     
     function exportCSV() {
         let csv = "Fecha,Liga,Partido,Status,Profit\n";
@@ -319,7 +311,7 @@
         const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", "Analisis_Profit_Ligas.csv");
+        link.setAttribute("download", "Rentabilidad_Historica_Ligas.csv");
         link.click();
     }
 </script>
