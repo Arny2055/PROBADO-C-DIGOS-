@@ -242,7 +242,20 @@
 
     function setStatus(index, status) {
         db[index].status = status;
-        db[index].profit = status === 'WIN' ? (db[index].cuota - 1) : (status === 'LOSS' ? -1 : 0);
+        
+        if (status === 'WIN') {
+            const c = db[index].cuota;
+            // Mejora de profit por cuotas solicitada
+            if (c >= 1.6 && c <= 1.69) db[index].profit = 0.65;
+            else if (c >= 1.7 && c <= 1.79) db[index].profit = 0.75;
+            else if (c >= 1.8) db[index].profit = 0.85;
+            else db[index].profit = (c - 1); // Por si la cuota es menor a 1.6
+        } else if (status === 'LOSS') {
+            db[index].profit = -1;
+        } else {
+            db[index].profit = 0;
+        }
+
         updateLeagues();
         saveDB();
     }
@@ -272,27 +285,28 @@
         
         const settled = db.filter(x => x.status !== 'PENDIENTE');
         
-        // 1. Minutos Rentables (Agrupados)
-        const minuteStats = { "15-25": 0, "26-35": 0, "36+": 0 };
-        // 2. Cuotas Rentables (Rangos)
-        const oddStats = { "1.50-1.75": 0, "1.76-2.00": 0, "2.01+": 0 };
+        // 1. Profit por Bloques de Minutos (15-25 dividido en 3 aprox)
+        const minuteStats = { "15-18": 0, "19-22": 0, "23-25": 0, "Otros": 0 };
+        // 2. Profit por Rangos de Cuota Solicitados
+        const oddStats = { "1.60-1.69": 0, "1.70-1.79": 0, "1.80+": 0 };
 
         settled.forEach(m => {
-            // Lógica Minutos
-            if (m.minuto <= 25) minuteStats["15-25"] += m.profit;
-            else if (m.minuto <= 35) minuteStats["26-35"] += m.profit;
-            else minuteStats["36+"] += m.profit;
+            // Lógica Minutos (Bloques de 3-4 mins entre 15 y 25)
+            if (m.minuto >= 15 && m.minuto <= 18) minuteStats["15-18"] += m.profit;
+            else if (m.minuto >= 19 && m.minuto <= 22) minuteStats["19-22"] += m.profit;
+            else if (m.minuto >= 23 && m.minuto <= 25) minuteStats["23-25"] += m.profit;
+            else minuteStats["Otros"] += m.profit;
 
             // Lógica Cuotas
-            if (m.cuota <= 1.75) oddStats["1.50-1.75"] += m.profit;
-            else if (m.cuota <= 2.00) oddStats["1.76-2.00"] += m.profit;
-            else oddStats["2.01+"] += m.profit;
+            if (m.cuota >= 1.6 && m.cuota <= 1.69) oddStats["1.60-1.69"] += m.profit;
+            else if (m.cuota >= 1.7 && m.cuota <= 1.79) oddStats["1.70-1.79"] += m.profit;
+            else if (m.cuota >= 1.8) oddStats["1.80+"] += m.profit;
         });
 
         let html = `
             <div class="analysis-grid">
                 <div>
-                    <h3 class="sub-title">🕒 Profit por Minutos</h3>
+                    <h3 class="sub-title">🕒 Profit Minutos (Bloques 15'-25')</h3>
                     ${Object.entries(minuteStats).map(([range, prof]) => `
                         <div class="league-item">
                             <span>Bloque <strong>${range}'</strong></span>
@@ -301,10 +315,10 @@
                     `).join('')}
                 </div>
                 <div>
-                    <h3 class="sub-title">📈 Profit por Cuotas</h3>
+                    <h3 class="sub-title">📈 Profit por Rangos de Cuota</h3>
                     ${Object.entries(oddStats).map(([range, prof]) => `
                         <div class="league-item">
-                            <span>Rango <strong>${range}</strong></span>
+                            <span>Rango <strong>@${range}</strong></span>
                             <span style="color:${prof >= 0 ? 'var(--success)' : 'var(--danger)'}; font-weight:bold;">${prof.toFixed(2)}u</span>
                         </div>
                     `).join('')}
@@ -335,12 +349,12 @@
     function clearData() { if(confirm("¿Reset total?")) { db = []; localStorage.clear(); location.reload(); } }
     
     function exportCSV() {
-        let csv = "Fecha,Liga,Partido,Status,Profit\n";
-        db.forEach(d => csv += `"${d.fecha}","${d.liga}","${d.partido}","${d.status}",${d.profit}\n`);
+        let csv = "Fecha,Liga,Partido,Minuto,Cuota,Status,Profit\n";
+        db.forEach(d => csv += `"${d.fecha}","${d.liga}","${d.partido}",${d.minuto},${d.cuota},"${d.status}",${d.profit}\n`);
         const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", "Analytics_Pro.csv");
+        link.setAttribute("download", "Analytics_Pro_HT.csv");
         link.click();
     }
 </script>
