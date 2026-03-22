@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CornerPro Analytics AI - Solo Ligas Rentables</title>
+    <title>CornerPro Analytics AI - Profit Positivo por Liga</title>
     <style>
         :root {
             --primary: #00d4ff; --danger: #ff4b4b; --success: #10b981;
@@ -62,7 +62,7 @@
 <div id="analysisModal">
     <div class="modal-content">
         <span class="close-modal" onclick="closeAnalysis()">&times;</span>
-        <h2 style="color: var(--primary);">🏆 Ranking de Ligas Rentables</h2>
+        <h2 style="color: var(--primary);">🏆 Filtro: Ligas con Profit Positivo</h2>
         <div id="analysisResults"></div>
     </div>
 </div>
@@ -73,7 +73,7 @@
     <div class="stats-grid">
         <div class="stat-card"><h3>Total Registros</h3><p id="stat-total">0</p></div>
         <div class="stat-card"><h3>Profit Total</h3><p id="stat-profit">0.00</p></div>
-        <div class="stat-card"><h3>Ligas Rentables</h3><p id="stat-leagues">0</p></div>
+        <div class="stat-card"><h3>Ligas en Verde</h3><p id="stat-leagues">0</p></div>
         <div class="stat-card"><h3>Efectividad Global</h3><p id="stat-accuracy">0%</p></div>
     </div>
     
@@ -92,7 +92,7 @@
         </div>
         
         <button class="btn-load" onclick="fetchMessages()">Cargar Alertas</button>
-        <button class="btn-analyze" onclick="analyzePatterns()">Ver Ligas Ganadoras</button>
+        <button class="btn-analyze" onclick="analyzePatterns()">Auditoría de Ligas</button>
         <a href="apuestasreales.html"><button style="background:var(--accent); color:black">Apuestas Reales 🔥</button></a>
         <button style="background:var(--success);color:white" onclick="exportCSV()">CSV</button>
         <button style="background:var(--danger);color:white" onclick="clearData()">Reset</button>
@@ -122,7 +122,7 @@
 
 <script>
     let db = JSON.parse(localStorage.getItem('cornerpro_db')) || [];
-    let leagueStats = {}; // Almacena winrate y conteo por liga
+    let leagueStats = {}; 
 
     window.onload = () => {
         document.getElementById('botToken').value = localStorage.getItem('tg_token') || '';
@@ -139,7 +139,6 @@
         localStorage.setItem('guru_range', document.getElementById('matchRange').value);
     }
 
-    // --- ACTUALIZA LAS ESTADÍSTICAS POR LIGA ---
     function updateLeagues() {
         const range = parseInt(document.getElementById('matchRange').value) || 100;
         const recentSettled = db.filter(x => x.status !== 'PENDIENTE').slice(0, range);
@@ -207,10 +206,11 @@
         tbody.innerHTML = '';
         
         db.forEach((d, i) => {
-            const stats = leagueStats[d.liga] || { total: 0, wins: 0 };
-            const isProfitable = stats.total >= 3 && (stats.wins / stats.total) >= 0.5;
+            const stats = leagueStats[d.liga] || { total: 0, wins: 0, profit: 0 };
+            
+            // NUEVA REGLA: MÍNIMO 3 PARTIDOS Y PROFIT > 0
+            const isProfitable = stats.total >= 3 && stats.profit > 0;
 
-            // RECOMENDACIÓN BASADA 100% EN LIGA RENTABLE
             if(isProfitable && d.status === 'PENDIENTE' && !d.sentToReal) {
                 let realBets = JSON.parse(localStorage.getItem('cornerpro_real_bets')) || [];
                 if(!realBets.find(x => x.id === d.id)) {
@@ -267,7 +267,8 @@
         const wins = settled.filter(x => x.status === 'WIN').length;
         const totalProfit = settled.reduce((acc, curr) => acc + curr.profit, 0);
         
-        const countRentables = Object.values(leagueStats).filter(l => l.total >= 3 && (l.wins / l.total) >= 0.5).length;
+        // Contamos solo ligas con Profit > 0
+        const countRentables = Object.values(leagueStats).filter(l => l.total >= 3 && l.profit > 0).length;
 
         document.getElementById('stat-total').innerText = db.length;
         document.getElementById('stat-accuracy').innerText = settled.length ? ((wins/settled.length)*100).toFixed(1) + '%' : '0%';
@@ -280,36 +281,37 @@
         const results = document.getElementById('analysisResults');
         modal.style.display = 'block';
         
-        let html = '<p style="color:#94a3b8; font-size:0.9em;">Mostrando ligas con al menos 3 partidos en el historial reciente:</p>';
+        let html = '<p style="color:#94a3b8; font-size:0.9em; margin-bottom:15px;">Filtro: Ligas con al menos 3 partidos y Profit positivo neto.</p>';
         
         const sortedLeagues = Object.keys(leagueStats)
             .filter(name => leagueStats[name].total >= 3)
-            .sort((a, b) => (leagueStats[b].wins/leagueStats[b].total) - (leagueStats[a].wins/leagueStats[a].total));
+            .sort((a, b) => leagueStats[b].profit - leagueStats[a].profit);
 
         sortedLeagues.forEach(name => {
             const l = leagueStats[name];
-            const wr = ((l.wins/l.total)*100).toFixed(0);
-            const isGood = wr >= 50;
+            const isGood = l.profit > 0;
             html += `
                 <div class="league-item" style="border-left: 4px solid ${isGood ? 'var(--success)' : 'var(--danger)'}">
                     <div>
                         <strong style="color:${isGood ? 'var(--success)' : 'white'}">${name}</strong>
-                        <div class="small-text">Total: ${l.total} | Wins: ${l.wins}</div>
+                        <div class="small-text">Partidos: ${l.total} | Wins: ${l.wins}</div>
                     </div>
                     <div style="text-align:right">
-                        <span class="data-hl" style="font-size:1.2em">${wr}%</span>
-                        <div class="small-text" style="color:${l.profit >= 0 ? 'var(--success)' : 'var(--danger)'}">${l.profit.toFixed(2)}u</div>
+                        <span style="font-size:1.2em; font-weight:bold; color:${isGood ? 'var(--success)' : 'var(--danger)'}">
+                            ${l.profit > 0 ? '+' : ''}${l.profit.toFixed(2)}u
+                        </span>
+                        <div class="small-text">Efectividad: ${((l.wins/l.total)*100).toFixed(0)}%</div>
                     </div>
                 </div>
             `;
         });
 
-        results.innerHTML = html || '<p>No hay ligas con datos suficientes (3 partidos).</p>';
+        results.innerHTML = html || '<p>No hay suficientes datos históricos para auditar ligas.</p>';
     }
 
     function closeAnalysis() { document.getElementById('analysisModal').style.display = 'none'; }
-    function deleteRow(i) { if(confirm("¿Eliminar?")) { db.splice(i, 1); saveDB(); } }
-    function clearData() { if(confirm("¿Borrar todo?")) { db = []; localStorage.clear(); location.reload(); } }
+    function deleteRow(i) { if(confirm("¿Eliminar registro?")) { db.splice(i, 1); saveDB(); } }
+    function clearData() { if(confirm("¿Reiniciar base de datos completa?")) { db = []; localStorage.clear(); location.reload(); } }
     
     function exportCSV() {
         let csv = "Fecha,Liga,Partido,Status,Profit\n";
@@ -317,7 +319,7 @@
         const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", "Ligas_Rentables_CornerPro.csv");
+        link.setAttribute("download", "Analisis_Profit_Ligas.csv");
         link.click();
     }
 </script>
