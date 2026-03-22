@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CornerPro Analytics AI - El Gurú</title>
+    <title>CornerPro Analytics AI - El Gurú Maestro</title>
     <style>
         :root {
             --primary: #00d4ff; --danger: #ff4b4b; --success: #10b981;
@@ -19,11 +19,11 @@
         .stat-card p { margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: var(--primary); }
 
         .config-section { 
-            display: grid; grid-template-columns: 1fr 1fr auto auto auto auto auto auto; gap: 10px; 
-            margin-bottom: 20px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; align-items: center;
+            display: grid; grid-template-columns: 1fr 1fr 120px auto auto auto auto auto; gap: 10px; 
+            margin-bottom: 20px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; align-items: end;
         }
-        .config-group { display: flex; flex-direction: column; gap: 2px; }
-        .config-group label { font-size: 0.7em; color: var(--primary); font-weight: bold; margin-left: 2px; }
+        .config-group { display: flex; flex-direction: column; gap: 5px; }
+        .config-group label { font-size: 0.75em; color: var(--primary); font-weight: bold; }
 
         input, select { background: #0f172a; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 5px; }
         button { border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; }
@@ -33,13 +33,12 @@
         .btn-analyze { background: var(--accent); color: #000; }
         
         table { width: 100%; border-collapse: collapse; font-size: 0.75em; min-width: 1300px; }
-        th { background: #0f172a; color: var(--primary); position: sticky; top: 0; padding: 10px; }
+        th { background: #0f172a; color: var(--primary); position: sticky; top: 0; padding: 10px; z-index: 10; }
         td { padding: 8px; border-bottom: 1px solid var(--border); text-align: center; }
         
-        .recommended-row { background: rgba(234, 179, 8, 0.15) !important; border-left: 4px solid var(--accent); }
+        .recommended-row { background: rgba(234, 179, 8, 0.12) !important; border-left: 4px solid var(--accent); }
         .badge-real { background: var(--accent); color: #000; padding: 3px 6px; border-radius: 4px; font-weight: bold; font-size: 0.85em; display: inline-block; margin-top: 5px; }
-        .badge-training { background: #475569; color: white; padding: 3px 6px; border-radius: 4px; font-size: 0.85em; display: inline-block; margin-top: 5px; }
-
+        
         .win { color: var(--success); font-weight: bold; }
         .loss { color: var(--danger); font-weight: bold; }
         .data-hl { color: var(--primary); font-weight: bold; }
@@ -51,10 +50,11 @@
         }
         .modal-content {
             background: var(--card); margin: 5% auto; padding: 25px; border-radius: 15px;
-            width: 80%; max-width: 800px; border: 1px solid var(--primary); max-height: 80vh; overflow-y: auto;
+            width: 80%; max-width: 900px; border: 1px solid var(--primary); max-height: 80vh; overflow-y: auto;
         }
-        .pattern-item { background: #0f172a; padding: 15px; border-left: 4px solid var(--primary); margin-bottom: 10px; border-radius: 5px; }
         .close-modal { float: right; cursor: pointer; font-size: 24px; color: var(--danger); }
+        .pattern-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 15px; }
+        .pattern-item { background: #0f172a; padding: 12px; border-left: 3px solid var(--primary); border-radius: 5px; }
     </style>
 </head>
 <body>
@@ -62,7 +62,7 @@
 <div id="analysisModal">
     <div class="modal-content">
         <span class="close-modal" onclick="closeAnalysis()">&times;</span>
-        <h2 style="color: var(--primary);">🎯 Inteligencia Adaptativa: El Gurú</h2>
+        <h2 style="color: var(--primary);">🎯 Inteligencia de Patrones: El Gurú</h2>
         <div id="analysisResults"></div>
     </div>
 </div>
@@ -71,29 +71,29 @@
     <h1>Estrategia Live: HT Goal Tracker Pro</h1>
 
     <div class="stats-grid">
-        <div class="stat-card"><h3>Picks Totales</h3><p id="stat-total">0</p></div>
-        <div class="stat-card"><h3>Efectividad</h3><p id="stat-accuracy">0%</p></div>
-        <div class="stat-card"><h3>Profit (u)</h3><p id="stat-profit">0.00</p></div>
+        <div class="stat-card"><h3>Total Registros</h3><p id="stat-total">0</p></div>
+        <div class="stat-card"><h3>Efectividad (Rango N)</h3><p id="stat-accuracy">0%</p></div>
+        <div class="stat-card"><h3>Profit</h3><p id="stat-profit">0.00</p></div>
         <div class="stat-card"><h3>Yield</h3><p id="stat-yield">0%</p></div>
     </div>
     
     <div class="config-section">
         <div class="config-group">
             <label>TOKEN BOT</label>
-            <input type="password" id="botToken" placeholder="Token Bot" oninput="saveConfig()">
+            <input type="password" id="botToken" placeholder="Token" oninput="saveConfig()">
         </div>
         <div class="config-group">
             <label>ID CANAL</label>
-            <input type="text" id="chatId" placeholder="ID Canal" oninput="saveConfig()">
+            <input type="text" id="chatId" placeholder="ID" oninput="saveConfig()">
         </div>
         <div class="config-group">
-            <label>RANGO DE PARTIDOS (N)</label>
-            <input type="number" id="matchRange" value="50" min="10" max="500" oninput="saveConfig(); updateGlobalPatterns(); render();">
+            <label>BUSCAR EN ÚLTIMOS (N)</label>
+            <input type="number" id="matchRange" value="50" min="5" max="500" oninput="saveConfig(); updateGlobalPatterns(); render();">
         </div>
         
         <button class="btn-load" onclick="fetchMessages()">Cargar Alertas</button>
-        <button class="btn-analyze" onclick="analyzePatterns()">Patrones Actualizados</button>
-        <a href="apuestasreales.html" style="text-decoration: none;"><button style="background:var(--accent); color:black">Ver Apuestas Reales 🔥</button></a>
+        <button class="btn-analyze" onclick="analyzePatterns()">Analizar Patrones</button>
+        <a href="apuestasreales.html"><button style="background:var(--accent); color:black">Apuestas Reales 🔥</button></a>
         <button style="background:var(--success);color:white" onclick="exportCSV()">CSV</button>
         <button style="background:var(--danger);color:white" onclick="clearData()">Reset</button>
     </div>
@@ -122,8 +122,8 @@
 
 <script>
     let db = JSON.parse(localStorage.getItem('cornerpro_db')) || [];
-    let currentBestPatterns = { min: 25, prob: 78, pos: 50 };
-    const MIN_TRAINING_SAMPLES = 30;
+    // Valores base de patrones
+    let currentBestPatterns = { min: 25, prob: 75, pos: 50, ap5: 1.0, corners: 3, shotsOn: 2 };
 
     window.onload = () => {
         document.getElementById('botToken').value = localStorage.getItem('tg_token') || '';
@@ -140,31 +140,41 @@
         localStorage.setItem('guru_range', document.getElementById('matchRange').value);
     }
 
-    // --- MEJORA: MOTOR BASADO EN "N" ÚLTIMOS PARTIDOS DECIDIDOS ---
+    // --- MOTOR DE ANÁLISIS MULTIVARIABLE BASADO EN RANGO N ---
     function updateGlobalPatterns() {
         const range = parseInt(document.getElementById('matchRange').value) || 50;
-        
-        // 1. Filtrar solo los partidos que ya tienen resultado (WIN o LOSS)
-        // 2. Tomar los 'range' más recientes de la lista (los primeros del array ya que usamos unshift)
         const recentSettled = db.filter(x => x.status !== 'PENDIENTE').slice(0, range);
-        
-        // 3. De esos recientes, extraer solo los que fueron WIN para ajustar el patrón
         const wins = recentSettled.filter(x => x.status === 'WIN');
         
-        if(wins.length >= 5) { 
+        if(wins.length >= 3) {
+            // Promedio Minuto, Probabilidad y Posesión
             const avgMin = wins.reduce((s, x) => s + x.minuto, 0) / wins.length;
             const avgProb = wins.reduce((s, x) => s + x.probHT, 0) / wins.length;
             const avgPos = wins.reduce((s, x) => s + x.pos, 0) / wins.length;
+            
+            // Promedio Ataques Peligrosos L5
+            const avgAp5 = wins.reduce((s, x) => s + (parseFloat(x.ap5) || 0), 0) / wins.length;
+            
+            // Promedio Córners Totales
+            const avgCorners = wins.reduce((s, x) => {
+                const c = x.corners.split('-').map(n => parseInt(n.trim()) || 0);
+                return s + (c[0] + c[1]);
+            }, 0) / wins.length;
 
-            // Ajuste fino con margen de seguridad
-            currentBestPatterns.min = Math.floor(avgMin - 1); 
-            currentBestPatterns.prob = Math.floor(avgProb - 2);
-            currentBestPatterns.pos = Math.floor(avgPos - 2);
+            // Promedio Shots On Target
+            const avgShotsOn = wins.reduce((s, x) => {
+                const sh = x.son.split('-').map(n => parseInt(n.trim()) || 0);
+                return s + (sh[0] + sh[1]);
+            }, 0) / wins.length;
 
-            // Filtros mínimos de seguridad global para evitar valores absurdos
-            if(currentBestPatterns.prob < 72) currentBestPatterns.prob = 75;
-            if(currentBestPatterns.min < 20) currentBestPatterns.min = 22;
-            if(currentBestPatterns.pos < 45) currentBestPatterns.pos = 48;
+            currentBestPatterns = {
+                min: Math.floor(avgMin),
+                prob: Math.floor(avgProb - 2),
+                pos: Math.floor(avgPos - 1),
+                ap5: parseFloat(avgAp5.toFixed(1)),
+                corners: Math.floor(avgCorners),
+                shotsOn: Math.floor(avgShotsOn)
+            };
         }
     }
 
@@ -173,31 +183,30 @@
             const m = text.match(regex); 
             return m ? m[index].trim() : 'N/A'; 
         };
-        const partido = get(/Game: (.*?)\n/);
-        const liga = get(/🏆 League: (.*?)\n/);
-        const minuto = parseInt(get(/🕛 Time: (\d+)/)) || 0;
-        const ap = get(/⚔ Dangerous Attacks: (\d+ - \d+)/);
-        const ap5 = get(/Last 5': ([\d. ]+)/);
-        const ap10 = get(/Last 10': ([\d. ]+)/);
-        const corners = get(/⛳ Corners: (\d+ - \d+)/);
-        const pos = parseInt(get(/⚖ Possession: (\d+)/)) || 0;
-        const son = get(/🥅 Shots on: (\d+ - \d+)/);
-        const soff = get(/➡ Shots off: (\d+ - \d+)/);
-        const heatmap = get(/heatmapFull:(.*?)(?:\n|$)/);
-        const probHT = parseInt(get(/Medio Tiempo:(\d+)/)) || 0;
-        const cuota = parseFloat(get(/Goal Live Line Odd:([\d.]+)/)) || 1.60;
-
-        return { partido, liga, minuto, ap, ap5, ap10, corners, pos, son, soff, heatmap, probHT, cuota };
+        return {
+            partido: get(/Game: (.*?)\n/),
+            liga: get(/🏆 League: (.*?)\n/),
+            minuto: parseInt(get(/🕛 Time: (\d+)/)) || 0,
+            ap: get(/⚔ Dangerous Attacks: (\d+ - \d+)/),
+            ap5: get(/Last 5': ([\d. ]+)/),
+            ap10: get(/Last 10': ([\d. ]+)/),
+            corners: get(/⛳ Corners: (\d+ - \d+)/),
+            pos: parseInt(get(/⚖ Possession: (\d+)/)) || 0,
+            son: get(/🥅 Shots on: (\d+ - \d+)/),
+            soff: get(/➡ Shots off: (\d+ - \d+)/),
+            heatmap: get(/heatmapFull:(.*?)(?:\n|$)/),
+            probHT: parseInt(get(/Medio Tiempo:(\d+)/)) || 0,
+            cuota: parseFloat(get(/Goal Live Line Odd:([\d.]+)/)) || 1.60
+        };
     }
 
     async function fetchMessages() {
         const token = document.getElementById('botToken').value;
-        if(!token) return alert("Falta Token del Bot");
+        if(!token) return alert("Ingresa el Token del Bot");
         try {
             const res = await fetch(`https://api.telegram.org/bot${token}/getUpdates`);
             const data = await res.json();
             if (data.ok && data.result.length > 0) {
-                let nuevos = 0;
                 data.result.reverse().forEach(item => {
                     const msg = item.channel_post || item.message;
                     if(msg && msg.text && !db.find(x => x.id === msg.message_id)) {
@@ -211,51 +220,43 @@
                                 profit: 0,
                                 sentToReal: false
                             });
-                            nuevos++;
                         }
                     }
                 });
-                if(nuevos > 0) saveDB();
+                saveDB();
                 const lastUpdateId = data.result[0].update_id;
                 fetch(`https://api.telegram.org/bot${token}/getUpdates?offset=${lastUpdateId + 1}`);
             }
         } catch (e) { console.error(e); }
     }
 
-    function sendToRealBets(pick) {
-        let realBets = JSON.parse(localStorage.getItem('cornerpro_real_bets')) || [];
-        if (!realBets.find(x => x.id === pick.id)) {
-            realBets.unshift({...pick, status: 'PENDIENTE'});
-            localStorage.setItem('cornerpro_real_bets', JSON.stringify(realBets));
-        }
-    }
-
     function render() {
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
-        const settledCount = db.filter(x => x.status !== 'PENDIENTE').length;
-        const isTrained = settledCount >= MIN_TRAINING_SAMPLES;
-
+        
         db.forEach((d, i) => {
+            // Lógica de recomendación basada en el patrón actual del Gurú
+            const c = d.corners.split('-').map(n => parseInt(n.trim()) || 0);
+            const totalCorners = c[0] + c[1];
+            
             const meetsCriteria = (d.probHT >= currentBestPatterns.prob) && 
                                   (d.pos >= currentBestPatterns.pos) &&
-                                  (d.minuto >= currentBestPatterns.min);
+                                  (d.minuto >= currentBestPatterns.min) &&
+                                  (parseFloat(d.ap5) >= currentBestPatterns.ap5);
 
-            const isReal = isTrained && meetsCriteria;
-
-            if(isReal && d.status === 'PENDIENTE' && !d.sentToReal) {
-                sendToRealBets(d);
+            if(meetsCriteria && d.status === 'PENDIENTE' && !d.sentToReal) {
+                let realBets = JSON.parse(localStorage.getItem('cornerpro_real_bets')) || [];
+                if(!realBets.find(x => x.id === d.id)) {
+                    realBets.unshift({...d});
+                    localStorage.setItem('cornerpro_real_bets', JSON.stringify(realBets));
+                }
                 d.sentToReal = true;
-                localStorage.setItem('cornerpro_db', JSON.stringify(db));
             }
 
             tbody.innerHTML += `
-                <tr class="${isReal ? 'recommended-row' : ''}">
+                <tr class="${meetsCriteria ? 'recommended-row' : ''}">
                     <td class="small-text">${d.fecha}</td>
-                    <td>
-                        <b>${d.partido}</b><span class="small-text">${d.liga}</span>
-                        ${meetsCriteria ? (isTrained ? '<span class="badge-real">🔥 APUESTA REAL</span>' : '<span class="badge-training">⏳ MODO APRENDIZAJE</span>') : ''}
-                    </td>
+                    <td><b>${d.partido}</b><br><span class="small-text">${d.liga}</span></td>
                     <td class="data-hl">${d.minuto}'</td>
                     <td>L5: <span class="win">${d.ap5}</span><br>L10: ${d.ap10}</td>
                     <td>${d.corners}</td>
@@ -280,13 +281,14 @@
     function setStatus(index, status) {
         const item = db[index];
         item.status = status;
-        item.profit = status === 'WIN' ? parseFloat((item.cuota - 1).toFixed(2)) : (status === 'LOSS' ? -1 : 0);
+        item.profit = status === 'WIN' ? (item.cuota - 1) : (status === 'LOSS' ? -1 : 0);
         
+        // Sincronizar con apuestas reales si existe
         let realBets = JSON.parse(localStorage.getItem('cornerpro_real_bets')) || [];
-        const realIdx = realBets.findIndex(x => x.id === item.id);
-        if(realIdx !== -1) {
-            realBets[realIdx].status = status;
-            realBets[realIdx].profit = item.profit;
+        const rIdx = realBets.findIndex(x => x.id === item.id);
+        if(rIdx !== -1) {
+            realBets[rIdx].status = status;
+            realBets[rIdx].profit = item.profit;
             localStorage.setItem('cornerpro_real_bets', JSON.stringify(realBets));
         }
 
@@ -301,53 +303,52 @@
     }
 
     function calculateStats() {
-        const settled = db.filter(x => x.status !== 'PENDIENTE');
+        const range = parseInt(document.getElementById('matchRange').value) || 50;
+        const settled = db.filter(x => x.status !== 'PENDIENTE').slice(0, range);
         const wins = settled.filter(x => x.status === 'WIN').length;
         const totalProfit = settled.reduce((acc, curr) => acc + curr.profit, 0);
-        document.getElementById('stat-total').innerText = settled.length;
+        
+        document.getElementById('stat-total').innerText = db.length;
         document.getElementById('stat-accuracy').innerText = settled.length ? ((wins/settled.length)*100).toFixed(1) + '%' : '0%';
         document.getElementById('stat-profit').innerText = totalProfit.toFixed(2);
-        document.getElementById('stat-profit').style.color = totalProfit >= 0 ? 'var(--success)' : 'var(--danger)';
         document.getElementById('stat-yield').innerText = settled.length ? ((totalProfit/settled.length)*100).toFixed(1) + '%' : '0%';
     }
 
     function analyzePatterns() {
-        const range = parseInt(document.getElementById('matchRange').value) || 50;
-        const recentSettled = db.filter(x => x.status !== 'PENDIENTE').slice(0, range);
-        const winsCount = recentSettled.filter(x => x.status === 'WIN').length;
-
+        const range = document.getElementById('matchRange').value;
         const modal = document.getElementById('analysisModal');
-        const resultsDiv = document.getElementById('analysisResults');
+        const results = document.getElementById('analysisResults');
         modal.style.display = 'block';
         
-        resultsDiv.innerHTML = `
-            <div class="pattern-item" style="border-left-color: var(--primary)">
-                <strong>🧬 Inteligencia Focalizada:</strong> Analizando los últimos <span class="data-hl">${recentSettled.length}</span> partidos finalizados para encontrar patrones.
-                <br><small>De estos, <span class="win">${winsCount}</span> han sido ganadores.</small>
+        results.innerHTML = `
+            <div class="pattern-item" style="border-left-color:var(--accent); margin-bottom:15px;">
+                <strong>Filtro de Rango:</strong> Buscando en los últimos <b>${range}</b> partidos finalizados.
             </div>
-            <div class="pattern-item">
-                <strong>📊 Patrón Sugerido (Basado en tu rango N=${range}):</strong> 
-                <br>• Minuto ideal: <span class="data-hl">≥ ${currentBestPatterns.min}'</span>
-                <br>• Probabilidad HT: <span class="data-hl">≥ ${currentBestPatterns.prob}%</span>
-                <br>• Dominio Posesión: <span class="data-hl">≥ ${currentBestPatterns.pos}%</span>
+            <div class="pattern-grid">
+                <div class="pattern-item"><strong>Minuto:</strong> ≥ ${currentBestPatterns.min}'</div>
+                <div class="pattern-item"><strong>Prob. HT:</strong> ≥ ${currentBestPatterns.prob}%</div>
+                <div class="pattern-item"><strong>Posesión:</strong> ≥ ${currentBestPatterns.pos}%</div>
+                <div class="pattern-item"><strong>AP L5:</strong> ≥ ${currentBestPatterns.ap5}</div>
+                <div class="pattern-item"><strong>Córners:</strong> ≥ ${currentBestPatterns.corners} totales</div>
+                <div class="pattern-item"><strong>Shots On:</strong> ≥ ${currentBestPatterns.shotsOn}</div>
             </div>
-            <div class="pattern-item" style="font-size: 0.85em; color: #94a3b8;">
-                *Nota: A menor rango (N), la herramienta se adaptará más rápido a cambios recientes en las ligas, pero con mayor riesgo de volatilidad.
-            </div>
+            <p style="font-size: 0.8em; color: #94a3b8; margin-top: 15px;">* Estos valores son el promedio extraído exclusivamente de tus partidos marcados como <b>WIN</b> dentro del rango seleccionado.</p>
         `;
     }
 
     function closeAnalysis() { document.getElementById('analysisModal').style.display = 'none'; }
-    function deleteRow(i) { if(confirm("¿Eliminar este registro?")) { db.splice(i, 1); saveDB(); } }
-    function clearData() { if(confirm("¿Reiniciar aprendizaje y base de datos?")) { db = []; localStorage.removeItem('cornerpro_real_bets'); saveDB(); } }
+    function deleteRow(i) { if(confirm("¿Eliminar registro?")) { db.splice(i, 1); saveDB(); } }
+    function clearData() { if(confirm("¿Reiniciar toda la base de datos?")) { db = []; localStorage.clear(); location.reload(); } }
     
     function exportCSV() {
-        let csv = "Fecha,Partido,Min,Posesion,HT_Prob,Cuota,Status,Profit\n";
-        db.forEach(d => { csv += `"${d.fecha}","${d.partido}",${d.minuto},${d.pos},${d.probHT},${d.cuota},${d.status},${d.profit}\n`; });
+        let csv = "Fecha,Partido,Liga,Min,AP5,Corners,Pos,ShotsOn,HT_Prob,Cuota,Status,Profit\n";
+        db.forEach(d => {
+            csv += `"${d.fecha}","${d.partido}","${d.liga}",${d.minuto},${d.ap5},"${d.corners}",${d.pos},"${d.son}",${d.probHT},${d.cuota},${d.status},${d.profit}\n`;
+        });
         const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", `Analisis_Guru_Top_${document.getElementById('matchRange').value}.csv`);
+        link.setAttribute("download", `Guru_Full_Analytics_N${document.getElementById('matchRange').value}.csv`);
         link.click();
     }
 </script>
