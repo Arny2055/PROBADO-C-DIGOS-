@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>El Gurú de las Apuestas - Análisis de Jornada</title>
+    <title>El Gurú de las Apuestas - Análisis Local/Visita</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; color: #333; margin: 0; padding: 20px; }
         .container { max-width: 1150px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
@@ -44,7 +44,7 @@
 <body>
 
 <div class="container">
-    <h2>El Gurú de las Apuestas: Análisis Poisson & Post-Jornada</h2>
+    <h2>El Gurú de las Apuestas: Análisis Local vs Visita</h2>
     
     <label>Pega aquí tus datos (TSV de Excel):</label>
     <textarea id="rawData" placeholder="Date	Time	HomeTeam	AwayTeam	FTHG	FTAG..."></textarea>
@@ -59,20 +59,20 @@
             <select id="awaySelect"><option value="">Carga datos primero...</option></select>
         </div>
         <div class="field">
-            <label>Límite Jornada (N)</label>
-            <input type="number" id="matchLimit" value="10" min="1">
+            <label>Límite Historial (N)</label>
+            <input type="number" id="matchLimit" value="8" min="1">
         </div>
         <div class="field">
             <label>Acción</label>
-            <button onclick="calculate()">Analizar y Validar</button>
+            <button onclick="calculate()">Analizar Local/Visita</button>
         </div>
     </div>
 
-    <div id="statsInfo" class="info-panel">Esperando datos...</div>
+    <div id="statsInfo" class="info-panel">Sube tus datos para comenzar.</div>
 
     <div class="results-grid">
-        <div class="card"><h3>xG Local</h3><div id="xgHome" class="val">-</div></div>
-        <div class="card"><h3>xG Visita</h3><div id="xgAway" class="val">-</div></div>
+        <div class="card"><h3>xG Local (en Casa)</h3><div id="xgHome" class="val">-</div></div>
+        <div class="card"><h3>xG Visita (Fuera)</h3><div id="xgAway" class="val">-</div></div>
         <div class="card"><h3>1 X 2 (%)</h3><div id="prob1x2" class="val">-</div></div>
         <div class="card"><h3>Over 2.5 FT</h3><div id="over25" class="val">-</div></div>
         <div class="card"><h3>Ambos Anotan</h3><div id="btts" class="val">-</div></div>
@@ -81,27 +81,27 @@
 
     <div class="validation-panel" id="validationPanel" style="display:none;">
         <div>
-            <h4>Resultado Real (Partido N+1)</h4>
+            <h4>Resultado Real (Próximo Encuentro)</h4>
             <div id="realResultBox" class="status-box">-</div>
         </div>
         <div>
-            <h4>Estado de la Predicción</h4>
+            <h4>Validación de Pronóstico</h4>
             <div id="hitStatus" class="status-box">-</div>
         </div>
     </div>
 
     <div class="tables-wrapper">
         <div>
-            <h4>Historial Local (Últimos N)</h4>
+            <h4>Partidos como LOCAL (Últimos N)</h4>
             <table id="homeHistoryTable"><thead><tr><th>Fecha</th><th>Rival</th><th>Res.</th></tr></thead><tbody></tbody></table>
         </div>
         <div>
-            <h4>Historial Visita (Últimos N)</h4>
+            <h4>Partidos como VISITANTE (Últimos N)</h4>
             <table id="awayHistoryTable"><thead><tr><th>Fecha</th><th>Rival</th><th>Res.</th></tr></thead><tbody></tbody></table>
         </div>
         
         <div class="full-width-table">
-            <h4>Partidos Posteriores a la Jornada Elegida (Futuro)</h4>
+            <h4>Partidos Posteriores en la Base de Datos</h4>
             <table id="futureMatchesTable">
                 <thead>
                     <tr>
@@ -155,7 +155,7 @@ document.getElementById('rawData').addEventListener('input', function(e) {
         awaySelector.innerHTML += `<option value="${t}">${t}</option>`;
     });
     
-    document.getElementById('statsInfo').innerText = `Base de datos cargada: ${allMatches.length} partidos detectados.`;
+    document.getElementById('statsInfo').innerText = `Base cargada: ${allMatches.length} partidos.`;
 });
 
 function factorial(n) {
@@ -174,50 +174,45 @@ function calculate() {
     const limit = parseInt(document.getElementById('matchLimit').value);
     
     if(!homeTeam || !awayTeam || homeTeam === awayTeam) {
-        alert("Por favor selecciona dos equipos diferentes.");
+        alert("Selecciona dos equipos distintos.");
         return;
     }
 
-    // 1. Filtrar historiales para cálculo (primeros N partidos)
-    const homeHistory = allMatches.filter(m => m.home === homeTeam || m.away === homeTeam).slice(0, limit);
-    const awayHistory = allMatches.filter(m => m.home === awayTeam || m.away === awayTeam).slice(0, limit);
+    // MEJORA: Filtrar LOCAL solo sus partidos en casa, y VISITANTE solo fuera
+    const homeOnlyHistory = allMatches.filter(m => m.home === homeTeam).slice(0, limit);
+    const awayOnlyHistory = allMatches.filter(m => m.away === awayTeam).slice(0, limit);
 
-    // 2. Identificar partidos posteriores (Futuro)
-    // El "futuro" empieza desde el índice más alto usado en los historiales
-    const lastIndexUsed = Math.max(
-        allMatches.indexOf(homeHistory[homeHistory.length-1]),
-        allMatches.indexOf(awayHistory[awayHistory.length-1])
+    if(homeOnlyHistory.length === 0 || awayOnlyHistory.length === 0) {
+        alert("No hay suficientes datos de local o visita para estos equipos.");
+        return;
+    }
+
+    // Partidos Futuros (Posteriores al último analizado cronológicamente)
+    const lastIdx = Math.max(
+        allMatches.indexOf(homeOnlyHistory[homeOnlyHistory.length-1]),
+        allMatches.indexOf(awayOnlyHistory[awayOnlyHistory.length-1])
     );
-    const futureMatches = allMatches.slice(lastIndexUsed + 1);
+    const futureMatches = allMatches.slice(lastIdx + 1);
 
-    // 3. Cálculo de Medias de Liga
+    // Medias de Liga
     let totalFTHG = 0, totalFTAG = 0;
     allMatches.forEach(m => { totalFTHG += m.fthg; totalFTAG += m.ftag; });
     const avgHomeG = totalFTHG / allMatches.length;
     const avgAwayG = totalFTAG / allMatches.length;
 
-    // 4. Fortalezas de Ataque/Defensa
-    const getStats = (history, team) => {
-        let scH = 0, conH = 0, gmH = 0, scA = 0, conA = 0, gmA = 0;
-        history.forEach(m => {
-            if(m.home === team) { scH += m.fthg; conH += m.ftag; gmH++; }
-            else { scA += m.ftag; conA += m.fthg; gmA++; }
-        });
-        return {
-            attH: gmH > 0 ? (scH/gmH)/avgHomeG : 1,
-            defH: gmH > 0 ? (conH/gmH)/avgAwayG : 1,
-            attA: gmA > 0 ? (scA/gmA)/avgAwayG : 1,
-            defA: gmA > 0 ? (conA/gmA)/avgHomeG : 1
-        };
-    };
+    // Estadísticas Local en Casa vs Visita Fuera
+    const getScored = (hist, isHome) => hist.reduce((sum, m) => sum + (isHome ? m.fthg : m.ftag), 0) / hist.length;
+    const getConceded = (hist, isHome) => hist.reduce((sum, m) => sum + (isHome ? m.ftag : m.fthg), 0) / hist.length;
 
-    const sH = getStats(homeHistory, homeTeam);
-    const sA = getStats(awayHistory, awayTeam);
+    const attH = getScored(homeOnlyHistory, true) / avgHomeG;
+    const defH = getConceded(homeOnlyHistory, true) / avgAwayG;
+    const attA = getScored(awayOnlyHistory, false) / avgAwayG;
+    const defA = getConceded(awayOnlyHistory, false) / avgHomeG;
 
-    const lambdaH = sH.attH * sA.defA * avgHomeG;
-    const lambdaA = sA.attA * sH.defH * avgAwayG;
+    const lambdaH = attH * defA * avgHomeG;
+    const lambdaA = attA * defH * avgAwayG;
 
-    // 5. Probabilidades Poisson
+    // Probabilidades
     let pW = 0, pD = 0, pL = 0, pO25 = 0, pBTTS = 0, pHS = 0;
     for(let h=0; h<=8; h++) {
         for(let a=0; a<=8; a++) {
@@ -229,7 +224,7 @@ function calculate() {
         }
     }
 
-    // 6. Actualizar Interfaz
+    // Renderizado
     document.getElementById('xgHome').innerText = lambdaH.toFixed(2);
     document.getElementById('xgAway').innerText = lambdaA.toFixed(2);
     document.getElementById('prob1x2').innerHTML = `<span style="color:green">${(pW*100).toFixed(0)}%</span> - ${(pD*100).toFixed(0)}% - <span style="color:red">${(pL*100).toFixed(0)}%</span>`;
@@ -237,73 +232,47 @@ function calculate() {
     document.getElementById('btts').innerText = (pBTTS * 100).toFixed(1) + "%";
     document.getElementById('probHomeScore').innerText = (pHS * 100).toFixed(1) + "%";
 
-    updateHistoryTable('homeHistoryTable', homeHistory, homeTeam);
-    updateHistoryTable('awayHistoryTable', awayHistory, awayTeam);
-    
-    // 7. Mostrar Futuro y Validar Partido N+1
-    renderFutureMatches(futureMatches, homeTeam, awayTeam, {pW, pO25});
+    updateTable('homeHistoryTable', homeOnlyHistory, true);
+    updateTable('awayHistoryTable', awayOnlyHistory, false);
+    renderFuture(futureMatches, homeTeam, awayTeam, {pW, pO25});
 }
 
-function renderFutureMatches(matches, hTeam, aTeam, probs) {
+function updateTable(id, hist, isHomeTable) {
+    const tbody = document.getElementById(id).querySelector('tbody');
+    tbody.innerHTML = '';
+    hist.forEach(m => {
+        const rival = isHomeTable ? m.away : m.home;
+        const res = isHomeTable ? `${m.fthg}-${m.ftag}` : `${m.ftag}-${m.fthg}`;
+        tbody.innerHTML += `<tr><td>${m.date}</td><td>${rival}</td><td>${res}</td></tr>`;
+    });
+}
+
+function renderFuture(matches, hTeam, aTeam, probs) {
     const tbody = document.getElementById('futureMatchesTable').querySelector('tbody');
     const valPanel = document.getElementById('validationPanel');
-    const realBox = document.getElementById('realResultBox');
     const hitBox = document.getElementById('hitStatus');
-    
     tbody.innerHTML = '';
-    let directMatchFound = false;
+    let found = false;
 
     matches.forEach(m => {
-        const isTargetMatch = (m.home === hTeam && m.away === aTeam);
-        let rowClass = isTargetMatch ? 'highlight-row' : '';
+        const isMatch = (m.home === hTeam && m.away === aTeam);
         let valCell = "-";
-
-        if(isTargetMatch && !directMatchFound) {
-            directMatchFound = true;
+        if(isMatch && !found) {
+            found = true;
             valPanel.style.display = 'grid';
-            realBox.innerText = `${m.fthg} - ${m.ftag}`;
-            
-            // Lógica de Acierto
-            let win = (probs.pW > 0.5 && m.fthg > m.ftag);
-            let over = (probs.pO25 > 0.5 && (m.fthg + m.ftag) > 2.5);
-            
-            if(win || over) {
-                hitBox.innerText = "VERDE (Acierto Detectado)";
-                hitBox.className = "status-box verde";
-                valCell = "✅ EXITOSO";
-            } else {
-                hitBox.innerText = "ROJO (Sin acierto en valor)";
-                hitBox.className = "status-box rojo";
-                valCell = "❌ FALLIDO";
-            }
+            document.getElementById('realResultBox').innerText = `${m.fthg} - ${m.ftag}`;
+            let ok = (probs.pW > 0.5 && m.fthg > m.ftag) || (probs.pO25 > 0.5 && (m.fthg + m.ftag) > 2.5);
+            hitBox.innerText = ok ? "VERDE (Acierto)" : "ROJO (Fallo)";
+            hitBox.className = ok ? "status-box verde" : "status-box rojo";
+            valCell = ok ? "✅ OK" : "❌ NO";
         }
-
-        tbody.innerHTML += `<tr class="${rowClass}">
-            <td>${m.date}</td>
-            <td>${m.home}</td>
-            <td>${m.away}</td>
-            <td>${m.fthg} - ${m.ftag}</td>
-            <td>${valCell}</td>
+        tbody.innerHTML += `<tr class="${isMatch ? 'highlight-row' : ''}">
+            <td>${m.date}</td><td>${m.home}</td><td>${m.away}</td>
+            <td>${m.fthg} - ${m.ftag}</td><td>${valCell}</td>
         </tr>`;
     });
-
-    if(!directMatchFound) {
-        valPanel.style.display = 'none';
-        tbody.innerHTML += `<tr><td colspan="5" style="text-align:center">No se encontraron más partidos para este enfrentamiento directo en los datos.</td></tr>`;
-    }
-}
-
-function updateHistoryTable(tableId, history, team) {
-    const tbody = document.getElementById(tableId).querySelector('tbody');
-    tbody.innerHTML = '';
-    history.forEach(m => {
-        const isHome = m.home === team;
-        const opp = isHome ? m.away : m.home;
-        const res = isHome ? `${m.fthg}-${m.ftag}` : `${m.ftag}-${m.fthg}`;
-        tbody.innerHTML += `<tr><td>${m.date}</td><td>${opp}</td><td>${res}</td></tr>`;
-    });
+    if(!found) valPanel.style.display = 'none';
 }
 </script>
-
 </body>
 </html>
