@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora Poisson Pro - Análisis Cronológico</title>
+    <title>Calculadora Poisson Pro - Análisis Ascendente</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; color: #333; margin: 0; padding: 20px; }
         .container { max-width: 1100px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
@@ -15,22 +15,28 @@
         label { font-size: 13px; font-weight: bold; color: #555; }
         
         select, input, button { padding: 10px; border-radius: 6px; border: 1px solid #ddd; font-size: 14px; }
-        button { background: #27ae60; color: white; border: none; cursor: pointer; transition: 0.3s; font-weight: bold; margin-top: 10px; width: 100%; }
-        button:hover { background: #219150; }
+        button { background: #3498db; color: white; border: none; cursor: pointer; transition: 0.3s; font-weight: bold; margin-top: 10px; width: 100%; }
+        button:hover { background: #2980b9; }
 
         .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 20px; }
         .card { background: #fff; border-top: 4px solid #3498db; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .card h3 { margin: 0 0 10px 0; font-size: 12px; color: #7f8c8d; text-transform: uppercase; }
         .val { font-size: 22px; font-weight: bold; color: #2c3e50; }
         
-        .info-panel { margin-top: 15px; padding: 10px; background: #d1ecf1; color: #0c5460; border-radius: 6px; font-size: 13px; text-align: center; }
+        .info-panel { margin-top: 15px; padding: 10px; background: #d4edda; color: #155724; border-radius: 6px; font-size: 13px; text-align: center; border: 1px solid #c3e6cb; }
         .footer-note { font-size: 11px; color: #999; margin-top: 10px; text-align: center; }
+        
+        /* Estilos para la tabla de equipos analizados */
+        .history-tables { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; font-size: 11px; }
+        .history-tables table { width: 100%; border-collapse: collapse; }
+        .history-tables th { background: #f8f9fa; }
+        .history-tables td, .history-tables th { border: 1px solid #eee; padding: 5px; text-align: left; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Calculadora Poisson - Análisis por Jornada</h2>
+    <h2>Calculadora Poisson - Análisis Ascendente (Jornadas 1 a N)</h2>
     
     <label>1. Pega los datos de la liga (TSV/Excel):</label>
     <textarea id="rawData" placeholder="Date	Time	HomeTeam	AwayTeam	FTHG	FTAG..."></textarea>
@@ -45,8 +51,8 @@
             <select id="awaySelect"><option value="">Carga datos primero...</option></select>
         </div>
         <div class="field">
-            <label>Muestra de partidos (ej. últimos 5)</label>
-            <input type="number" id="matchLimit" value="10" min="1">
+            <label>Analizar hasta la Jornada (N)</label>
+            <input type="number" id="matchLimit" value="5" min="1">
         </div>
         <div class="field">
             <label>Acción</label>
@@ -54,7 +60,7 @@
         </div>
     </div>
 
-    <div id="statsInfo" class="info-panel">Sube datos para comenzar el análisis cronológico.</div>
+    <div id="statsInfo" class="info-panel">Sube datos para comenzar el análisis cronológico ascendente.</div>
 
     <div class="results-grid">
         <div class="card"><h3>xG Local</h3><div id="xgHome" class="val">-</div></div>
@@ -65,7 +71,18 @@
         <div class="card"><h3>Over 0.5 HT</h3><div id="over05ht" class="val">-</div></div>
     </div>
 
-    <p class="footer-note">El sistema calcula la fuerza de ataque/defensa usando solo los últimos N partidos de cada equipo para reflejar la forma actual.</p>
+    <div class="history-tables">
+        <div>
+            <h4>Partidos considerados (Local)</h4>
+            <table id="homeHistoryTable"><thead><tr><th>Fecha</th><th>Rival</th><th>Res.</th></tr></thead><tbody></tbody></table>
+        </div>
+        <div>
+            <h4>Partidos considerados (Visita)</h4>
+            <table id="awayHistoryTable"><thead><tr><th>Fecha</th><th>Rival</th><th>Res.</th></tr></thead><tbody></tbody></table>
+        </div>
+    </div>
+
+    <p class="footer-note">Este análisis utiliza los primeros N partidos de cada equipo para calcular su fuerza de ataque y defensa de forma evolutiva.</p>
 </div>
 
 <script>
@@ -87,21 +104,25 @@ document.getElementById('rawData').addEventListener('input', function(e) {
         const cols = rows[i].split('\t');
         if(cols.length < 8) continue;
         
+        // Limpiar nombres de equipos para evitar errores de selección
+        const hTeam = cols[2].trim();
+        const aTeam = cols[3].trim();
+
         allMatches.push({
-            date: new Date(cols[0]), 
-            home: cols[2].trim(),
-            away: cols[3].trim(),
+            date: cols[0], 
+            home: hTeam,
+            away: aTeam,
             fthg: parseInt(cols[4]),
             ftag: parseInt(cols[5]),
             hthg: parseInt(cols[6]),
             htag: parseInt(cols[7])
         });
-        teams.add(cols[2].trim());
-        teams.add(cols[3].trim());
+        teams.add(hTeam);
+        teams.add(aTeam);
     }
 
-    // Ordenar por fecha ascendentemente para análisis cronológico
-    allMatches.sort((a, b) => a.date - b.date);
+    // Nota: No ordenamos por fecha aquí si los datos ya vienen por jornadas en el Excel.
+    // Pero para seguridad, ordenamos cronológicamente si es necesario.
 
     const sortedTeams = Array.from(teams).sort();
     homeSelector.innerHTML = awaySelector.innerHTML = '<option value="">Seleccionar...</option>';
@@ -110,7 +131,7 @@ document.getElementById('rawData').addEventListener('input', function(e) {
         awaySelector.innerHTML += `<option value="${t}">${t}</option>`;
     });
     
-    document.getElementById('statsInfo').innerText = `Base de datos cargada: ${allMatches.length} partidos detectados.`;
+    document.getElementById('statsInfo').innerText = `Base de datos cargada: ${allMatches.length} partidos.`;
 });
 
 function factorial(n) {
@@ -134,22 +155,25 @@ function calculate() {
         return;
     }
 
-    // Filtrar últimos N partidos para cada equipo (Forma actual/Ascendente)
-    const homeHistory = allMatches.filter(m => m.home === homeTeam || m.away === homeTeam).slice(-limit);
-    const awayHistory = allMatches.filter(m => m.home === awayTeam || m.away === awayTeam).slice(-limit);
+    // ANÁLISIS ASCENDENTE: Filtrar los PRIMEROS N partidos de cada equipo
+    const homeHistory = allMatches.filter(m => m.home === homeTeam || m.away === homeTeam).slice(0, limit);
+    const awayHistory = allMatches.filter(m => m.home === awayTeam || m.away === awayTeam).slice(0, limit);
     
-    // Promedios globales de la liga (basados en toda la data cargada para estabilidad)
+    if(homeHistory.length === 0 || awayHistory.length === 0) {
+        alert("No hay suficientes partidos para la jornada seleccionada.");
+        return;
+    }
+
+    // Promedios globales de la liga (usamos todos los datos disponibles hasta ese punto o totales)
     let totalFTHG = 0, totalFTAG = 0, totalHTG = 0;
     allMatches.forEach(m => {
-        totalFTHG += m.fthg;
-        totalFTAG += m.ftag;
+        totalFTHG += m.fthg; totalFTAG += m.ftag;
         totalHTG += (m.hthg + m.htag);
     });
     const avgHomeG = totalFTHG / allMatches.length;
     const avgAwayG = totalFTAG / allMatches.length;
-    const avgHTG = (totalHTG / 2) / allMatches.length;
 
-    // Calcular Fuerza de Ataque y Defensa basada en la muestra N
+    // Función para calcular métricas
     const getTeamStats = (history, teamName) => {
         let scoredH = 0, concededH = 0, gamesH = 0;
         let scoredA = 0, concededA = 0, gamesA = 0;
@@ -181,9 +205,8 @@ function calculate() {
     const lambdaAway = awayStats.attAway * homeStats.defHome * avgAwayG;
     const lambdaHT = (homeStats.avgHT + awayStats.avgHT) / 2;
 
-    // Probabilidades
+    // Poisson
     let pWinH = 0, pDraw = 0, pWinA = 0, pOver25 = 0, pBTTS = 0;
-    
     for(let h = 0; h <= 7; h++) {
         for(let a = 0; a <= 7; a++) {
             const prob = poisson(h, lambdaHome) * poisson(a, lambdaAway);
@@ -195,21 +218,30 @@ function calculate() {
         }
     }
 
-    const probOver05HT = 1 - Math.exp(-lambdaHT);
-
-    // Renderizado
+    // Renderizar Resultados
     document.getElementById('xgHome').innerText = lambdaHome.toFixed(2);
     document.getElementById('xgAway').innerText = lambdaAway.toFixed(2);
-    document.getElementById('prob1x2').innerHTML = 
-        `<span style="color:green">${(pWinH*100).toFixed(1)}%</span> | 
-         <span style="color:#666">${(pDraw*100).toFixed(1)}%</span> | 
-         <span style="color:red">${(pWinA*100).toFixed(1)}%</span>`;
+    document.getElementById('prob1x2').innerHTML = `<span style="color:green">${(pWinH*100).toFixed(1)}%</span> | <span style="color:#666">${(pDraw*100).toFixed(1)}%</span> | <span style="color:red">${(pWinA*100).toFixed(1)}%</span>`;
     document.getElementById('over25').innerText = (pOver25 * 100).toFixed(1) + "%";
     document.getElementById('btts').innerText = (pBTTS * 100).toFixed(1) + "%";
-    document.getElementById('over05ht').innerText = (probOver05HT * 100).toFixed(1) + "%";
+    document.getElementById('over05ht').innerText = ( (1 - Math.exp(-lambdaHT)) * 100).toFixed(1) + "%";
+
+    // Actualizar tablas visuales de historia para verificar el análisis ascendente
+    updateHistoryTable('homeHistoryTable', homeHistory, homeTeam);
+    updateHistoryTable('awayHistoryTable', awayHistory, awayTeam);
     
-    document.getElementById('statsInfo').innerText = 
-        `Análisis basado en los últimos ${homeHistory.length} partidos de ${homeTeam} y ${awayHistory.length} de ${awayTeam}.`;
+    document.getElementById('statsInfo').innerText = `Análisis ASCENDENTE: Procesados los primeros ${homeHistory.length} partidos de ${homeTeam} y los primeros ${awayHistory.length} de ${awayTeam}.`;
+}
+
+function updateHistoryTable(tableId, history, teamName) {
+    const tbody = document.getElementById(tableId).querySelector('tbody');
+    tbody.innerHTML = '';
+    history.forEach(m => {
+        const isHome = m.home === teamName;
+        const opponent = isHome ? m.away : m.home;
+        const score = isHome ? `${m.fthg}-${m.ftag}` : `${m.ftag}-${m.fthg}`;
+        tbody.innerHTML += `<tr><td>${m.date}</td><td>${opponent}</td><td>${score}</td></tr>`;
+    });
 }
 </script>
 </body>
