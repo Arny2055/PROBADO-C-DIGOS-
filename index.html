@@ -3,360 +3,236 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CornerPro Analytics AI - Ultra Profit Focus</title>
+    <title>El Gurú de las Apuestas - Poisson Calculator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #00d4ff; --danger: #ff4b4b; --success: #10b981;
-            --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --border: #334155;
-            --accent: #eab308;
+            --primary: #00f2fe;
+            --secondary: #4facfe;
+            --bg: #0f172a;
+            --card: rgba(30, 41, 59, 0.7);
+            --text: #f8fafc;
         }
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 15px; }
-        .container { width: 100%; max-width: 1600px; margin: auto; background: var(--card); padding: 20px; border-radius: 15px; overflow-x: auto; }
-        
-        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
-        .stat-card { background: #0f172a; padding: 15px; border-radius: 10px; text-align: center; border: 1px solid var(--border); }
-        .stat-card h3 { margin: 0; font-size: 0.8em; color: #94a3b8; text-transform: uppercase; }
-        .stat-card p { margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: var(--primary); }
 
-        .config-section { 
-            display: grid; grid-template-columns: 1fr 1fr auto auto auto auto auto; gap: 10px; 
-            margin-bottom: 20px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; align-items: end;
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
         }
-        .config-group { display: flex; flex-direction: column; gap: 5px; }
-        .config-group label { font-size: 0.75em; color: var(--primary); font-weight: bold; }
 
-        input, select { background: #0f172a; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 5px; }
-        button { border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { filter: brightness(1.2); }
-        
-        .btn-load { background: var(--primary); color: #0f172a; }
-        .btn-analyze { background: var(--accent); color: #000; }
-        
-        table { width: 100%; border-collapse: collapse; font-size: 0.75em; min-width: 1300px; }
-        th { background: #0f172a; color: var(--primary); position: sticky; top: 0; padding: 10px; z-index: 10; }
-        td { padding: 8px; border-bottom: 1px solid var(--border); text-align: center; }
-        
-        .recommended-row { background: rgba(234, 179, 8, 0.15) !important; border-left: 5px solid var(--accent); }
-        .league-badge { font-size: 0.85em; padding: 3px 8px; border-radius: 4px; background: #334155; color: #94a3b8; margin-top: 5px; display: inline-block; font-weight: bold; }
-        .league-win { background: var(--success); color: #000; }
-
-        .win { color: var(--success); font-weight: bold; }
-        .loss { color: var(--danger); font-weight: bold; }
-        .data-hl { color: var(--primary); font-weight: bold; }
-        .small-text { font-size: 0.85em; color: #64748b; display: block; }
-
-        #analysisModal {
-            display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
-        .modal-content {
-            background: var(--card); margin: 2% auto; padding: 25px; border-radius: 15px;
-            width: 90%; max-width: 1000px; border: 1px solid var(--primary); max-height: 90vh; overflow-y: auto;
+
+        h1 { text-align: center; font-weight: 800; color: var(--primary); margin-bottom: 30px; }
+        
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.8rem; margin-bottom: 5px; color: #94a3b8; }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid #334155;
+            border-radius: 8px;
+            color: white;
+            box-sizing: border-box;
+            outline: none;
+            transition: border 0.3s;
         }
-        .close-modal { float: right; cursor: pointer; font-size: 24px; color: var(--danger); }
-        .analysis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
-        .league-item { background: #0f172a; padding: 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
-        .sub-title { color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 5px; margin-bottom: 10px; }
+
+        input:focus { border-color: var(--primary); }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            border: none;
+            border-radius: 10px;
+            color: #0f172a;
+            font-weight: 800;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 10px;
+        }
+
+        .results {
+            margin-top: 25px;
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 12px;
+            padding: 15px;
+            display: none;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #334155;
+        }
+
+        .ai-verdict {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .bet-yes { background: rgba(34, 197, 94, 0.2); border: 1px solid #22c55e; color: #4ade80; }
+        .bet-no { background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #f87171; }
+        
+        .badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: var(--secondary); color: black; }
     </style>
 </head>
 <body>
 
-<div id="analysisModal">
-    <div class="modal-content">
-        <span class="close-modal" onclick="closeAnalysis()">&times;</span>
-        <h2 style="color: var(--primary);">📊 Auditoría de Rentabilidad Global</h2>
-        <div id="analysisResults"></div>
-    </div>
-</div>
-
 <div class="container">
-    <h1>Estrategia Live: HT Goal Tracker Pro</h1>
-
-    <div class="stats-grid">
-        <div class="stat-card"><h3>Registros Totales</h3><p id="stat-total">0</p></div>
-        <div class="stat-card"><h3>Profit Histórico</h3><p id="stat-profit">0.00</p></div>
-        <div class="stat-card"><h3>Ligas en Profit</h3><p id="stat-leagues">0</p></div>
-        <div class="stat-card"><h3>Efectividad Global</h3><p id="stat-accuracy">0%</p></div>
-    </div>
+    <h1>EL GURÚ DE LAS APUESTAS</h1>
     
-    <div class="config-section">
-        <div class="config-group">
-            <label>TOKEN BOT</label>
-            <input type="password" id="botToken" placeholder="Token" oninput="saveConfig()">
+    <div class="grid">
+        <div class="col">
+            <h3>Local</h3>
+            <div class="input-group">
+                <label>Avg Shots Favor</label>
+                <input type="number" id="lShots" step="0.01" placeholder="5.80">
+            </div>
+            <div class="input-group">
+                <label>Shots Per Goal</label>
+                <input type="number" id="lEff" step="0.01" placeholder="2.64">
+            </div>
         </div>
-        <div class="config-group">
-            <label>ID CANAL</label>
-            <input type="text" id="chatId" placeholder="ID" oninput="saveConfig()">
+        <div class="col">
+            <h3>Visitante</h3>
+            <div class="input-group">
+                <label>Avg Shots Favor</label>
+                <input type="number" id="vShots" step="0.01" placeholder="0.70">
+            </div>
+            <div class="input-group">
+                <label>Shots Per Goal</label>
+                <input type="number" id="vEff" step="0.01" placeholder="0.88">
+            </div>
         </div>
-        
-        <button class="btn-load" onclick="fetchMessages()">Cargar Alertas</button>
-        <button class="btn-analyze" onclick="analyzePatterns()">Auditoría de Patrones</button>
-        <a href="apuestasreales.html"><button style="background:var(--accent); color:black">Apuestas Reales 🔥</button></a>
-        <button style="background:var(--success);color:white" onclick="exportCSV()">CSV</button>
-        <button style="background:var(--danger);color:white" onclick="clearData()">Reset</button>
     </div>
 
-    <table id="mainTable">
-        <thead>
-            <tr>
-                <th>Fecha/Hora</th>
-                <th>Partido/Liga</th>
-                <th>Min</th>
-                <th>AP (L5/L10)</th>
-                <th>Córners</th>
-                <th>Posesión</th>
-                <th>Shots (On/Off)</th>
-                <th>Heatmap</th>
-                <th>% HT</th>
-                <th>Cuota</th>
-                <th>Resultado</th>
-                <th>Profit</th>
-                <th>Acción</th>
-            </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-    </table>
+    <div class="grid">
+        <div class="input-group">
+            <label>Cuota Over 2.5</label>
+            <input type="number" id="oddsOver" step="0.01" placeholder="1.80">
+        </div>
+        <div class="input-group">
+            <label>Cuota BTTS Si</label>
+            <input type="number" id="oddsBtts" step="0.01" placeholder="1.95">
+        </div>
+    </div>
+
+    <button onclick="calculate()">Analizar con Poisson</button>
+
+    <div id="resultsArea" class="results">
+        <div class="result-item"><span>Exp. Goles Local:</span> <span id="resLambL">-</span></div>
+        <div class="result-item"><span>Exp. Goles Vis:</span> <span id="resLambV">-</span></div>
+        <div class="result-item"><span>Prob. Over 2.5:</span> <span id="resOverP">-</span></div>
+        <div class="result-item"><span>Prob. BTTS Si:</span> <span id="resBttsP">-</span></div>
+        
+        <div id="verdictOver" class="ai-verdict"></div>
+        <div id="verdictBtts" class="ai-verdict"></div>
+    </div>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('cornerpro_db')) || [];
-    let leagueStats = {}; 
-
-    window.onload = () => {
-        document.getElementById('botToken').value = localStorage.getItem('tg_token') || '';
-        document.getElementById('chatId').value = localStorage.getItem('tg_chatId') || '';
-        updateLeagues();
-        calculateStats();
-        render();
-    };
-
-    function saveConfig() {
-        localStorage.setItem('tg_token', document.getElementById('botToken').value);
-        localStorage.setItem('tg_chatId', document.getElementById('chatId').value);
+    function poisson(k, lambda) {
+        return (Math.exp(-lambda) * Math.pow(lambda, k)) / factorial(k);
     }
 
-    function updateLeagues() {
-        const allSettled = db.filter(x => x.status !== 'PENDIENTE');
-        leagueStats = {};
-        allSettled.forEach(m => {
-            if(!leagueStats[m.liga]) leagueStats[m.liga] = { total: 0, wins: 0, profit: 0 };
-            leagueStats[m.liga].total++;
-            if(m.status === 'WIN') leagueStats[m.liga].wins++;
-            leagueStats[m.liga].profit += m.profit;
-        });
+    function factorial(n) {
+        if (n === 0) return 1;
+        let res = 1;
+        for (let i = 1; i <= n; i++) res *= i;
+        return res;
     }
 
-    function parseAlert(text) {
-        const get = (regex, index = 1) => { 
-            const m = text.match(regex); 
-            return m ? m[index].trim() : 'N/A'; 
-        };
-        return {
-            partido: get(/Game: (.*?)\n/),
-            liga: get(/🏆 League: (.*?)\n/),
-            minuto: parseInt(get(/🕛 Time: (\d+)/)) || 0,
-            ap: get(/⚔ Dangerous Attacks: (\d+ - \d+)/),
-            ap5: get(/Last 5': ([\d. ]+)/),
-            ap10: get(/Last 10': ([\d. ]+)/),
-            corners: get(/⛳ Corners: (\d+ - \d+)/),
-            pos: parseInt(get(/⚖ Possession: (\d+)/)) || 0,
-            son: get(/🥅 Shots on: (\d+ - \d+)/),
-            soff: get(/➡ Shots off: (\d+ - \d+)/),
-            heatmap: get(/heatmapFull:(.*?)(?:\n|$)/),
-            probHT: parseInt(get(/Medio Tiempo:(\d+)/)) || 0,
-            cuota: parseFloat(get(/Goal Live Line Odd:([\d.]+)/)) || 1.60
-        };
-    }
-
-    async function fetchMessages() {
-        const token = document.getElementById('botToken').value;
-        if(!token) return alert("Falta Token");
-        try {
-            const res = await fetch(`https://api.telegram.org/bot${token}/getUpdates`);
-            const data = await res.json();
-            if (data.ok && data.result.length > 0) {
-                data.result.reverse().forEach(item => {
-                    const msg = item.channel_post || item.message;
-                    if(msg && msg.text && !db.find(x => x.id === msg.message_id)) {
-                        const info = parseAlert(msg.text);
-                        if(info.partido !== 'N/A') {
-                            db.unshift({
-                                id: msg.message_id,
-                                fecha: new Date(msg.date * 1000).toLocaleString('es-MX'),
-                                ...info,
-                                status: 'PENDIENTE', profit: 0, sentToReal: false
-                            });
-                        }
-                    }
-                });
-                saveDB();
-                fetch(`https://api.telegram.org/bot${token}/getUpdates?offset=${data.result[0].update_id + 1}`);
-            }
-        } catch (e) { console.error(e); }
-    }
-
-    function render() {
-        const tbody = document.getElementById('tableBody');
-        tbody.innerHTML = '';
+    function calculate() {
+        const lS = parseFloat(document.getElementById('lShots').value);
+        const lE = parseFloat(document.getElementById('lEff').value);
+        const vS = parseFloat(document.getElementById('vShots').value);
+        const vE = parseFloat(document.getElementById('vEff').value);
         
-        db.forEach((d, i) => {
-            const stats = leagueStats[d.liga] || { total: 0, wins: 0, profit: 0 };
-            const isProfitable = stats.total >= 3 && stats.profit > 0;
+        if(!lS || !lE || !vS || !vE) return alert("Llena todos los campos técnicos");
 
-            if(isProfitable && d.status === 'PENDIENTE' && !d.sentToReal) {
-                let realBets = JSON.parse(localStorage.getItem('cornerpro_real_bets')) || [];
-                if(!realBets.find(x => x.id === d.id)) {
-                    realBets.unshift({...d});
-                    localStorage.setItem('cornerpro_real_bets', JSON.stringify(realBets));
-                }
-                d.sentToReal = true;
-            }
+        const lambL = lS / lE;
+        const lambV = vS / vE;
 
-            tbody.innerHTML += `
-                <tr class="${isProfitable ? 'recommended-row' : ''}">
-                    <td class="small-text">${d.fecha}</td>
-                    <td>
-                        <b>${d.partido}</b><br>
-                        <span class="league-badge ${isProfitable ? 'league-win' : ''}">${d.liga}</span>
-                    </td>
-                    <td class="data-hl">${d.minuto}'</td>
-                    <td>L5: <span class="win">${d.ap5}</span><br>L10: ${d.ap10}</td>
-                    <td>${d.corners}</td>
-                    <td>${d.pos}%</td>
-                    <td>${d.son} / ${d.soff}</td>
-                    <td class="small-text">${d.heatmap}</td>
-                    <td class="data-hl">${d.probHT}%</td>
-                    <td>${d.cuota}</td>
-                    <td>
-                        <select onchange="setStatus(${i}, this.value)" style="background:#1e293b; color:${d.status === 'WIN' ? 'var(--success)' : (d.status === 'LOSS' ? 'var(--danger)' : 'white')}">
-                            <option value="PENDIENTE" ${d.status === 'PENDIENTE' ? 'selected' : ''}>⏳</option>
-                            <option value="WIN" ${d.status === 'WIN' ? 'selected' : ''}>WIN</option>
-                            <option value="LOSS" ${d.status === 'LOSS' ? 'selected' : ''}>LOSS</option>
-                        </select>
-                    </td>
-                    <td class="${d.profit > 0 ? 'win' : (d.profit < 0 ? 'loss' : '')}">${d.profit.toFixed(2)}</td>
-                    <td><button onclick="deleteRow(${i})" style="background:none; color:var(--danger)">🗑</button></td>
-                </tr>`;
-        });
+        // Probabilidades base
+        const pL0 = poisson(0, lambL);
+        const pL1 = poisson(1, lambL);
+        const pL2 = poisson(2, lambL);
+        
+        const pV0 = poisson(0, lambV);
+        const pV1 = poisson(1, lambV);
+        const pV2 = poisson(2, lambV);
+
+        // Under 2.5
+        const p00 = pL0 * pV0;
+        const p10 = pL1 * pV0;
+        const p01 = pL0 * pV1;
+        const p20 = pL2 * pV0;
+        const p02 = pL0 * pV2;
+        const p11 = pL1 * pV1;
+        
+        const probUnder = p00 + p10 + p01 + p20 + p02 + p11;
+        const probOver = 1 - probUnder;
+
+        // BTTS
+        const probBtts = (1 - pL0) * (1 - pV0);
+
+        // UI Updates
+        document.getElementById('resultsArea').style.display = 'block';
+        document.getElementById('resLambL').innerText = lambL.toFixed(2);
+        document.getElementById('resLambV').innerText = lambV.toFixed(2);
+        document.getElementById('resOverP').innerText = (probOver * 100).toFixed(2) + "%";
+        document.getElementById('resBttsP').innerText = (probBtts * 100).toFixed(2) + "%";
+
+        generateVerdict('Over', probOver, 'oddsOver', 'verdictOver');
+        generateVerdict('BTTS', probBtts, 'oddsBtts', 'verdictBtts');
     }
 
-    function setStatus(index, status) {
-        db[index].status = status;
+    function generateVerdict(market, prob, inputId, divId) {
+        const userOdds = parseFloat(document.getElementById(inputId).value);
+        const div = document.getElementById(divId);
         
-        if (status === 'WIN') {
-            const c = db[index].cuota;
-            // Mejora de profit por cuotas solicitada
-            if (c >= 1.6 && c <= 1.69) db[index].profit = 0.65;
-            else if (c >= 1.7 && c <= 1.79) db[index].profit = 0.75;
-            else if (c >= 1.8) db[index].profit = 0.85;
-            else db[index].profit = (c - 1); // Por si la cuota es menor a 1.6
-        } else if (status === 'LOSS') {
-            db[index].profit = -1;
+        if(!userOdds) { div.style.display = 'none'; return; }
+        div.style.display = 'block';
+
+        const fairOdds = 1 / prob;
+        const edge = userOdds / fairOdds;
+
+        if (edge > 1.02) {
+            let stake = 0.5;
+            if (edge > 1.10) stake = 1.5;
+            else if (edge > 1.05) stake = 1;
+            
+            div.className = 'ai-verdict bet-yes';
+            div.innerHTML = `ANÁLISIS ${market}: ENTRAR <br> <small>Stake sugerido: ${stake} | Ventaja: ${((edge-1)*100).toFixed(1)}%</small>`;
         } else {
-            db[index].profit = 0;
+            div.className = 'ai-verdict bet-no';
+            div.innerHTML = `ANÁLISIS ${market}: SIN VALOR <br> <small>Cuota mínima recomendada: ${fairOdds.toFixed(2)}</small>`;
         }
-
-        updateLeagues();
-        saveDB();
-    }
-
-    function saveDB() {
-        localStorage.setItem('cornerpro_db', JSON.stringify(db));
-        calculateStats();
-        render();
-    }
-
-    function calculateStats() {
-        const settled = db.filter(x => x.status !== 'PENDIENTE');
-        const wins = settled.filter(x => x.status === 'WIN').length;
-        const totalProfit = settled.reduce((acc, curr) => acc + curr.profit, 0);
-        const countRentables = Object.values(leagueStats).filter(l => l.total >= 3 && l.profit > 0).length;
-
-        document.getElementById('stat-total').innerText = db.length;
-        document.getElementById('stat-accuracy').innerText = settled.length ? ((wins/settled.length)*100).toFixed(1) + '%' : '0%';
-        document.getElementById('stat-profit').innerText = totalProfit.toFixed(2);
-        document.getElementById('stat-leagues').innerText = countRentables;
-    }
-
-    function analyzePatterns() {
-        const modal = document.getElementById('analysisModal');
-        const results = document.getElementById('analysisResults');
-        modal.style.display = 'block';
-        
-        const settled = db.filter(x => x.status !== 'PENDIENTE');
-        
-        // 1. Profit por Bloques de Minutos (15-25 dividido en 3 aprox)
-        const minuteStats = { "15-18": 0, "19-22": 0, "23-25": 0, "Otros": 0 };
-        // 2. Profit por Rangos de Cuota Solicitados
-        const oddStats = { "1.60-1.69": 0, "1.70-1.79": 0, "1.80+": 0 };
-
-        settled.forEach(m => {
-            // Lógica Minutos (Bloques de 3-4 mins entre 15 y 25)
-            if (m.minuto >= 15 && m.minuto <= 18) minuteStats["15-18"] += m.profit;
-            else if (m.minuto >= 19 && m.minuto <= 22) minuteStats["19-22"] += m.profit;
-            else if (m.minuto >= 23 && m.minuto <= 25) minuteStats["23-25"] += m.profit;
-            else minuteStats["Otros"] += m.profit;
-
-            // Lógica Cuotas
-            if (m.cuota >= 1.6 && m.cuota <= 1.69) oddStats["1.60-1.69"] += m.profit;
-            else if (m.cuota >= 1.7 && m.cuota <= 1.79) oddStats["1.70-1.79"] += m.profit;
-            else if (m.cuota >= 1.8) oddStats["1.80+"] += m.profit;
-        });
-
-        let html = `
-            <div class="analysis-grid">
-                <div>
-                    <h3 class="sub-title">🕒 Profit Minutos (Bloques 15'-25')</h3>
-                    ${Object.entries(minuteStats).map(([range, prof]) => `
-                        <div class="league-item">
-                            <span>Bloque <strong>${range}'</strong></span>
-                            <span style="color:${prof >= 0 ? 'var(--success)' : 'var(--danger)'}; font-weight:bold;">${prof.toFixed(2)}u</span>
-                        </div>
-                    `).join('')}
-                </div>
-                <div>
-                    <h3 class="sub-title">📈 Profit por Rangos de Cuota</h3>
-                    ${Object.entries(oddStats).map(([range, prof]) => `
-                        <div class="league-item">
-                            <span>Rango <strong>@${range}</strong></span>
-                            <span style="color:${prof >= 0 ? 'var(--success)' : 'var(--danger)'}; font-weight:bold;">${prof.toFixed(2)}u</span>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-            <h3 class="sub-title" style="margin-top:20px;">🏆 Top Ligas (Histórico Completo)</h3>
-        `;
-
-        const sortedLeagues = Object.keys(leagueStats)
-            .filter(name => leagueStats[name].total >= 3)
-            .sort((a, b) => leagueStats[b].profit - leagueStats[a].profit);
-
-        sortedLeagues.forEach(name => {
-            const l = leagueStats[name];
-            html += `
-                <div class="league-item" style="border-left: 4px solid ${l.profit > 0 ? 'var(--success)' : 'var(--danger)'}">
-                    <div><strong>${name}</strong><br><small>Partidos: ${l.total} | Eff: ${((l.wins/l.total)*100).toFixed(0)}%</small></div>
-                    <div style="color:${l.profit > 0 ? 'var(--success)' : 'var(--danger)'}; font-weight:bold; font-size:1.1em;">${l.profit.toFixed(2)}u</div>
-                </div>
-            `;
-        });
-
-        results.innerHTML = html || '<p>Carga más datos para ver patrones.</p>';
-    }
-
-    function closeAnalysis() { document.getElementById('analysisModal').style.display = 'none'; }
-    function deleteRow(i) { if(confirm("¿Eliminar?")) { db.splice(i, 1); saveDB(); } }
-    function clearData() { if(confirm("¿Reset total?")) { db = []; localStorage.clear(); location.reload(); } }
-    
-    function exportCSV() {
-        let csv = "Fecha,Liga,Partido,Minuto,Cuota,Status,Profit\n";
-        db.forEach(d => csv += `"${d.fecha}","${d.liga}","${d.partido}",${d.minuto},${d.cuota},"${d.status}",${d.profit}\n`);
-        const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", "Analytics_Pro_HT.csv");
-        link.click();
     }
 </script>
+
 </body>
 </html>
