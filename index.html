@@ -10,6 +10,9 @@
             --bg: #0f172a;
             --glass: rgba(255, 255, 255, 0.05);
             --border: rgba(255, 255, 255, 0.1);
+            --success: #22c55e;
+            --warning: #eab308;
+            --danger: #f43f5e;
         }
 
         body {
@@ -25,8 +28,8 @@
         }
 
         .container {
-            width: 90%;
-            max-width: 1000px;
+            width: 95%;
+            max-width: 1100px;
             margin: 40px 0;
             padding: 20px;
             background: var(--glass);
@@ -36,11 +39,12 @@
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
         }
 
-        h1 { text-align: center; color: var(--primary); font-weight: 300; }
+        h1 { text-align: center; color: var(--primary); font-weight: 300; margin-bottom: 10px; }
+        .subtitle { text-align: center; font-size: 0.9em; color: #94a3b8; margin-bottom: 30px; }
 
         textarea {
             width: 100%;
-            height: 150px;
+            height: 120px;
             background: rgba(0, 0, 0, 0.3);
             border: 1px solid var(--border);
             color: #00ffcc;
@@ -53,7 +57,7 @@
 
         .controls {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 15px;
             margin-bottom: 20px;
         }
@@ -63,9 +67,10 @@
             border-radius: 8px;
             border: none;
             cursor: pointer;
+            font-size: 14px;
         }
 
-        select { background: #334155; color: white; }
+        select { background: #334155; color: white; border: 1px solid var(--border); }
 
         button {
             background: var(--primary);
@@ -79,7 +84,7 @@
         .results {
             margin-top: 30px;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
         }
 
@@ -87,38 +92,63 @@
             background: rgba(255, 255, 255, 0.03);
             padding: 20px;
             border-radius: 15px;
-            border-left: 4px solid var(--primary);
+            border-top: 3px solid var(--primary);
+        }
+
+        .card h3 { margin-top: 0; color: var(--primary); font-size: 1.1em; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+
+        .prob-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 8px 0;
         }
 
         .prob-bar {
-            height: 10px;
+            height: 6px;
             background: #444;
-            border-radius: 5px;
-            margin: 10px 0;
+            border-radius: 3px;
+            margin-bottom: 10px;
             overflow: hidden;
         }
 
-        .fill { height: 100%; background: var(--primary); }
+        .fill { height: 100%; background: var(--primary); transition: width 0.5s; }
+        
+        .grid-mini {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .badge {
+            background: rgba(255,255,255,0.1);
+            padding: 5px 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        b { color: var(--primary); }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>📊 El Gurú de las Apuestas</h1>
-    <p>Pega aquí los datos de xG (incluyendo cabeceras):</p>
-    <textarea id="csvData" placeholder="id	matchDate	Country	League..."></textarea>
+    <div class="subtitle">Calculadora Poisson Avanzada por Tiempos</div>
+    
+    <textarea id="csvData" placeholder="Pega aquí los datos con cabeceras (id, matchDate, Country, League, etc...)"></textarea>
     
     <div class="controls">
         <button onclick="processData()">1. Cargar Datos</button>
         <select id="leagueSelector" onchange="updateTeams()">
             <option value="">Selecciona Liga</option>
         </select>
-        <button onclick="calculatePoisson()" style="background: #22c55e;">2. Calcular Pronóstico</button>
+        <button onclick="calculateEverything()" style="background: var(--success);">2. Calcular Pronóstico</button>
     </div>
 
     <div class="controls">
-        <select id="homeTeam"><option value="">Local</option></select>
-        <select id="awayTeam"><option value="">Visitante</option></select>
+        <select id="homeTeam"><option value="">Selecciona Local</option></select>
+        <select id="awayTeam"><option value="">Selecciona Visitante</option></select>
     </div>
 
     <div id="output" class="results"></div>
@@ -130,42 +160,57 @@
     function processData() {
         const text = document.getElementById('csvData').value.trim();
         const lines = text.split('\n');
-        const headers = lines[0].split('\t');
+        if (lines.length < 2) return alert("Pega datos válidos");
 
+        db = {}; // Limpiar base de datos
+        
         lines.slice(1).forEach(line => {
             const cols = line.split('\t');
-            if (cols.length < 10) return;
+            if (cols.length < 13) return;
 
-            const league = `${cols[2]} - ${cols[3]}`; // Country - League
+            const league = `${cols[2]} - ${cols[3]}`; 
             const home = cols[5];
             const away = cols[6];
-            const xgh = parseFloat(cols[7]);
-            const xga = parseFloat(cols[8]);
+            
+            // xG Data
+            const xg = {
+                ftH: parseFloat(cols[7]), ftA: parseFloat(cols[8]),
+                h1H: parseFloat(cols[9]), h1A: parseFloat(cols[10]),
+                h2H: parseFloat(cols[11]), h2A: parseFloat(cols[12])
+            };
 
             if (!db[league]) db[league] = {};
-            if (!db[league][home]) db[league][home] = { gf: [], gc: [] };
-            if (!db[league][away]) db[league][away] = { gf: [], gc: [] };
+            [home, away].forEach(t => {
+                if (!db[league][t]) db[league][t] = { 
+                    ft_gf: [], ft_gc: [],
+                    h1_gf: [], h1_gc: [],
+                    h2_gf: [], h2_gc: [] 
+                };
+            });
 
-            db[league][home].gf.push(xgh);
-            db[league][home].gc.push(xga);
-            db[league][away].gf.push(xga);
-            db[league][away].gc.push(xgh);
+            // Local
+            db[league][home].ft_gf.push(xg.ftH); db[league][home].ft_gc.push(xg.ftA);
+            db[league][home].h1_gf.push(xg.h1H); db[league][home].h1_gc.push(xg.h1A);
+            db[league][home].h2_gf.push(xg.h2H); db[league][home].h2_gc.push(xg.h2A);
+            // Visitante
+            db[league][away].ft_gf.push(xg.ftA); db[league][away].ft_gc.push(xg.ftH);
+            db[league][away].h1_gf.push(xg.h1A); db[league][away].h1_gc.push(xg.h1H);
+            db[league][away].h2_gf.push(xg.h2A); db[league][away].h2_gc.push(xg.h2H);
         });
 
         const selector = document.getElementById('leagueSelector');
         selector.innerHTML = '<option value="">Selecciona Liga</option>';
-        Object.keys(db).forEach(l => {
+        Object.keys(db).sort().forEach(l => {
             selector.innerHTML += `<option value="${l}">${l}</option>`;
         });
-        alert("Datos cargados correctamente por Liga.");
+        alert("Datos procesados. Ligas detectadas: " + Object.keys(db).length);
     }
 
     function updateTeams() {
         const league = document.getElementById('leagueSelector').value;
         const hSelect = document.getElementById('homeTeam');
         const aSelect = document.getElementById('awayTeam');
-        hSelect.innerHTML = '';
-        aSelect.innerHTML = '';
+        hSelect.innerHTML = ''; aSelect.innerHTML = '';
 
         if (db[league]) {
             Object.keys(db[league]).sort().forEach(team => {
@@ -176,10 +221,6 @@
         }
     }
 
-    function poisson(k, lambda) {
-        return (Math.exp(-lambda) * Math.pow(lambda, k)) / factorial(k);
-    }
-
     function factorial(n) {
         if (n === 0) return 1;
         let res = 1;
@@ -187,49 +228,96 @@
         return res;
     }
 
-    function calculatePoisson() {
+    function poisson(k, lambda) {
+        return (Math.exp(-lambda) * Math.pow(lambda, k)) / factorial(k);
+    }
+
+    function getProbabilities(lH, lA) {
+        let pHome = 0, pAway = 0, pDraw = 0, pO25 = 0, pBTTS = 0;
+        let zeroH = poisson(0, lH);
+        let zeroA = poisson(0, lA);
+
+        for (let i = 0; i < 8; i++) {
+            for (let j = 0; j < 8; j++) {
+                const p = poisson(i, lH) * poisson(j, lA);
+                if (i > j) pHome += p;
+                else if (j > i) pAway += p;
+                else pDraw += p;
+                
+                if (i + j > 2.5) pO25 += p;
+                if (i > 0 && j > 0) pBTTS += p;
+            }
+        }
+        return { pHome, pAway, pDraw, pO25, pBTTS, zeroH, zeroA };
+    }
+
+    function calculateEverything() {
         const league = document.getElementById('leagueSelector').value;
         const t1 = document.getElementById('homeTeam').value;
         const t2 = document.getElementById('awayTeam').value;
 
-        if (!t1 || !t2 || t1 === t2) return alert("Selecciona equipos distintos");
+        if (!t1 || !t2 || t1 === t2) return alert("Selecciona equipos válidos");
 
-        // Promedios simples de xG de la muestra cargada
-        const getAvg = (arr) => arr.reduce((a,b) => a+b, 0) / arr.length;
+        const getAvg = (arr) => arr.length ? arr.reduce((a,b) => a+b, 0) / arr.length : 0;
+        const calcLambda = (teamH, teamA, type) => {
+            const att = getAvg(db[league][teamH][type + '_gf']);
+            const def = getAvg(db[league][teamA][type + '_gc']);
+            return (att + def) / 2;
+        };
+
+        // Lambdas por periodos
+        const lFT_H = calcLambda(t1, t2, 'ft'); const lFT_A = calcLambda(t2, t1, 'ft');
+        const l1H_H = calcLambda(t1, t2, 'h1'); const l1H_A = calcLambda(t2, t1, 'h1');
+        const l2H_H = calcLambda(t1, t2, 'h2'); const l2H_A = calcLambda(t2, t1, 'h2');
+
+        const ft = getProbabilities(lFT_H, lFT_A);
+        const h1 = getProbabilities(l1H_H, l1H_A);
         
-        const lambdaH = (getAvg(db[league][t1].gf) + getAvg(db[league][t2].gc)) / 2;
-        const lambdaA = (getAvg(db[league][t2].gf) + getAvg(db[league][t1].gc)) / 2;
+        // Overs específicos HT (Usando Lambda 1H)
+        const pO05HT = 1 - (poisson(0, l1H_H) * poisson(0, l1H_A));
+        const pO15HT = 1 - (poisson(0, l1H_H) * poisson(0, l1H_A)) - (poisson(1, l1H_H) * poisson(0, l1H_A)) - (poisson(0, l1H_H) * poisson(1, l1H_A));
+        // El Over 0.75 y 1.0 son estimaciones entre O0.5 y O1.5
+        const pO075HT = (pO05HT * 0.7) + (pO15HT * 0.3);
+        const pO10HT = (pO05HT * 0.4) + (pO15HT * 0.6);
 
-        let pHome = 0, pAway = 0, pDraw = 0;
-        let matrix = "";
-
-        for (let i = 0; i < 6; i++) {
-            for (let j = 0; j < 6; j++) {
-                const prob = poisson(i, lambdaH) * poisson(j, lambdaA);
-                if (i > j) pHome += prob;
-                else if (i < j) pAway += prob;
-                else pDraw += prob;
-            }
-        }
-
-        const total = pHome + pAway + pDraw;
-        const toPct = (val) => ((val / total) * 100).toFixed(1);
+        const toPct = (v) => (v * 100).toFixed(1) + '%';
 
         document.getElementById('output').innerHTML = `
             <div class="card">
-                <h3>Probabilidades</h3>
-                <p>Local (${t1}): ${toPct(pHome)}%</p>
-                <div class="prob-bar"><div class="fill" style="width:${toPct(pHome)}%"></div></div>
-                <p>Empate: ${toPct(pDraw)}%</p>
-                <div class="prob-bar"><div class="fill" style="width:${toPct(pDraw)}%; background:#94a3b8"></div></div>
-                <p>Visitante (${t2}): ${toPct(pAway)}%</p>
-                <div class="prob-bar"><div class="fill" style="width:${toPct(pAway)}%; background:#f43f5e"></div></div>
+                <h3>Match 1X2 & BTTS (FT)</h3>
+                <div class="prob-row"><span>Local (${t1})</span> <b>${toPct(ft.pHome)}</b></div>
+                <div class="prob-bar"><div class="fill" style="width:${toPct(ft.pHome)}"></div></div>
+                <div class="prob-row"><span>Empate</span> <b>${toPct(ft.pDraw)}</b></div>
+                <div class="prob-bar"><div class="fill" style="width:${toPct(ft.pDraw)}; background:#64748b"></div></div>
+                <div class="prob-row"><span>Visitante (${t2})</span> <b>${toPct(ft.pAway)}</b></div>
+                <div class="prob-bar"><div class="fill" style="width:${toPct(ft.pAway)}; background:var(--danger)"></div></div>
+                <div class="prob-row" style="margin-top:15px"><span>BTTS Yes</span> <b style="color:var(--success)">${toPct(ft.pBTTS)}</b></div>
             </div>
-            <div class="card" style="border-left-color: #eab308;">
-                <h3>Expectativa de Goles</h3>
-                <p>${t1}: <b>${lambdaH.toFixed(2)} xG</b></p>
-                <p>${t2}: <b>${lambdaA.toFixed(2)} xG</b></p>
-                <p>Sugerencia: ${lambdaH + lambdaA > 2.5 ? 'Over 2.5' : 'Under 2.5'}</p>
+
+            <div class="card" style="border-top-color: var(--warning)">
+                <h3>Goles Tiempo Completo</h3>
+                <div class="prob-row"><span>Over 2.5 FT</span> <b>${toPct(ft.pO25)}</b></div>
+                <div class="prob-bar"><div class="fill" style="width:${toPct(ft.pO25)}; background:var(--warning)"></div></div>
+                <div class="grid-mini">
+                    <div class="badge">Exp. ${t1}<br><b>${lFT_H.toFixed(2)}</b></div>
+                    <div class="badge">Exp. ${t2}<br><b>${lFT_A.toFixed(2)}</b></div>
+                </div>
+            </div>
+
+            <div class="card" style="border-top-color: #a855f7">
+                <h3>Mercados 1er Tiempo (HT)</h3>
+                <div class="prob-row"><span>Over 0.5 HT</span> <b>${toPct(pO05HT)}</b></div>
+                <div class="prob-bar"><div class="fill" style="width:${toPct(pO05HT)}; background:#a855f7"></div></div>
+                <div class="prob-row"><span>Over 0.75 HT</span> <b>${toPct(pO075HT)}</b></div>
+                <div class="prob-row"><span>Over 1.0 HT</span> <b>${toPct(pO10HT)}</b></div>
+                <div class="subtitle" style="margin:10px 0 0 0">Exp. Goles HT: ${(l1H_H + l1H_A).toFixed(2)}</div>
+            </div>
+
+            <div class="card" style="border-top-color: #06b6d4">
+                <h3>Expectativa 2do Tiempo</h3>
+                <div class="prob-row"><span>Exp. Goles ${t1}</span> <b>${l2H_H.toFixed(2)}</b></div>
+                <div class="prob-row"><span>Exp. Goles ${t2}</span> <b>${l2H_A.toFixed(2)}</b></div>
+                <div class="badge" style="width:100%; margin-top:10px">Total 2H: <b>${(l2H_H + l2H_A).toFixed(2)} xG</b></div>
             </div>
         `;
     }
