@@ -13,6 +13,8 @@
             --success: #22c55e;
             --warning: #eab308;
             --danger: #f43f5e;
+            --info: #06b6d4;
+            --purple: #a855f7;
         }
 
         body {
@@ -162,7 +164,7 @@
         const lines = text.split('\n');
         if (lines.length < 2) return alert("Pega datos válidos");
 
-        db = {}; // Limpiar base de datos
+        db = {}; 
         
         lines.slice(1).forEach(line => {
             const cols = line.split('\t');
@@ -172,7 +174,6 @@
             const home = cols[5];
             const away = cols[6];
             
-            // xG Data
             const xg = {
                 ftH: parseFloat(cols[7]), ftA: parseFloat(cols[8]),
                 h1H: parseFloat(cols[9]), h1A: parseFloat(cols[10]),
@@ -188,11 +189,10 @@
                 };
             });
 
-            // Local
             db[league][home].ft_gf.push(xg.ftH); db[league][home].ft_gc.push(xg.ftA);
             db[league][home].h1_gf.push(xg.h1H); db[league][home].h1_gc.push(xg.h1A);
             db[league][home].h2_gf.push(xg.h2H); db[league][home].h2_gc.push(xg.h2A);
-            // Visitante
+
             db[league][away].ft_gf.push(xg.ftA); db[league][away].ft_gc.push(xg.ftH);
             db[league][away].h1_gf.push(xg.h1A); db[league][away].h1_gc.push(xg.h1H);
             db[league][away].h2_gf.push(xg.h2A); db[league][away].h2_gc.push(xg.h2H);
@@ -203,7 +203,7 @@
         Object.keys(db).sort().forEach(l => {
             selector.innerHTML += `<option value="${l}">${l}</option>`;
         });
-        alert("Datos procesados. Ligas detectadas: " + Object.keys(db).length);
+        alert("Datos procesados correctamente.");
     }
 
     function updateTeams() {
@@ -234,21 +234,30 @@
 
     function getProbabilities(lH, lA) {
         let pHome = 0, pAway = 0, pDraw = 0, pO25 = 0, pBTTS = 0;
-        let zeroH = poisson(0, lH);
-        let zeroA = poisson(0, lA);
-
-        for (let i = 0; i < 8; i++) {
-            for (let j = 0; j < 8; j++) {
+        for (let i = 0; i < 9; i++) {
+            for (let j = 0; j < 9; j++) {
                 const p = poisson(i, lH) * poisson(j, lA);
                 if (i > j) pHome += p;
                 else if (j > i) pAway += p;
                 else pDraw += p;
-                
                 if (i + j > 2.5) pO25 += p;
                 if (i > 0 && j > 0) pBTTS += p;
             }
         }
-        return { pHome, pAway, pDraw, pO25, pBTTS, zeroH, zeroA };
+        return { pHome, pAway, pDraw, pO25, pBTTS };
+    }
+
+    // Calcula Overs asiáticos y normales para una mitad dada su lambda combinada
+    function calcHalfOvers(lH, lA) {
+        const p0 = poisson(0, lH) * poisson(0, lA);
+        const p1 = (poisson(1, lH) * poisson(0, lA)) + (poisson(0, lH) * poisson(1, lA));
+        const o05 = 1 - p0;
+        const o15 = 1 - p0 - p1;
+        return {
+            o05: o05,
+            o075: (o05 * 0.7) + (o15 * 0.3), // Estimación lineal
+            o10: (o05 * 0.4) + (o15 * 0.6)   // Estimación lineal
+        };
     }
 
     function calculateEverything() {
@@ -265,59 +274,54 @@
             return (att + def) / 2;
         };
 
-        // Lambdas por periodos
         const lFT_H = calcLambda(t1, t2, 'ft'); const lFT_A = calcLambda(t2, t1, 'ft');
         const l1H_H = calcLambda(t1, t2, 'h1'); const l1H_A = calcLambda(t2, t1, 'h1');
         const l2H_H = calcLambda(t1, t2, 'h2'); const l2H_A = calcLambda(t2, t1, 'h2');
 
         const ft = getProbabilities(lFT_H, lFT_A);
-        const h1 = getProbabilities(l1H_H, l1H_A);
-        
-        // Overs específicos HT (Usando Lambda 1H)
-        const pO05HT = 1 - (poisson(0, l1H_H) * poisson(0, l1H_A));
-        const pO15HT = 1 - (poisson(0, l1H_H) * poisson(0, l1H_A)) - (poisson(1, l1H_H) * poisson(0, l1H_A)) - (poisson(0, l1H_H) * poisson(1, l1H_A));
-        // El Over 0.75 y 1.0 son estimaciones entre O0.5 y O1.5
-        const pO075HT = (pO05HT * 0.7) + (pO15HT * 0.3);
-        const pO10HT = (pO05HT * 0.4) + (pO15HT * 0.6);
+        const ht = calcHalfOvers(l1H_H, l1H_A);
+        const st = calcHalfOvers(l2H_H, l2H_A);
 
         const toPct = (v) => (v * 100).toFixed(1) + '%';
 
         document.getElementById('output').innerHTML = `
             <div class="card">
-                <h3>Match 1X2 & BTTS (FT)</h3>
+                <h3>Ganador del Partido (1X2)</h3>
                 <div class="prob-row"><span>Local (${t1})</span> <b>${toPct(ft.pHome)}</b></div>
                 <div class="prob-bar"><div class="fill" style="width:${toPct(ft.pHome)}"></div></div>
                 <div class="prob-row"><span>Empate</span> <b>${toPct(ft.pDraw)}</b></div>
                 <div class="prob-bar"><div class="fill" style="width:${toPct(ft.pDraw)}; background:#64748b"></div></div>
                 <div class="prob-row"><span>Visitante (${t2})</span> <b>${toPct(ft.pAway)}</b></div>
                 <div class="prob-bar"><div class="fill" style="width:${toPct(ft.pAway)}; background:var(--danger)"></div></div>
-                <div class="prob-row" style="margin-top:15px"><span>BTTS Yes</span> <b style="color:var(--success)">${toPct(ft.pBTTS)}</b></div>
             </div>
 
             <div class="card" style="border-top-color: var(--warning)">
-                <h3>Goles Tiempo Completo</h3>
-                <div class="prob-row"><span>Over 2.5 FT</span> <b>${toPct(ft.pO25)}</b></div>
+                <h3>Goles FT & BTTS</h3>
+                <div class="prob-row"><span>Over 2.5 FT</span> <b style="color:var(--warning)">${toPct(ft.pO25)}</b></div>
                 <div class="prob-bar"><div class="fill" style="width:${toPct(ft.pO25)}; background:var(--warning)"></div></div>
-                <div class="grid-mini">
-                    <div class="badge">Exp. ${t1}<br><b>${lFT_H.toFixed(2)}</b></div>
-                    <div class="badge">Exp. ${t2}<br><b>${lFT_A.toFixed(2)}</b></div>
+                <div class="prob-row"><span>Ambos Anotan (BTTS Yes)</span> <b style="color:var(--success)">${toPct(ft.pBTTS)}</b></div>
+                <div class="prob-bar"><div class="fill" style="width:${toPct(ft.pBTTS)}; background:var(--success)"></div></div>
+                <div class="grid-mini" style="margin-top:10px">
+                    <div class="badge">Exp. FT: <b>${(lFT_H + lFT_A).toFixed(2)}</b></div>
                 </div>
             </div>
 
-            <div class="card" style="border-top-color: #a855f7">
-                <h3>Mercados 1er Tiempo (HT)</h3>
-                <div class="prob-row"><span>Over 0.5 HT</span> <b>${toPct(pO05HT)}</b></div>
-                <div class="prob-bar"><div class="fill" style="width:${toPct(pO05HT)}; background:#a855f7"></div></div>
-                <div class="prob-row"><span>Over 0.75 HT</span> <b>${toPct(pO075HT)}</b></div>
-                <div class="prob-row"><span>Over 1.0 HT</span> <b>${toPct(pO10HT)}</b></div>
-                <div class="subtitle" style="margin:10px 0 0 0">Exp. Goles HT: ${(l1H_H + l1H_A).toFixed(2)}</div>
+            <div class="card" style="border-top-color: var(--purple)">
+                <h3>1er Tiempo (HT)</h3>
+                <div class="prob-row"><span>Over 0.5 HT</span> <b>${toPct(ht.o05)}</b></div>
+                <div class="prob-bar"><div class="fill" style="width:${toPct(ht.o05)}; background:var(--purple)"></div></div>
+                <div class="prob-row"><span>Over 0.75 HT</span> <b>${toPct(ht.o075)}</b></div>
+                <div class="prob-row"><span>Over 1.0 HT</span> <b>${toPct(ht.o10)}</b></div>
+                <div class="subtitle" style="margin:10px 0 0 0">Exp. 1H: ${(l1H_H + l1H_A).toFixed(2)}</div>
             </div>
 
-            <div class="card" style="border-top-color: #06b6d4">
-                <h3>Expectativa 2do Tiempo</h3>
-                <div class="prob-row"><span>Exp. Goles ${t1}</span> <b>${l2H_H.toFixed(2)}</b></div>
-                <div class="prob-row"><span>Exp. Goles ${t2}</span> <b>${l2H_A.toFixed(2)}</b></div>
-                <div class="badge" style="width:100%; margin-top:10px">Total 2H: <b>${(l2H_H + l2H_A).toFixed(2)} xG</b></div>
+            <div class="card" style="border-top-color: var(--info)">
+                <h3>2do Tiempo (2H)</h3>
+                <div class="prob-row"><span>Over 0.5 2H</span> <b>${toPct(st.o05)}</b></div>
+                <div class="prob-bar"><div class="fill" style="width:${toPct(st.o05)}; background:var(--info)"></div></div>
+                <div class="prob-row"><span>Over 0.75 2H</span> <b>${toPct(st.o075)}</b></div>
+                <div class="prob-row"><span>Over 1.0 2H</span> <b>${toPct(st.o10)}</b></div>
+                <div class="subtitle" style="margin:10px 0 0 0">Exp. 2H: ${(l2H_H + l2H_A).toFixed(2)}</div>
             </div>
         `;
     }
