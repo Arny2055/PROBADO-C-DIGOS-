@@ -3,49 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora Poisson Pro - Análisis Ascendente & Valor</title>
+    <title>El Gurú de las Apuestas - Análisis de Jornada</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; color: #333; margin: 0; padding: 20px; }
-        .container { max-width: 1100px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        h2 { color: #1a3a5a; text-align: center; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
-        textarea { width: 100%; height: 120px; border-radius: 8px; border: 1px solid #ccc; padding: 10px; font-size: 11px; margin-bottom: 15px; background: #fafafa; }
+        .container { max-width: 1150px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h2 { color: #1a3a5a; text-align: center; border-bottom: 3px solid #3498db; padding-bottom: 10px; margin-top: 0; }
+        textarea { width: 100%; height: 100px; border-radius: 8px; border: 1px solid #ccc; padding: 10px; font-size: 11px; margin-bottom: 15px; background: #fafafa; resize: vertical; }
         
-        .config-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; background: #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .config-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; background: #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
         .field { display: flex; flex-direction: column; gap: 5px; }
-        label { font-size: 13px; font-weight: bold; color: #555; }
+        label { font-size: 12px; font-weight: bold; color: #555; text-transform: uppercase; }
         
         select, input, button { padding: 10px; border-radius: 6px; border: 1px solid #ddd; font-size: 14px; }
-        button { background: #3498db; color: white; border: none; cursor: pointer; transition: 0.3s; font-weight: bold; margin-top: 10px; width: 100%; }
-        button:hover { background: #2980b9; }
+        button { background: #2c3e50; color: white; border: none; cursor: pointer; transition: 0.3s; font-weight: bold; width: 100%; }
+        button:hover { background: #34495e; transform: translateY(-1px); }
 
-        .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 20px; }
-        .card { background: #fff; border-top: 4px solid #3498db; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .card h3 { margin: 0 0 10px 0; font-size: 12px; color: #7f8c8d; text-transform: uppercase; }
-        .val { font-size: 22px; font-weight: bold; color: #2c3e50; }
+        .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 20px; }
+        .card { background: #fff; border-top: 4px solid #3498db; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .card h3 { margin: 0 0 8px 0; font-size: 11px; color: #7f8c8d; text-transform: uppercase; }
+        .val { font-size: 20px; font-weight: bold; color: #2c3e50; }
         
-        /* Nuevos estilos para Validación */
-        .validation-panel { margin-top: 20px; padding: 15px; border-radius: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border: 2px dashed #bbb; }
-        .status-box { padding: 10px; border-radius: 6px; font-weight: bold; text-align: center; font-size: 18px; }
+        .validation-panel { margin-top: 20px; padding: 15px; border-radius: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border: 2px dashed #3498db; background: #f8fbff; }
+        .status-box { padding: 12px; border-radius: 6px; font-weight: bold; text-align: center; font-size: 16px; }
         .verde { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .rojo { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .valor-true { color: #27ae60; font-size: 14px; }
-        .valor-false { color: #e74c3c; font-size: 14px; }
 
-        .info-panel { margin-top: 15px; padding: 10px; background: #d4edda; color: #155724; border-radius: 6px; font-size: 13px; text-align: center; border: 1px solid #c3e6cb; }
-        .footer-note { font-size: 11px; color: #999; margin-top: 10px; text-align: center; }
+        .info-panel { margin-top: 15px; padding: 10px; background: #e3f2fd; color: #0d47a1; border-radius: 6px; font-size: 13px; text-align: center; border: 1px solid #bbdefb; }
         
-        .history-tables { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; font-size: 11px; }
-        .history-tables table { width: 100%; border-collapse: collapse; }
-        .history-tables th { background: #f8f9fa; }
-        .history-tables td, .history-tables th { border: 1px solid #eee; padding: 5px; text-align: left; }
+        .tables-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 25px; }
+        .full-width-table { grid-column: 1 / -1; margin-top: 10px; }
+        
+        h4 { margin-bottom: 10px; color: #2c3e50; border-left: 4px solid #3498db; padding-left: 8px; font-size: 14px; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; background: white; }
+        th { background: #f2f2f2; color: #444; text-align: left; padding: 8px; border: 1px solid #dee2e6; }
+        td { padding: 8px; border: 1px solid #dee2e6; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .highlight-row { background-color: #fff3cd !important; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Calculadora Poisson - Análisis Ascendente & Validación</h2>
+    <h2>El Gurú de las Apuestas: Análisis Poisson & Post-Jornada</h2>
     
-    <label>1. Pega los datos de la liga (TSV/Excel):</label>
+    <label>Pega aquí tus datos (TSV de Excel):</label>
     <textarea id="rawData" placeholder="Date	Time	HomeTeam	AwayTeam	FTHG	FTAG..."></textarea>
     
     <div class="config-bar">
@@ -58,16 +59,16 @@
             <select id="awaySelect"><option value="">Carga datos primero...</option></select>
         </div>
         <div class="field">
-            <label>Analizar hasta la Jornada (N)</label>
-            <input type="number" id="matchLimit" value="5" min="1">
+            <label>Límite Jornada (N)</label>
+            <input type="number" id="matchLimit" value="10" min="1">
         </div>
         <div class="field">
             <label>Acción</label>
-            <button onclick="calculate()">Calcular Pronóstico</button>
+            <button onclick="calculate()">Analizar y Validar</button>
         </div>
     </div>
 
-    <div id="statsInfo" class="info-panel">Sube datos para comenzar el análisis.</div>
+    <div id="statsInfo" class="info-panel">Esperando datos...</div>
 
     <div class="results-grid">
         <div class="card"><h3>xG Local</h3><div id="xgHome" class="val">-</div></div>
@@ -75,32 +76,46 @@
         <div class="card"><h3>1 X 2 (%)</h3><div id="prob1x2" class="val">-</div></div>
         <div class="card"><h3>Over 2.5 FT</h3><div id="over25" class="val">-</div></div>
         <div class="card"><h3>Ambos Anotan</h3><div id="btts" class="val">-</div></div>
-        <div class="card"><h3>Over 0.5 HT</h3><div id="over05ht" class="val">-</div></div>
+        <div class="card"><h3>Prob. Local Marca</h3><div id="probHomeScore" class="val">-</div></div>
     </div>
 
     <div class="validation-panel" id="validationPanel" style="display:none;">
         <div>
-            <h4>Resultado Real Partido N+1</h4>
+            <h4>Resultado Real (Partido N+1)</h4>
             <div id="realResultBox" class="status-box">-</div>
         </div>
         <div>
-            <h4>Análisis de Valor y Acierto</h4>
+            <h4>Estado de la Predicción</h4>
             <div id="hitStatus" class="status-box">-</div>
         </div>
     </div>
 
-    <div class="history-tables">
+    <div class="tables-wrapper">
         <div>
-            <h4>Partidos considerados (Local)</h4>
+            <h4>Historial Local (Últimos N)</h4>
             <table id="homeHistoryTable"><thead><tr><th>Fecha</th><th>Rival</th><th>Res.</th></tr></thead><tbody></tbody></table>
         </div>
         <div>
-            <h4>Partidos considerados (Visita)</h4>
+            <h4>Historial Visita (Últimos N)</h4>
             <table id="awayHistoryTable"><thead><tr><th>Fecha</th><th>Rival</th><th>Res.</th></tr></thead><tbody></tbody></table>
         </div>
+        
+        <div class="full-width-table">
+            <h4>Partidos Posteriores a la Jornada Elegida (Futuro)</h4>
+            <table id="futureMatchesTable">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Local</th>
+                        <th>Visita</th>
+                        <th>Resultado FT</th>
+                        <th>Validación Directa</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
     </div>
-
-    <p class="footer-note">El sistema analiza los primeros N partidos y valida si el partido N+1 (el siguiente en el tiempo) cumple con la predicción.</p>
 </div>
 
 <script>
@@ -111,15 +126,12 @@ document.getElementById('rawData').addEventListener('input', function(e) {
     const text = e.target.value.trim();
     if(!text) return;
     const rows = text.split('\n');
-    const homeSelector = document.getElementById('homeSelect');
-    const awaySelector = document.getElementById('awaySelect');
-    
     allMatches = [];
     teams.clear();
     
     for(let i = 1; i < rows.length; i++) {
         const cols = rows[i].split('\t');
-        if(cols.length < 8) continue;
+        if(cols.length < 6) continue;
         
         allMatches.push({
             date: cols[0], 
@@ -127,13 +139,15 @@ document.getElementById('rawData').addEventListener('input', function(e) {
             away: cols[3].trim(),
             fthg: parseInt(cols[4]),
             ftag: parseInt(cols[5]),
-            hthg: parseInt(cols[6]),
-            htag: parseInt(cols[7])
+            hthg: parseInt(cols[6] || 0),
+            htag: parseInt(cols[7] || 0)
         });
         teams.add(cols[2].trim());
         teams.add(cols[3].trim());
     }
 
+    const homeSelector = document.getElementById('homeSelect');
+    const awaySelector = document.getElementById('awaySelect');
     const sortedTeams = Array.from(teams).sort();
     homeSelector.innerHTML = awaySelector.innerHTML = '<option value="">Seleccionar...</option>';
     sortedTeams.forEach(t => {
@@ -141,11 +155,10 @@ document.getElementById('rawData').addEventListener('input', function(e) {
         awaySelector.innerHTML += `<option value="${t}">${t}</option>`;
     });
     
-    document.getElementById('statsInfo').innerText = `Base de datos cargada: ${allMatches.length} partidos.`;
+    document.getElementById('statsInfo').innerText = `Base de datos cargada: ${allMatches.length} partidos detectados.`;
 });
 
 function factorial(n) {
-    if (n <= 1) return 1;
     let res = 1;
     for (let i = 2; i <= n; i++) res *= i;
     return res;
@@ -161,122 +174,136 @@ function calculate() {
     const limit = parseInt(document.getElementById('matchLimit').value);
     
     if(!homeTeam || !awayTeam || homeTeam === awayTeam) {
-        alert("Selecciona equipos válidos.");
+        alert("Por favor selecciona dos equipos diferentes.");
         return;
     }
 
-    // Análisis Ascendente
+    // 1. Filtrar historiales para cálculo (primeros N partidos)
     const homeHistory = allMatches.filter(m => m.home === homeTeam || m.away === homeTeam).slice(0, limit);
     const awayHistory = allMatches.filter(m => m.home === awayTeam || m.away === awayTeam).slice(0, limit);
-    
-    // Buscar el partido N+1 (El siguiente partido REAL entre estos dos o del local)
-    // Buscamos el primer partido que ocurra DESPUÉS de los analizados en la lista original
-    const nextMatch = allMatches.find((m, index) => {
-        const isThisMatchup = (m.home === homeTeam && m.away === awayTeam);
-        // El partido debe estar después del último partido analizado cronológicamente
-        return isThisMatchup && allMatches.indexOf(m) >= Math.max(allMatches.indexOf(homeHistory[homeHistory.length-1]), allMatches.indexOf(awayHistory[awayHistory.length-1]));
-    });
 
-    if(homeHistory.length === 0 || awayHistory.length === 0) {
-        alert("No hay suficientes partidos.");
-        return;
-    }
+    // 2. Identificar partidos posteriores (Futuro)
+    // El "futuro" empieza desde el índice más alto usado en los historiales
+    const lastIndexUsed = Math.max(
+        allMatches.indexOf(homeHistory[homeHistory.length-1]),
+        allMatches.indexOf(awayHistory[awayHistory.length-1])
+    );
+    const futureMatches = allMatches.slice(lastIndexUsed + 1);
 
-    let totalFTHG = 0, totalFTAG = 0, totalHTG = 0;
-    allMatches.forEach(m => {
-        totalFTHG += m.fthg; totalFTAG += m.ftag;
-        totalHTG += (m.hthg + m.htag);
-    });
+    // 3. Cálculo de Medias de Liga
+    let totalFTHG = 0, totalFTAG = 0;
+    allMatches.forEach(m => { totalFTHG += m.fthg; totalFTAG += m.ftag; });
     const avgHomeG = totalFTHG / allMatches.length;
     const avgAwayG = totalFTAG / allMatches.length;
 
-    const getTeamStats = (history, teamName) => {
-        let scoredH = 0, concededH = 0, gamesH = 0;
-        let scoredA = 0, concededA = 0, gamesA = 0;
-        let htTotal = 0;
+    // 4. Fortalezas de Ataque/Defensa
+    const getStats = (history, team) => {
+        let scH = 0, conH = 0, gmH = 0, scA = 0, conA = 0, gmA = 0;
         history.forEach(m => {
-            if(m.home === teamName) { scoredH += m.fthg; concededH += m.ftag; gamesH++; }
-            else { scoredA += m.ftag; concededA += m.fthg; gamesA++; }
-            htTotal += (m.hthg + m.htag);
+            if(m.home === team) { scH += m.fthg; conH += m.ftag; gmH++; }
+            else { scA += m.ftag; conA += m.fthg; gmA++; }
         });
         return {
-            attHome: gamesH > 0 ? (scoredH / gamesH) / avgHomeG : 1,
-            defHome: gamesH > 0 ? (concededH / gamesH) / avgAwayG : 1,
-            attAway: gamesA > 0 ? (scoredA / gamesA) / avgAwayG : 1,
-            defAway: gamesA > 0 ? (concededA / gamesA) / avgHomeG : 1,
-            avgHT: htTotal / (gamesH + gamesA)
+            attH: gmH > 0 ? (scH/gmH)/avgHomeG : 1,
+            defH: gmH > 0 ? (conH/gmH)/avgAwayG : 1,
+            attA: gmA > 0 ? (scA/gmA)/avgAwayG : 1,
+            defA: gmA > 0 ? (conA/gmA)/avgHomeG : 1
         };
     };
 
-    const homeStats = getTeamStats(homeHistory, homeTeam);
-    const awayStats = getTeamStats(awayHistory, awayTeam);
+    const sH = getStats(homeHistory, homeTeam);
+    const sA = getStats(awayHistory, awayTeam);
 
-    const lambdaHome = homeStats.attHome * awayStats.defAway * avgHomeG;
-    const lambdaAway = awayStats.attAway * homeStats.defHome * avgAwayG;
-    const lambdaHT = (homeStats.avgHT + awayStats.avgHT) / 2;
+    const lambdaH = sH.attH * sA.defA * avgHomeG;
+    const lambdaA = sA.attA * sH.defH * avgAwayG;
 
-    let pWinH = 0, pDraw = 0, pWinA = 0, pOver25 = 0, pBTTS = 0;
-    for(let h = 0; h <= 7; h++) {
-        for(let a = 0; a <= 7; a++) {
-            const prob = poisson(h, lambdaHome) * poisson(a, lambdaAway);
-            if(h > a) pWinH += prob;
-            else if(h === a) pDraw += prob;
-            else pWinA += prob;
-            if(h + a > 2.5) pOver25 += prob;
-            if(h > 0 && a > 0) pBTTS += prob;
+    // 5. Probabilidades Poisson
+    let pW = 0, pD = 0, pL = 0, pO25 = 0, pBTTS = 0, pHS = 0;
+    for(let h=0; h<=8; h++) {
+        for(let a=0; a<=8; a++) {
+            let p = poisson(h, lambdaH) * poisson(a, lambdaA);
+            if(h > a) pW += p; else if(h === a) pD += p; else pL += p;
+            if(h + a > 2.5) pO25 += p;
+            if(h > 0 && a > 0) pBTTS += p;
+            if(h > 0) pHS += p;
         }
     }
 
-    // Renderizado de Resultados Base
-    document.getElementById('xgHome').innerText = lambdaHome.toFixed(2);
-    document.getElementById('xgAway').innerText = lambdaAway.toFixed(2);
-    document.getElementById('prob1x2').innerHTML = `<span style="color:green">${(pWinH*100).toFixed(1)}%</span> | <span style="color:#666">${(pDraw*100).toFixed(1)}%</span> | <span style="color:red">${(pWinA*100).toFixed(1)}%</span>`;
-    document.getElementById('over25').innerText = (pOver25 * 100).toFixed(1) + "%";
+    // 6. Actualizar Interfaz
+    document.getElementById('xgHome').innerText = lambdaH.toFixed(2);
+    document.getElementById('xgAway').innerText = lambdaA.toFixed(2);
+    document.getElementById('prob1x2').innerHTML = `<span style="color:green">${(pW*100).toFixed(0)}%</span> - ${(pD*100).toFixed(0)}% - <span style="color:red">${(pL*100).toFixed(0)}%</span>`;
+    document.getElementById('over25').innerText = (pO25 * 100).toFixed(1) + "%";
     document.getElementById('btts').innerText = (pBTTS * 100).toFixed(1) + "%";
-    document.getElementById('over05ht').innerText = ((1 - Math.exp(-lambdaHT)) * 100).toFixed(1) + "%";
-
-    // LÓGICA DE VALIDACIÓN (VERDE / ROJO)
-    const valPanel = document.getElementById('validationPanel');
-    if(nextMatch) {
-        valPanel.style.display = 'grid';
-        const realScore = `${nextMatch.fthg} - ${nextMatch.ftag}`;
-        document.getElementById('realResultBox').innerText = realScore;
-        
-        // Determinar si es Verde o Rojo basado en el mercado con más probabilidad
-        let hit = false;
-        let market = "";
-        if(pWinH > 0.5 && nextMatch.fthg > nextMatch.ftag) hit = true;
-        else if(pWinA > 0.5 && nextMatch.ftag > nextMatch.fthg) hit = true;
-        else if(pOver25 > 0.5 && (nextMatch.fthg + nextMatch.ftag) > 2.5) hit = true;
-        
-        const hitBox = document.getElementById('hitStatus');
-        hitBox.innerText = hit ? "VERDE (Acierto)" : "ROJO (Fallo)";
-        hitBox.className = hit ? "status-box verde" : "status-box rojo";
-
-        // Análisis de Valor (Si prob Poisson > 50% hay "Valor" teórico)
-        const valorText = (pWinH > 0.5 || pWinA > 0.5 || pOver25 > 0.5) ? 
-            "<br><span class='valor-true'>Hay Valor Detectado</span>" : 
-            "<br><span class='valor-false'>Sin Valor Claro</span>";
-        hitBox.innerHTML += valorText;
-
-    } else {
-        valPanel.style.display = 'none';
-    }
+    document.getElementById('probHomeScore').innerText = (pHS * 100).toFixed(1) + "%";
 
     updateHistoryTable('homeHistoryTable', homeHistory, homeTeam);
     updateHistoryTable('awayHistoryTable', awayHistory, awayTeam);
+    
+    // 7. Mostrar Futuro y Validar Partido N+1
+    renderFutureMatches(futureMatches, homeTeam, awayTeam, {pW, pO25});
 }
 
-function updateHistoryTable(tableId, history, teamName) {
+function renderFutureMatches(matches, hTeam, aTeam, probs) {
+    const tbody = document.getElementById('futureMatchesTable').querySelector('tbody');
+    const valPanel = document.getElementById('validationPanel');
+    const realBox = document.getElementById('realResultBox');
+    const hitBox = document.getElementById('hitStatus');
+    
+    tbody.innerHTML = '';
+    let directMatchFound = false;
+
+    matches.forEach(m => {
+        const isTargetMatch = (m.home === hTeam && m.away === aTeam);
+        let rowClass = isTargetMatch ? 'highlight-row' : '';
+        let valCell = "-";
+
+        if(isTargetMatch && !directMatchFound) {
+            directMatchFound = true;
+            valPanel.style.display = 'grid';
+            realBox.innerText = `${m.fthg} - ${m.ftag}`;
+            
+            // Lógica de Acierto
+            let win = (probs.pW > 0.5 && m.fthg > m.ftag);
+            let over = (probs.pO25 > 0.5 && (m.fthg + m.ftag) > 2.5);
+            
+            if(win || over) {
+                hitBox.innerText = "VERDE (Acierto Detectado)";
+                hitBox.className = "status-box verde";
+                valCell = "✅ EXITOSO";
+            } else {
+                hitBox.innerText = "ROJO (Sin acierto en valor)";
+                hitBox.className = "status-box rojo";
+                valCell = "❌ FALLIDO";
+            }
+        }
+
+        tbody.innerHTML += `<tr class="${rowClass}">
+            <td>${m.date}</td>
+            <td>${m.home}</td>
+            <td>${m.away}</td>
+            <td>${m.fthg} - ${m.ftag}</td>
+            <td>${valCell}</td>
+        </tr>`;
+    });
+
+    if(!directMatchFound) {
+        valPanel.style.display = 'none';
+        tbody.innerHTML += `<tr><td colspan="5" style="text-align:center">No se encontraron más partidos para este enfrentamiento directo en los datos.</td></tr>`;
+    }
+}
+
+function updateHistoryTable(tableId, history, team) {
     const tbody = document.getElementById(tableId).querySelector('tbody');
     tbody.innerHTML = '';
     history.forEach(m => {
-        const isHome = m.home === teamName;
-        const opponent = isHome ? m.away : m.home;
-        const score = isHome ? `${m.fthg}-${m.ftag}` : `${m.ftag}-${m.fthg}`;
-        tbody.innerHTML += `<tr><td>${m.date}</td><td>${opponent}</td><td>${score}</td></tr>`;
+        const isHome = m.home === team;
+        const opp = isHome ? m.away : m.home;
+        const res = isHome ? `${m.fthg}-${m.ftag}` : `${m.ftag}-${m.fthg}`;
+        tbody.innerHTML += `<tr><td>${m.date}</td><td>${opp}</td><td>${res}</td></tr>`;
     });
 }
 </script>
+
 </body>
 </html>
