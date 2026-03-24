@@ -3,276 +3,237 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>El Gurú de las Apuestas - Análisis Local/Visita</title>
+    <title>Poisson xG - El Gurú de las Apuestas</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; color: #333; margin: 0; padding: 20px; }
-        .container { max-width: 1150px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        h2 { color: #1a3a5a; text-align: center; border-bottom: 3px solid #3498db; padding-bottom: 10px; margin-top: 0; }
-        textarea { width: 100%; height: 100px; border-radius: 8px; border: 1px solid #ccc; padding: 10px; font-size: 11px; margin-bottom: 15px; background: #fafafa; resize: vertical; }
-        
-        .config-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; background: #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-        .field { display: flex; flex-direction: column; gap: 5px; }
-        label { font-size: 12px; font-weight: bold; color: #555; text-transform: uppercase; }
-        
-        select, input, button { padding: 10px; border-radius: 6px; border: 1px solid #ddd; font-size: 14px; }
-        button { background: #2c3e50; color: white; border: none; cursor: pointer; transition: 0.3s; font-weight: bold; width: 100%; }
-        button:hover { background: #34495e; transform: translateY(-1px); }
+        :root {
+            --primary: #00d4ff;
+            --bg: #0f172a;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
 
-        .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 20px; }
-        .card { background: #fff; border-top: 4px solid #3498db; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .card h3 { margin: 0 0 8px 0; font-size: 11px; color: #7f8c8d; text-transform: uppercase; }
-        .val { font-size: 20px; font-weight: bold; color: #2c3e50; }
-        
-        .validation-panel { margin-top: 20px; padding: 15px; border-radius: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border: 2px dashed #3498db; background: #f8fbff; }
-        .status-box { padding: 12px; border-radius: 6px; font-weight: bold; text-align: center; font-size: 16px; }
-        .verde { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .rojo { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: white;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            background: radial-gradient(circle at top right, #1e293b, #0f172a);
+        }
 
-        .info-panel { margin-top: 15px; padding: 10px; background: #e3f2fd; color: #0d47a1; border-radius: 6px; font-size: 13px; text-align: center; border: 1px solid #bbdefb; }
-        
-        .tables-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 25px; }
-        .full-width-table { grid-column: 1 / -1; margin-top: 10px; }
-        
-        h4 { margin-bottom: 10px; color: #2c3e50; border-left: 4px solid #3498db; padding-left: 8px; font-size: 14px; }
-        table { width: 100%; border-collapse: collapse; font-size: 11px; background: white; }
-        th { background: #f2f2f2; color: #444; text-align: left; padding: 8px; border: 1px solid #dee2e6; }
-        td { padding: 8px; border: 1px solid #dee2e6; }
-        tr:nth-child(even) { background-color: #f9f9f9; }
-        .highlight-row { background-color: #fff3cd !important; font-weight: bold; }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 40px 0;
+            padding: 20px;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+        }
+
+        h1 { text-align: center; color: var(--primary); font-weight: 300; }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            color: #00ffcc;
+            border-radius: 10px;
+            padding: 10px;
+            box-sizing: border-box;
+            font-family: monospace;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        select, button {
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+        }
+
+        select { background: #334155; color: white; }
+
+        button {
+            background: var(--primary);
+            color: #0f172a;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        button:hover { opacity: 0.8; transform: translateY(-2px); }
+
+        .results {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 20px;
+            border-radius: 15px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .prob-bar {
+            height: 10px;
+            background: #444;
+            border-radius: 5px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .fill { height: 100%; background: var(--primary); }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>El Gurú de las Apuestas: Análisis Local vs Visita</h2>
+    <h1>📊 El Gurú de las Apuestas</h1>
+    <p>Pega aquí los datos de xG (incluyendo cabeceras):</p>
+    <textarea id="csvData" placeholder="id	matchDate	Country	League..."></textarea>
     
-    <label>Pega aquí tus datos (TSV de Excel):</label>
-    <textarea id="rawData" placeholder="Date	Time	HomeTeam	AwayTeam	FTHG	FTAG..."></textarea>
-    
-    <div class="config-bar">
-        <div class="field">
-            <label>Equipo Local</label>
-            <select id="homeSelect"><option value="">Carga datos primero...</option></select>
-        </div>
-        <div class="field">
-            <label>Equipo Visitante</label>
-            <select id="awaySelect"><option value="">Carga datos primero...</option></select>
-        </div>
-        <div class="field">
-            <label>Límite Historial (N)</label>
-            <input type="number" id="matchLimit" value="8" min="1">
-        </div>
-        <div class="field">
-            <label>Acción</label>
-            <button onclick="calculate()">Analizar Local/Visita</button>
-        </div>
+    <div class="controls">
+        <button onclick="processData()">1. Cargar Datos</button>
+        <select id="leagueSelector" onchange="updateTeams()">
+            <option value="">Selecciona Liga</option>
+        </select>
+        <button onclick="calculatePoisson()" style="background: #22c55e;">2. Calcular Pronóstico</button>
     </div>
 
-    <div id="statsInfo" class="info-panel">Sube tus datos para comenzar.</div>
-
-    <div class="results-grid">
-        <div class="card"><h3>xG Local (en Casa)</h3><div id="xgHome" class="val">-</div></div>
-        <div class="card"><h3>xG Visita (Fuera)</h3><div id="xgAway" class="val">-</div></div>
-        <div class="card"><h3>1 X 2 (%)</h3><div id="prob1x2" class="val">-</div></div>
-        <div class="card"><h3>Over 2.5 FT</h3><div id="over25" class="val">-</div></div>
-        <div class="card"><h3>Ambos Anotan</h3><div id="btts" class="val">-</div></div>
-        <div class="card"><h3>Prob. Local Marca</h3><div id="probHomeScore" class="val">-</div></div>
+    <div class="controls">
+        <select id="homeTeam"><option value="">Local</option></select>
+        <select id="awayTeam"><option value="">Visitante</option></select>
     </div>
 
-    <div class="validation-panel" id="validationPanel" style="display:none;">
-        <div>
-            <h4>Resultado Real (Próximo Encuentro)</h4>
-            <div id="realResultBox" class="status-box">-</div>
-        </div>
-        <div>
-            <h4>Validación de Pronóstico</h4>
-            <div id="hitStatus" class="status-box">-</div>
-        </div>
-    </div>
-
-    <div class="tables-wrapper">
-        <div>
-            <h4>Partidos como LOCAL (Últimos N)</h4>
-            <table id="homeHistoryTable"><thead><tr><th>Fecha</th><th>Rival</th><th>Res.</th></tr></thead><tbody></tbody></table>
-        </div>
-        <div>
-            <h4>Partidos como VISITANTE (Últimos N)</h4>
-            <table id="awayHistoryTable"><thead><tr><th>Fecha</th><th>Rival</th><th>Res.</th></tr></thead><tbody></tbody></table>
-        </div>
-        
-        <div class="full-width-table">
-            <h4>Partidos Posteriores en la Base de Datos</h4>
-            <table id="futureMatchesTable">
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Local</th>
-                        <th>Visita</th>
-                        <th>Resultado FT</th>
-                        <th>Validación Directa</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
+    <div id="output" class="results"></div>
 </div>
 
 <script>
-let allMatches = [];
-let teams = new Set();
+    let db = {};
 
-document.getElementById('rawData').addEventListener('input', function(e) {
-    const text = e.target.value.trim();
-    if(!text) return;
-    const rows = text.split('\n');
-    allMatches = [];
-    teams.clear();
-    
-    for(let i = 1; i < rows.length; i++) {
-        const cols = rows[i].split('\t');
-        if(cols.length < 6) continue;
-        
-        allMatches.push({
-            date: cols[0], 
-            home: cols[2].trim(),
-            away: cols[3].trim(),
-            fthg: parseInt(cols[4]),
-            ftag: parseInt(cols[5]),
-            hthg: parseInt(cols[6] || 0),
-            htag: parseInt(cols[7] || 0)
+    function processData() {
+        const text = document.getElementById('csvData').value.trim();
+        const lines = text.split('\n');
+        const headers = lines[0].split('\t');
+
+        lines.slice(1).forEach(line => {
+            const cols = line.split('\t');
+            if (cols.length < 10) return;
+
+            const league = `${cols[2]} - ${cols[3]}`; // Country - League
+            const home = cols[5];
+            const away = cols[6];
+            const xgh = parseFloat(cols[7]);
+            const xga = parseFloat(cols[8]);
+
+            if (!db[league]) db[league] = {};
+            if (!db[league][home]) db[league][home] = { gf: [], gc: [] };
+            if (!db[league][away]) db[league][away] = { gf: [], gc: [] };
+
+            db[league][home].gf.push(xgh);
+            db[league][home].gc.push(xga);
+            db[league][away].gf.push(xga);
+            db[league][away].gc.push(xgh);
         });
-        teams.add(cols[2].trim());
-        teams.add(cols[3].trim());
+
+        const selector = document.getElementById('leagueSelector');
+        selector.innerHTML = '<option value="">Selecciona Liga</option>';
+        Object.keys(db).forEach(l => {
+            selector.innerHTML += `<option value="${l}">${l}</option>`;
+        });
+        alert("Datos cargados correctamente por Liga.");
     }
 
-    const homeSelector = document.getElementById('homeSelect');
-    const awaySelector = document.getElementById('awaySelect');
-    const sortedTeams = Array.from(teams).sort();
-    homeSelector.innerHTML = awaySelector.innerHTML = '<option value="">Seleccionar...</option>';
-    sortedTeams.forEach(t => {
-        homeSelector.innerHTML += `<option value="${t}">${t}</option>`;
-        awaySelector.innerHTML += `<option value="${t}">${t}</option>`;
-    });
-    
-    document.getElementById('statsInfo').innerText = `Base cargada: ${allMatches.length} partidos.`;
-});
+    function updateTeams() {
+        const league = document.getElementById('leagueSelector').value;
+        const hSelect = document.getElementById('homeTeam');
+        const aSelect = document.getElementById('awayTeam');
+        hSelect.innerHTML = '';
+        aSelect.innerHTML = '';
 
-function factorial(n) {
-    let res = 1;
-    for (let i = 2; i <= n; i++) res *= i;
-    return res;
-}
-
-function poisson(k, lambda) {
-    return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial(k);
-}
-
-function calculate() {
-    const homeTeam = document.getElementById('homeSelect').value;
-    const awayTeam = document.getElementById('awaySelect').value;
-    const limit = parseInt(document.getElementById('matchLimit').value);
-    
-    if(!homeTeam || !awayTeam || homeTeam === awayTeam) {
-        alert("Selecciona dos equipos distintos.");
-        return;
-    }
-
-    // MEJORA: Filtrar LOCAL solo sus partidos en casa, y VISITANTE solo fuera
-    const homeOnlyHistory = allMatches.filter(m => m.home === homeTeam).slice(0, limit);
-    const awayOnlyHistory = allMatches.filter(m => m.away === awayTeam).slice(0, limit);
-
-    if(homeOnlyHistory.length === 0 || awayOnlyHistory.length === 0) {
-        alert("No hay suficientes datos de local o visita para estos equipos.");
-        return;
-    }
-
-    // Partidos Futuros (Posteriores al último analizado cronológicamente)
-    const lastIdx = Math.max(
-        allMatches.indexOf(homeOnlyHistory[homeOnlyHistory.length-1]),
-        allMatches.indexOf(awayOnlyHistory[awayOnlyHistory.length-1])
-    );
-    const futureMatches = allMatches.slice(lastIdx + 1);
-
-    // Medias de Liga
-    let totalFTHG = 0, totalFTAG = 0;
-    allMatches.forEach(m => { totalFTHG += m.fthg; totalFTAG += m.ftag; });
-    const avgHomeG = totalFTHG / allMatches.length;
-    const avgAwayG = totalFTAG / allMatches.length;
-
-    // Estadísticas Local en Casa vs Visita Fuera
-    const getScored = (hist, isHome) => hist.reduce((sum, m) => sum + (isHome ? m.fthg : m.ftag), 0) / hist.length;
-    const getConceded = (hist, isHome) => hist.reduce((sum, m) => sum + (isHome ? m.ftag : m.fthg), 0) / hist.length;
-
-    const attH = getScored(homeOnlyHistory, true) / avgHomeG;
-    const defH = getConceded(homeOnlyHistory, true) / avgAwayG;
-    const attA = getScored(awayOnlyHistory, false) / avgAwayG;
-    const defA = getConceded(awayOnlyHistory, false) / avgHomeG;
-
-    const lambdaH = attH * defA * avgHomeG;
-    const lambdaA = attA * defH * avgAwayG;
-
-    // Probabilidades
-    let pW = 0, pD = 0, pL = 0, pO25 = 0, pBTTS = 0, pHS = 0;
-    for(let h=0; h<=8; h++) {
-        for(let a=0; a<=8; a++) {
-            let p = poisson(h, lambdaH) * poisson(a, lambdaA);
-            if(h > a) pW += p; else if(h === a) pD += p; else pL += p;
-            if(h + a > 2.5) pO25 += p;
-            if(h > 0 && a > 0) pBTTS += p;
-            if(h > 0) pHS += p;
+        if (db[league]) {
+            Object.keys(db[league]).sort().forEach(team => {
+                const opt = `<option value="${team}">${team}</option>`;
+                hSelect.innerHTML += opt;
+                aSelect.innerHTML += opt;
+            });
         }
     }
 
-    // Renderizado
-    document.getElementById('xgHome').innerText = lambdaH.toFixed(2);
-    document.getElementById('xgAway').innerText = lambdaA.toFixed(2);
-    document.getElementById('prob1x2').innerHTML = `<span style="color:green">${(pW*100).toFixed(0)}%</span> - ${(pD*100).toFixed(0)}% - <span style="color:red">${(pL*100).toFixed(0)}%</span>`;
-    document.getElementById('over25').innerText = (pO25 * 100).toFixed(1) + "%";
-    document.getElementById('btts').innerText = (pBTTS * 100).toFixed(1) + "%";
-    document.getElementById('probHomeScore').innerText = (pHS * 100).toFixed(1) + "%";
+    function poisson(k, lambda) {
+        return (Math.exp(-lambda) * Math.pow(lambda, k)) / factorial(k);
+    }
 
-    updateTable('homeHistoryTable', homeOnlyHistory, true);
-    updateTable('awayHistoryTable', awayOnlyHistory, false);
-    renderFuture(futureMatches, homeTeam, awayTeam, {pW, pO25});
-}
+    function factorial(n) {
+        if (n === 0) return 1;
+        let res = 1;
+        for (let i = 2; i <= n; i++) res *= i;
+        return res;
+    }
 
-function updateTable(id, hist, isHomeTable) {
-    const tbody = document.getElementById(id).querySelector('tbody');
-    tbody.innerHTML = '';
-    hist.forEach(m => {
-        const rival = isHomeTable ? m.away : m.home;
-        const res = isHomeTable ? `${m.fthg}-${m.ftag}` : `${m.ftag}-${m.fthg}`;
-        tbody.innerHTML += `<tr><td>${m.date}</td><td>${rival}</td><td>${res}</td></tr>`;
-    });
-}
+    function calculatePoisson() {
+        const league = document.getElementById('leagueSelector').value;
+        const t1 = document.getElementById('homeTeam').value;
+        const t2 = document.getElementById('awayTeam').value;
 
-function renderFuture(matches, hTeam, aTeam, probs) {
-    const tbody = document.getElementById('futureMatchesTable').querySelector('tbody');
-    const valPanel = document.getElementById('validationPanel');
-    const hitBox = document.getElementById('hitStatus');
-    tbody.innerHTML = '';
-    let found = false;
+        if (!t1 || !t2 || t1 === t2) return alert("Selecciona equipos distintos");
 
-    matches.forEach(m => {
-        const isMatch = (m.home === hTeam && m.away === aTeam);
-        let valCell = "-";
-        if(isMatch && !found) {
-            found = true;
-            valPanel.style.display = 'grid';
-            document.getElementById('realResultBox').innerText = `${m.fthg} - ${m.ftag}`;
-            let ok = (probs.pW > 0.5 && m.fthg > m.ftag) || (probs.pO25 > 0.5 && (m.fthg + m.ftag) > 2.5);
-            hitBox.innerText = ok ? "VERDE (Acierto)" : "ROJO (Fallo)";
-            hitBox.className = ok ? "status-box verde" : "status-box rojo";
-            valCell = ok ? "✅ OK" : "❌ NO";
+        // Promedios simples de xG de la muestra cargada
+        const getAvg = (arr) => arr.reduce((a,b) => a+b, 0) / arr.length;
+        
+        const lambdaH = (getAvg(db[league][t1].gf) + getAvg(db[league][t2].gc)) / 2;
+        const lambdaA = (getAvg(db[league][t2].gf) + getAvg(db[league][t1].gc)) / 2;
+
+        let pHome = 0, pAway = 0, pDraw = 0;
+        let matrix = "";
+
+        for (let i = 0; i < 6; i++) {
+            for (let j = 0; j < 6; j++) {
+                const prob = poisson(i, lambdaH) * poisson(j, lambdaA);
+                if (i > j) pHome += prob;
+                else if (i < j) pAway += prob;
+                else pDraw += prob;
+            }
         }
-        tbody.innerHTML += `<tr class="${isMatch ? 'highlight-row' : ''}">
-            <td>${m.date}</td><td>${m.home}</td><td>${m.away}</td>
-            <td>${m.fthg} - ${m.ftag}</td><td>${valCell}</td>
-        </tr>`;
-    });
-    if(!found) valPanel.style.display = 'none';
-}
+
+        const total = pHome + pAway + pDraw;
+        const toPct = (val) => ((val / total) * 100).toFixed(1);
+
+        document.getElementById('output').innerHTML = `
+            <div class="card">
+                <h3>Probabilidades</h3>
+                <p>Local (${t1}): ${toPct(pHome)}%</p>
+                <div class="prob-bar"><div class="fill" style="width:${toPct(pHome)}%"></div></div>
+                <p>Empate: ${toPct(pDraw)}%</p>
+                <div class="prob-bar"><div class="fill" style="width:${toPct(pDraw)}%; background:#94a3b8"></div></div>
+                <p>Visitante (${t2}): ${toPct(pAway)}%</p>
+                <div class="prob-bar"><div class="fill" style="width:${toPct(pAway)}%; background:#f43f5e"></div></div>
+            </div>
+            <div class="card" style="border-left-color: #eab308;">
+                <h3>Expectativa de Goles</h3>
+                <p>${t1}: <b>${lambdaH.toFixed(2)} xG</b></p>
+                <p>${t2}: <b>${lambdaA.toFixed(2)} xG</b></p>
+                <p>Sugerencia: ${lambdaH + lambdaA > 2.5 ? 'Over 2.5' : 'Under 2.5'}</p>
+            </div>
+        `;
+    }
 </script>
+
 </body>
 </html>
