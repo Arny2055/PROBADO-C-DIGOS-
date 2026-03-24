@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora Poisson Pro - Análisis Ascendente</title>
+    <title>Calculadora Poisson Pro - Análisis Ascendente & Valor</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; color: #333; margin: 0; padding: 20px; }
         .container { max-width: 1100px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
@@ -23,10 +23,17 @@
         .card h3 { margin: 0 0 10px 0; font-size: 12px; color: #7f8c8d; text-transform: uppercase; }
         .val { font-size: 22px; font-weight: bold; color: #2c3e50; }
         
+        /* Nuevos estilos para Validación */
+        .validation-panel { margin-top: 20px; padding: 15px; border-radius: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border: 2px dashed #bbb; }
+        .status-box { padding: 10px; border-radius: 6px; font-weight: bold; text-align: center; font-size: 18px; }
+        .verde { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .rojo { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .valor-true { color: #27ae60; font-size: 14px; }
+        .valor-false { color: #e74c3c; font-size: 14px; }
+
         .info-panel { margin-top: 15px; padding: 10px; background: #d4edda; color: #155724; border-radius: 6px; font-size: 13px; text-align: center; border: 1px solid #c3e6cb; }
         .footer-note { font-size: 11px; color: #999; margin-top: 10px; text-align: center; }
         
-        /* Estilos para la tabla de equipos analizados */
         .history-tables { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; font-size: 11px; }
         .history-tables table { width: 100%; border-collapse: collapse; }
         .history-tables th { background: #f8f9fa; }
@@ -36,7 +43,7 @@
 <body>
 
 <div class="container">
-    <h2>Calculadora Poisson - Análisis Ascendente (Jornadas 1 a N)</h2>
+    <h2>Calculadora Poisson - Análisis Ascendente & Validación</h2>
     
     <label>1. Pega los datos de la liga (TSV/Excel):</label>
     <textarea id="rawData" placeholder="Date	Time	HomeTeam	AwayTeam	FTHG	FTAG..."></textarea>
@@ -60,7 +67,7 @@
         </div>
     </div>
 
-    <div id="statsInfo" class="info-panel">Sube datos para comenzar el análisis cronológico ascendente.</div>
+    <div id="statsInfo" class="info-panel">Sube datos para comenzar el análisis.</div>
 
     <div class="results-grid">
         <div class="card"><h3>xG Local</h3><div id="xgHome" class="val">-</div></div>
@@ -69,6 +76,17 @@
         <div class="card"><h3>Over 2.5 FT</h3><div id="over25" class="val">-</div></div>
         <div class="card"><h3>Ambos Anotan</h3><div id="btts" class="val">-</div></div>
         <div class="card"><h3>Over 0.5 HT</h3><div id="over05ht" class="val">-</div></div>
+    </div>
+
+    <div class="validation-panel" id="validationPanel" style="display:none;">
+        <div>
+            <h4>Resultado Real Partido N+1</h4>
+            <div id="realResultBox" class="status-box">-</div>
+        </div>
+        <div>
+            <h4>Análisis de Valor y Acierto</h4>
+            <div id="hitStatus" class="status-box">-</div>
+        </div>
     </div>
 
     <div class="history-tables">
@@ -82,14 +100,13 @@
         </div>
     </div>
 
-    <p class="footer-note">Este análisis utiliza los primeros N partidos de cada equipo para calcular su fuerza de ataque y defensa de forma evolutiva.</p>
+    <p class="footer-note">El sistema analiza los primeros N partidos y valida si el partido N+1 (el siguiente en el tiempo) cumple con la predicción.</p>
 </div>
 
 <script>
 let allMatches = [];
 let teams = new Set();
 
-// Parser de datos
 document.getElementById('rawData').addEventListener('input', function(e) {
     const text = e.target.value.trim();
     if(!text) return;
@@ -104,25 +121,18 @@ document.getElementById('rawData').addEventListener('input', function(e) {
         const cols = rows[i].split('\t');
         if(cols.length < 8) continue;
         
-        // Limpiar nombres de equipos para evitar errores de selección
-        const hTeam = cols[2].trim();
-        const aTeam = cols[3].trim();
-
         allMatches.push({
             date: cols[0], 
-            home: hTeam,
-            away: aTeam,
+            home: cols[2].trim(),
+            away: cols[3].trim(),
             fthg: parseInt(cols[4]),
             ftag: parseInt(cols[5]),
             hthg: parseInt(cols[6]),
             htag: parseInt(cols[7])
         });
-        teams.add(hTeam);
-        teams.add(aTeam);
+        teams.add(cols[2].trim());
+        teams.add(cols[3].trim());
     }
-
-    // Nota: No ordenamos por fecha aquí si los datos ya vienen por jornadas en el Excel.
-    // Pero para seguridad, ordenamos cronológicamente si es necesario.
 
     const sortedTeams = Array.from(teams).sort();
     homeSelector.innerHTML = awaySelector.innerHTML = '<option value="">Seleccionar...</option>';
@@ -155,16 +165,23 @@ function calculate() {
         return;
     }
 
-    // ANÁLISIS ASCENDENTE: Filtrar los PRIMEROS N partidos de cada equipo
+    // Análisis Ascendente
     const homeHistory = allMatches.filter(m => m.home === homeTeam || m.away === homeTeam).slice(0, limit);
     const awayHistory = allMatches.filter(m => m.home === awayTeam || m.away === awayTeam).slice(0, limit);
     
+    // Buscar el partido N+1 (El siguiente partido REAL entre estos dos o del local)
+    // Buscamos el primer partido que ocurra DESPUÉS de los analizados en la lista original
+    const nextMatch = allMatches.find((m, index) => {
+        const isThisMatchup = (m.home === homeTeam && m.away === awayTeam);
+        // El partido debe estar después del último partido analizado cronológicamente
+        return isThisMatchup && allMatches.indexOf(m) >= Math.max(allMatches.indexOf(homeHistory[homeHistory.length-1]), allMatches.indexOf(awayHistory[awayHistory.length-1]));
+    });
+
     if(homeHistory.length === 0 || awayHistory.length === 0) {
-        alert("No hay suficientes partidos para la jornada seleccionada.");
+        alert("No hay suficientes partidos.");
         return;
     }
 
-    // Promedios globales de la liga (usamos todos los datos disponibles hasta ese punto o totales)
     let totalFTHG = 0, totalFTAG = 0, totalHTG = 0;
     allMatches.forEach(m => {
         totalFTHG += m.fthg; totalFTAG += m.ftag;
@@ -173,21 +190,15 @@ function calculate() {
     const avgHomeG = totalFTHG / allMatches.length;
     const avgAwayG = totalFTAG / allMatches.length;
 
-    // Función para calcular métricas
     const getTeamStats = (history, teamName) => {
         let scoredH = 0, concededH = 0, gamesH = 0;
         let scoredA = 0, concededA = 0, gamesA = 0;
         let htTotal = 0;
-
         history.forEach(m => {
-            if(m.home === teamName) {
-                scoredH += m.fthg; concededH += m.ftag; gamesH++;
-            } else {
-                scoredA += m.ftag; concededA += m.fthg; gamesA++;
-            }
+            if(m.home === teamName) { scoredH += m.fthg; concededH += m.ftag; gamesH++; }
+            else { scoredA += m.ftag; concededA += m.fthg; gamesA++; }
             htTotal += (m.hthg + m.htag);
         });
-
         return {
             attHome: gamesH > 0 ? (scoredH / gamesH) / avgHomeG : 1,
             defHome: gamesH > 0 ? (concededH / gamesH) / avgAwayG : 1,
@@ -200,12 +211,10 @@ function calculate() {
     const homeStats = getTeamStats(homeHistory, homeTeam);
     const awayStats = getTeamStats(awayHistory, awayTeam);
 
-    // Lambdas
     const lambdaHome = homeStats.attHome * awayStats.defAway * avgHomeG;
     const lambdaAway = awayStats.attAway * homeStats.defHome * avgAwayG;
     const lambdaHT = (homeStats.avgHT + awayStats.avgHT) / 2;
 
-    // Poisson
     let pWinH = 0, pDraw = 0, pWinA = 0, pOver25 = 0, pBTTS = 0;
     for(let h = 0; h <= 7; h++) {
         for(let a = 0; a <= 7; a++) {
@@ -218,19 +227,44 @@ function calculate() {
         }
     }
 
-    // Renderizar Resultados
+    // Renderizado de Resultados Base
     document.getElementById('xgHome').innerText = lambdaHome.toFixed(2);
     document.getElementById('xgAway').innerText = lambdaAway.toFixed(2);
     document.getElementById('prob1x2').innerHTML = `<span style="color:green">${(pWinH*100).toFixed(1)}%</span> | <span style="color:#666">${(pDraw*100).toFixed(1)}%</span> | <span style="color:red">${(pWinA*100).toFixed(1)}%</span>`;
     document.getElementById('over25').innerText = (pOver25 * 100).toFixed(1) + "%";
     document.getElementById('btts').innerText = (pBTTS * 100).toFixed(1) + "%";
-    document.getElementById('over05ht').innerText = ( (1 - Math.exp(-lambdaHT)) * 100).toFixed(1) + "%";
+    document.getElementById('over05ht').innerText = ((1 - Math.exp(-lambdaHT)) * 100).toFixed(1) + "%";
 
-    // Actualizar tablas visuales de historia para verificar el análisis ascendente
+    // LÓGICA DE VALIDACIÓN (VERDE / ROJO)
+    const valPanel = document.getElementById('validationPanel');
+    if(nextMatch) {
+        valPanel.style.display = 'grid';
+        const realScore = `${nextMatch.fthg} - ${nextMatch.ftag}`;
+        document.getElementById('realResultBox').innerText = realScore;
+        
+        // Determinar si es Verde o Rojo basado en el mercado con más probabilidad
+        let hit = false;
+        let market = "";
+        if(pWinH > 0.5 && nextMatch.fthg > nextMatch.ftag) hit = true;
+        else if(pWinA > 0.5 && nextMatch.ftag > nextMatch.fthg) hit = true;
+        else if(pOver25 > 0.5 && (nextMatch.fthg + nextMatch.ftag) > 2.5) hit = true;
+        
+        const hitBox = document.getElementById('hitStatus');
+        hitBox.innerText = hit ? "VERDE (Acierto)" : "ROJO (Fallo)";
+        hitBox.className = hit ? "status-box verde" : "status-box rojo";
+
+        // Análisis de Valor (Si prob Poisson > 50% hay "Valor" teórico)
+        const valorText = (pWinH > 0.5 || pWinA > 0.5 || pOver25 > 0.5) ? 
+            "<br><span class='valor-true'>Hay Valor Detectado</span>" : 
+            "<br><span class='valor-false'>Sin Valor Claro</span>";
+        hitBox.innerHTML += valorText;
+
+    } else {
+        valPanel.style.display = 'none';
+    }
+
     updateHistoryTable('homeHistoryTable', homeHistory, homeTeam);
     updateHistoryTable('awayHistoryTable', awayHistory, awayTeam);
-    
-    document.getElementById('statsInfo').innerText = `Análisis ASCENDENTE: Procesados los primeros ${homeHistory.length} partidos de ${homeTeam} y los primeros ${awayHistory.length} de ${awayTeam}.`;
 }
 
 function updateHistoryTable(tableId, history, teamName) {
