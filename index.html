@@ -98,6 +98,7 @@
             border: 1px solid var(--border);
         }
 
+        input { width: 100%; box-sizing: border-box; }
         input:focus { outline: 1px solid var(--primary); }
 
         button {
@@ -129,7 +130,7 @@
 
         .card:hover { background: rgba(255, 255, 255, 0.05); }
 
-        .card h3 { margin-top: 0; color: var(--primary); font-size: 1.1em; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .card h3 { margin-top: 0; color: var(--primary); font-size: 1.1em; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 15px; }
 
         .prob-row {
             display: flex;
@@ -138,7 +139,15 @@
             margin: 8px 0;
         }
 
-        .odd-container { text-align: right; }
+        .odd-input-mini {
+            width: 60px !important;
+            padding: 4px !important;
+            font-size: 11px !important;
+            background: rgba(0,0,0,0.2) !important;
+            text-align: center;
+        }
+
+        .odd-container { text-align: right; display: flex; flex-direction: column; align-items: flex-end; }
 
         .odd-tag {
             font-size: 0.75em;
@@ -154,6 +163,9 @@
             font-weight: bold;
             display: block;
             margin-top: 2px;
+            background: rgba(34, 197, 94, 0.1);
+            padding: 2px 4px;
+            border-radius: 3px;
         }
 
         .prob-bar {
@@ -173,6 +185,16 @@
             text-align: center;
         }
 
+        .market-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 5px;
+            margin-bottom: 15px;
+            background: rgba(0,0,0,0.1);
+            padding: 10px;
+            border-radius: 8px;
+        }
+
         b { color: var(--primary); }
     </style>
 </head>
@@ -180,7 +202,7 @@
 
 <div class="container">
     <h1>📊 El Gurú de las Apuestas</h1>
-    <div class="subtitle">Calculadora Poisson con Local Storage & Analizador de Valor</div>
+    <div class="subtitle">Calculadora Poisson xG - Análisis de Valor Individual por Mercado</div>
     
     <div id="dbStatus" class="db-status">Partidos en memoria: 0</div>
     
@@ -191,7 +213,7 @@
         <select id="leagueSelector" onchange="updateTeams()">
             <option value="">Selecciona Liga</option>
         </select>
-        <button onclick="calculateEverything()" style="background: var(--success); border:none;">2. Calcular Pronóstico</button>
+        <button onclick="calculateEverything()" style="background: var(--success); color: white;">2. Calcular Pronóstico</button>
     </div>
 
     <div class="controls">
@@ -203,9 +225,32 @@
             <label>Visitante</label>
             <select id="awayTeam"><option value="">Selecciona Visitante</option></select>
         </div>
+    </div>
+
+    <div class="market-inputs">
         <div class="input-group">
-            <label>Cuota de la Casa</label>
-            <input type="number" id="bookieOdd" step="0.01" placeholder="Ej: 1.95">
+            <label style="font-size: 0.65em;">Cuota 1</label>
+            <input type="number" id="odd_1" step="0.01" class="odd-input-mini" placeholder="Local">
+        </div>
+        <div class="input-group">
+            <label style="font-size: 0.65em;">Cuota X</label>
+            <input type="number" id="odd_X" step="0.01" class="odd-input-mini" placeholder="Empate">
+        </div>
+        <div class="input-group">
+            <label style="font-size: 0.65em;">Cuota 2</label>
+            <input type="number" id="odd_2" step="0.01" class="odd-input-mini" placeholder="Visita">
+        </div>
+        <div class="input-group">
+            <label style="font-size: 0.65em;">Cuota O2.5</label>
+            <input type="number" id="odd_O25" step="0.01" class="odd-input-mini" placeholder="+2.5">
+        </div>
+        <div class="input-group">
+            <label style="font-size: 0.65em;">Cuota BTTS</label>
+            <input type="number" id="odd_BTTS" step="0.01" class="odd-input-mini" placeholder="Ambos">
+        </div>
+        <div class="input-group">
+            <label style="font-size: 0.65em;">Cuota O0.5 HT</label>
+            <input type="number" id="odd_HT05" step="0.01" class="odd-input-mini" placeholder="HT">
         </div>
     </div>
 
@@ -314,11 +359,11 @@
     }
 
     function checkValue(myProb, bookieOdd) {
-        if (!bookieOdd || bookieOdd <= 1) return "";
+        if (!bookieOdd || isNaN(bookieOdd) || bookieOdd <= 1) return "";
         const bookieProb = 1 / bookieOdd;
         if (myProb > bookieProb) {
             const edge = ((myProb - bookieProb) * 100).toFixed(1);
-            return `<span class="value-badge">VALOR ENCONTRADO (+${edge}%)</span>`;
+            return `<span class="value-badge">VALOR (+${edge}%)</span>`;
         }
         return "";
     }
@@ -327,7 +372,14 @@
         const league = document.getElementById('leagueSelector').value;
         const t1 = document.getElementById('homeTeam').value;
         const t2 = document.getElementById('awayTeam').value;
-        const bOdd = parseFloat(document.getElementById('bookieOdd').value);
+
+        // Captura de cuotas individuales
+        const o1 = parseFloat(document.getElementById('odd_1').value);
+        const oX = parseFloat(document.getElementById('odd_X').value);
+        const o2 = parseFloat(document.getElementById('odd_2').value);
+        const oO25 = parseFloat(document.getElementById('odd_O25').value);
+        const oBTTS = parseFloat(document.getElementById('odd_BTTS').value);
+        const oHT05 = parseFloat(document.getElementById('odd_HT05').value);
 
         if (!t1 || !t2 || t1 === t2) return alert("Selecciona equipos válidos");
 
@@ -348,26 +400,29 @@
         document.getElementById('output').innerHTML = `
             <div class="card">
                 <h3>1X2 & Valor</h3>
-                <div class="prob-row"><span>Local (${t1})</span> <div class="odd-container"><b>${toPct(ft.pHome)}</b> <span class="odd-tag">@${toOdd(ft.pHome)}</span> ${checkValue(ft.pHome, bOdd)}</div></div>
+                <div class="prob-row"><span>Local (${t1})</span> <div class="odd-container"><b>${toPct(ft.pHome)}</b> <span class="odd-tag">@${toOdd(ft.pHome)}</span> ${checkValue(ft.pHome, o1)}</div></div>
                 <div class="prob-bar"><div class="fill" style="width:${toPct(ft.pHome)}"></div></div>
-                <div class="prob-row"><span>Empate</span> <div class="odd-container"><b>${toPct(ft.pDraw)}</b> <span class="odd-tag">@${toOdd(ft.pDraw)}</span> ${checkValue(ft.pDraw, bOdd)}</div></div>
+                
+                <div class="prob-row"><span>Empate</span> <div class="odd-container"><b>${toPct(ft.pDraw)}</b> <span class="odd-tag">@${toOdd(ft.pDraw)}</span> ${checkValue(ft.pDraw, oX)}</div></div>
                 <div class="prob-bar"><div class="fill" style="width:${toPct(ft.pDraw)}; background:#64748b"></div></div>
-                <div class="prob-row"><span>Visitante (${t2})</span> <div class="odd-container"><b>${toPct(ft.pAway)}</b> <span class="odd-tag">@${toOdd(ft.pAway)}</span> ${checkValue(ft.pAway, bOdd)}</div></div>
+                
+                <div class="prob-row"><span>Visitante (${t2})</span> <div class="odd-container"><b>${toPct(ft.pAway)}</b> <span class="odd-tag">@${toOdd(ft.pAway)}</span> ${checkValue(ft.pAway, o2)}</div></div>
                 <div class="prob-bar"><div class="fill" style="width:${toPct(ft.pAway)}; background:var(--danger)"></div></div>
             </div>
 
             <div class="card" style="border-top-color: var(--warning)">
                 <h3>Goles FT & BTTS</h3>
-                <div class="prob-row"><span>Over 2.5 FT</span> <div class="odd-container"><b style="color:var(--warning)">${toPct(ft.pO25)}</b> <span class="odd-tag">@${toOdd(ft.pO25)}</span> ${checkValue(ft.pO25, bOdd)}</div></div>
+                <div class="prob-row"><span>Over 2.5 FT</span> <div class="odd-container"><b style="color:var(--warning)">${toPct(ft.pO25)}</b> <span class="odd-tag">@${toOdd(ft.pO25)}</span> ${checkValue(ft.pO25, oO25)}</div></div>
                 <div class="prob-bar"><div class="fill" style="width:${toPct(ft.pO25)}; background:var(--warning)"></div></div>
-                <div class="prob-row"><span>BTTS Yes</span> <div class="odd-container"><b style="color:var(--success)">${toPct(ft.pBTTS)}</b> <span class="odd-tag">@${toOdd(ft.pBTTS)}</span> ${checkValue(ft.pBTTS, bOdd)}</div></div>
+                
+                <div class="prob-row"><span>BTTS Yes</span> <div class="odd-container"><b style="color:var(--success)">${toPct(ft.pBTTS)}</b> <span class="odd-tag">@${toOdd(ft.pBTTS)}</span> ${checkValue(ft.pBTTS, oBTTS)}</div></div>
                 <div class="prob-bar"><div class="fill" style="width:${toPct(ft.pBTTS)}; background:var(--success)"></div></div>
                 <div class="badge" style="margin-top:10px">Prom. xG FT: <b>${(lFT_H + lFT_A).toFixed(2)}</b></div>
             </div>
 
             <div class="card" style="border-top-color: var(--purple)">
                 <h3>1er Tiempo (HT)</h3>
-                <div class="prob-row"><span>Over 0.5 HT</span> <div class="odd-container"><b>${toPct(ht.o05)}</b> <span class="odd-tag">@${toOdd(ht.o05)}</span> ${checkValue(ht.o05, bOdd)}</div></div>
+                <div class="prob-row"><span>Over 0.5 HT</span> <div class="odd-container"><b>${toPct(ht.o05)}</b> <span class="odd-tag">@${toOdd(ht.o05)}</span> ${checkValue(ht.o05, oHT05)}</div></div>
                 <div class="prob-bar"><div class="fill" style="width:${toPct(ht.o05)}; background:var(--purple)"></div></div>
                 <div class="prob-row"><span>Over 0.75 HT</span> <b>${toPct(ht.o075)}</b> <span class="odd-tag">@${toOdd(ht.o075)}</span></div>
                 <div class="prob-row"><span>Over 1.0 HT</span> <b>${toPct(ht.o10)}</b> <span class="odd-tag">@${toOdd(ht.o10)}</span></div>
@@ -375,7 +430,7 @@
 
             <div class="card" style="border-top-color: var(--info)">
                 <h3>2do Tiempo (2H)</h3>
-                <div class="prob-row"><span>Over 0.5 2H</span> <div class="odd-container"><b>${toPct(st.o05)}</b> <span class="odd-tag">@${toOdd(st.o05)}</span> ${checkValue(st.o05, bOdd)}</div></div>
+                <div class="prob-row"><span>Over 0.5 2H</span> <div class="odd-container"><b>${toPct(st.o05)}</b> <span class="odd-tag">@${toOdd(st.o05)}</span></div></div>
                 <div class="prob-bar"><div class="fill" style="width:${toPct(st.o05)}; background:var(--info)"></div></div>
                 <div class="prob-row"><span>Over 0.75 2H</span> <b>${toPct(st.o075)}</b> <span class="odd-tag">@${toOdd(st.o075)}</span></div>
                 <div class="prob-row"><span>Over 1.0 2H</span> <b>${toPct(st.o10)}</b> <span class="odd-tag">@${toOdd(st.o10)}</span></div>
