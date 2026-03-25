@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Alertas y Estadísticas - El Gurú</title>
+    <style>
+        :root { --primary: #00d4ff; --bg: #0f172a; --glass: rgba(255, 255, 255, 0.05); --border: rgba(255, 255, 255, 0.1); --success: #22c55e; --warning: #eab308; --danger: #f43f5e; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; padding: 20px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .stat-card { background: var(--glass); padding: 15px; border-radius: 12px; border: 1px solid var(--border); text-align: center; }
+        .stat-card h4 { margin: 0; font-size: 0.8em; color: var(--primary); text-transform: uppercase; }
+        .stat-card p { font-size: 1.5em; font-weight: bold; margin: 10px 0 0 0; }
+        
+        table { width: 100%; border-collapse: collapse; background: var(--glass); border-radius: 10px; overflow: hidden; margin-top: 20px; font-size: 0.85em; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: rgba(0,0,0,0.3); color: var(--primary); }
+        
+        .btn { padding: 5px 10px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; font-size: 0.75em; margin-right: 2px; }
+        .btn-g { background: var(--success); color: white; }
+        .btn-p { background: var(--danger); color: white; }
+        .btn-n { background: #64748b; color: white; }
+        .btn-del { background: transparent; color: #f43f5e; border: 1px solid #f43f5e; }
+        
+        .filters { margin-bottom: 20px; display: flex; gap: 10px; }
+        .summary-box { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px; }
+        .category-table { background: var(--glass); padding: 15px; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <h2>🔔 Panel de Alertas y Rendimiento</h2>
+    
+    <div class="stats-grid" id="mainStats">
+        </div>
+
+    <div class="filters">
+        <button class="btn btn-p" onclick="clearAll()">Borrar Todo el Historial</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Liga</th>
+                <th>Evento</th>
+                <th>Mercado</th>
+                <th>Prob.</th>
+                <th>Cuota</th>
+                <th>Stake</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody id="alertsTable"></tbody>
+    </table>
+
+    <div class="summary-box">
+        <div class="category-table">
+            <h4>Profit por Liga</h4>
+            <div id="profitByLeague"></div>
+        </div>
+        <div class="category-table">
+            <h4>Profit por Mercado</h4>
+            <div id="profitByMarket"></div>
+        </div>
+    </div>
+
+    <script>
+        function loadData() {
+            const alerts = JSON.parse(localStorage.getItem('guru_alerts')) || [];
+            const table = document.getElementById('alertsTable');
+            table.innerHTML = '';
+            
+            alerts.reverse().forEach(a => {
+                const row = document.createElement('tr');
+                let rowColor = a.status === 'ganado' ? 'rgba(34,197,94,0.1)' : (a.status === 'perdido' ? 'rgba(244,63,94,0.1)' : 'transparent');
+                row.style.background = rowColor;
+                
+                row.innerHTML = `
+                    <td>${a.league}</td>
+                    <td>${a.event}</td>
+                    <td>${a.market}</td>
+                    <td>${a.prob}</td>
+                    <td>@${a.odd}</td>
+                    <td>${a.stake}u</td>
+                    <td>
+                        ${a.status === 'pendiente' ? `
+                            <button class="btn btn-g" onclick="setStatus(${a.id}, 'ganado')">G</button>
+                            <button class="btn btn-p" onclick="setStatus(${a.id}, 'perdido')">P</button>
+                            <button class="btn btn-n" onclick="setStatus(${a.id}, 'nulo')">N</button>
+                        ` : `<span>${a.status.toUpperCase()}</span>`}
+                        <button class="btn btn-del" onclick="deleteAlert(${a.id})">🗑</button>
+                    </td>
+                `;
+                table.appendChild(row);
+            });
+            calculateStats(alerts);
+        }
+
+        function setStatus(id, status) {
+            let alerts = JSON.parse(localStorage.getItem('guru_alerts')) || [];
+            const idx = alerts.findIndex(a => a.id === id);
+            if(idx !== -1) {
+                alerts[idx].status = status;
+                localStorage.setItem('guru_alerts', JSON.stringify(alerts));
+                loadData();
+            }
+        }
+
+        function deleteAlert(id) {
+            let alerts = JSON.parse(localStorage.getItem('guru_alerts')) || [];
+            alerts = alerts.filter(a => a.id !== id);
+            localStorage.setItem('guru_alerts', JSON.stringify(alerts));
+            loadData();
+        }
+
+        function clearAll() {
+            if(confirm("¿Borrar todo el historial?")) {
+                localStorage.setItem('guru_alerts', JSON.stringify([]));
+                loadData();
+            }
+        }
+
+        function calculateStats(alerts) {
+            let profit = 0, totalStaked = 0, wins = 0, totalResolved = 0;
+            let byLeague = {}, byMarket = {};
+
+            alerts.forEach(a => {
+                if(a.status === 'pendiente') return;
+                totalResolved++;
+                let s = parseFloat(a.stake);
+                let o = parseFloat(a.odd);
+                let res = 0;
+
+                if(a.status === 'ganado') {
+                    res = s * (o - 1);
+                    wins++;
+                } else if(a.status === 'perdido') {
+                    res = -s;
+                }
+                
+                profit += res;
+                totalStaked += s;
+
+                // Agrupación
+                byLeague[a.league] = (byLeague[a.league] || 0) + res;
+                byMarket[a.market] = (byMarket[a.market] || 0) + res;
+            });
+
+            const yieldVal = totalStaked > 0 ? (profit / totalStaked) * 100 : 0;
+            const winRate = totalResolved > 0 ? (wins / totalResolved) * 100 : 0;
+            
+            // P-Value simplificado (Z-Score)
+            const expectedWinRate = 0.5; // Base conservadora
+            const pValue = totalResolved > 5 ? (1 - Math.erf(Math.abs(winRate/100 - expectedWinRate) / Math.sqrt(2 * (0.25/totalResolved)))).toFixed(4) : "N/A";
+
+            document.getElementById('mainStats').innerHTML = `
+                <div class="stat-card"><h4>Profit Total</h4><p style="color:${profit>=0?'var(--success)':'var(--danger)'}">${profit.toFixed(2)}u</p></div>
+                <div class="stat-card"><h4>Yield</h4><p>${yieldVal.toFixed(2)}%</p></div>
+                <div class="stat-card"><h4>Win Rate</h4><p>${winRate.toFixed(1)}%</p></div>
+                <div class="stat-card"><h4>P-Value</h4><p>${pValue}</p></div>
+            `;
+
+            // Renderizar desgloses
+            renderSmallTable('profitByLeague', byLeague);
+            renderSmallTable('profitByMarket', byMarket);
+        }
+
+        function renderSmallTable(id, obj) {
+            let html = '<table>';
+            for(let key in obj) {
+                html += `<tr><td>${key}</td><td style="color:${obj[key]>=0?'var(--success)':'var(--danger)'}">${obj[key].toFixed(2)}u</td></tr>`;
+            }
+            document.getElementById(id).innerHTML = html + '</table>';
+        }
+
+        window.onload = loadData;
+    </script>
+</body>
+</html>
