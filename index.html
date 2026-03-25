@@ -212,7 +212,7 @@
 
 <div class="container">
     <h1>📊 El Gurú de las Apuestas</h1>
-    <div class="subtitle">Calculadora Poisson xG - Kelly Stake (Max 3u)</div>
+    <div class="subtitle">Calculadora Poisson xG - Kelly Stake (20% Kelly, Max 3u)</div>
     
     <div id="dbStatus" class="db-status">Partidos en memoria: 0</div>
     
@@ -370,19 +370,24 @@
 
     function calculateKelly(myProb, bookieOdd) {
         if (!bookieOdd || bookieOdd <= 1) return 0;
-        // Fórmula de Kelly: (p*b - q) / b  donde b es cuota decimal - 1
+        
+        // Parámetros solicitados
+        const maxStakeLimit = 3.0; // El máximo que la herramienta debe sugerir
+        const fractionalKelly = 0.20; // 20% de Kelly
+
         const b = bookieOdd - 1;
         const q = 1 - myProb;
-        const kelly = (myProb * b - q) / b;
         
-        if (kelly <= 0) return 0;
+        // Kelly Standard: (bp - q) / b
+        const fullKelly = (b * myProb - q) / b;
         
-        // Aplicamos un multiplicador de 0.2 (Fractional Kelly) para ser conservadores
-        // y que el máximo de 3 unidades se alcance con valores de ventaja muy altos.
-        let suggestedStake = kelly * 10; // Escala base 10%
-        
-        // Limitar a máximo 3 unidades
-        return Math.min(suggestedStake, 3).toFixed(1);
+        if (fullKelly <= 0) return 0;
+
+        // Aplicamos el 20% de Kelly (Ponderación solicitada)
+        let suggestedStake = fullKelly * fractionalKelly * 100; 
+
+        // Limitar el resultado al máximo de 3 unidades
+        return Math.min(suggestedStake, maxStakeLimit).toFixed(1);
     }
 
     function checkValue(myProb, bookieOdd) {
