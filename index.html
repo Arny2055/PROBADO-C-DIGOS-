@@ -2,10 +2,10 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Poisson Predictor • Predicción Fútbol</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500&amp;display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500&display=swap');
 
         :root {
             --primary: #00d4aa;
@@ -15,14 +15,16 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent; /* Elimina el cuadro azul al tocar en iPhone */
         }
 
         body {
-            font-family: 'Inter', system_ui, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background: linear-gradient(135deg, #0f172a 0%, #1e2937 100%);
             color: #f1f5f9;
             min-height: 100vh;
-            padding: 16px 12px;
+            padding: 20px;
+            line-height: 1.5;
         }
 
         .container {
@@ -32,12 +34,12 @@
 
         header {
             text-align: center;
-            margin-bottom: 32px;
+            margin-bottom: 40px;
         }
 
         h1 {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 2.4rem;
+            font-size: 2.8rem;
             background: linear-gradient(to right, #00d4aa, #00a88a);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -46,31 +48,33 @@
 
         .subtitle {
             color: #94a3b8;
-            font-size: 1.05rem;
+            font-size: 1.1rem;
         }
 
         .card {
             background: #1e2937;
             border-radius: 20px;
-            padding: 24px;
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            padding: 28px;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1),
+                        0 8px 10px -6px rgb(0 0 0 / 0.1);
             border: 1px solid #334155;
-            margin-bottom: 24px;
+        }
+
+        .section {
+            margin-bottom: 40px;
         }
 
         .grid-2 {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 24px;
         }
 
         @media (max-width: 768px) {
             .grid-2 {
                 grid-template-columns: 1fr;
             }
-            h1 {
-                font-size: 2.1rem;
-            }
+            h1 { font-size: 2.2rem; }
         }
 
         label {
@@ -81,14 +85,19 @@
             color: #cbd5e1;
         }
 
+        /* CORRECCIÓN DE INPUTS PARA IPHONE */
         input[type="number"] {
             width: 100%;
-            padding: 14px 16px;
+            padding: 14px 18px;
             background: #334155;
             border: 2px solid #475569;
             border-radius: 12px;
             color: #f1f5f9;
             font-size: 1.1rem;
+            transition: all 0.2s;
+            -webkit-appearance: none; /* Elimina estilos de iOS */
+            appearance: none;
+            display: block;
         }
 
         input[type="number"]:focus {
@@ -101,32 +110,39 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-top: 20px;
-            padding: 14px 16px;
+            margin-top: 16px;
+            padding: 12px 18px;
             background: #334155;
             border-radius: 12px;
         }
 
+        /* CORRECCIÓN DEL TOGGLE (BOTÓN QUE PARECÍA MANCHA) */
         .toggle {
             position: relative;
             display: inline-block;
             width: 52px;
             height: 28px;
+            flex-shrink: 0;
         }
 
         .toggle input {
             opacity: 0;
             width: 0;
             height: 0;
+            position: absolute;
         }
 
         .slider {
             position: absolute;
             cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             background-color: #64748b;
             transition: .3s;
             border-radius: 9999px;
+            -webkit-appearance: none;
         }
 
         .slider:before {
@@ -139,6 +155,7 @@
             background-color: white;
             transition: .3s;
             border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
         input:checked + .slider {
@@ -159,7 +176,14 @@
             border-radius: 9999px;
             cursor: pointer;
             width: 100%;
-            margin-top: 20px;
+            margin-top: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 15px -3px rgba(0, 212, 170, 0.3);
+            -webkit-appearance: none;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
         }
 
         .results {
@@ -176,15 +200,27 @@
 
         .summary-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 14px;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
         }
 
         .summary-card {
             background: #334155;
             border-radius: 16px;
-            padding: 18px;
+            padding: 20px;
             text-align: center;
+        }
+
+        .summary-label {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-bottom: 4px;
+        }
+
+        .summary-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
         }
 
         table {
@@ -196,8 +232,9 @@
         }
 
         th, td {
-            padding: 12px 10px;
+            padding: 14px 8px;
             text-align: center;
+            font-size: 0.9rem;
         }
 
         th {
@@ -205,15 +242,20 @@
             color: #e2e8f0;
         }
 
+        td {
+            border-bottom: 1px solid #334155;
+        }
+
         .matrix-container {
             overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
+            -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
+            border-radius: 16px;
         }
 
         .canvas-container {
             display: flex;
             flex-wrap: wrap;
-            gap: 20px;
+            gap: 24px;
         }
 
         .canvas-card {
@@ -221,116 +263,109 @@
             min-width: 280px;
             background: #1e2937;
             border-radius: 16px;
-            padding: 18px;
+            padding: 20px;
         }
 
         canvas {
             width: 100% !important;
-            height: 260px !important;
+            height: 250px !important;
         }
 
         .ev-row {
             display: flex;
-            align-items: center;
+            flex-direction: column;
             gap: 12px;
             background: #334155;
-            padding: 14px;
+            padding: 16px;
             border-radius: 12px;
             margin-bottom: 12px;
-            flex-wrap: wrap;
         }
 
-        .ev-positive {
-            color: #00d4aa;
+        @media (min-width: 600px) {
+            .ev-row { flex-direction: row; }
         }
 
-        .ev-negative {
-            color: #f87171;
-        }
+        .ev-positive { color: #00d4aa; }
+        .ev-negative { color: #f87171; }
 
         footer {
             text-align: center;
-            margin-top: 50px;
+            margin-top: 60px;
             color: #64748b;
             font-size: 0.85rem;
+            padding-bottom: 40px;
         }
 
         .badge {
             display: inline-block;
             background: #00d4aa;
             color: #0f172a;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 700;
-            padding: 2px 10px;
+            padding: 2px 8px;
             border-radius: 9999px;
-            margin-left: 8px;
+            margin-left: 4px;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- HEADER -->
         <header>
             <h1>Poisson Predictor</h1>
-            <p class="subtitle">Modelo de Poisson para predecir resultados de fútbol • 100% Vanilla JS</p>
-            <div style="margin-top: 12px; display: inline-flex; align-items: center; background: #334155; padding: 6px 16px; border-radius: 9999px; font-size: 0.9rem;">
+            <p class="subtitle">Modelo para predecir resultados de fútbol</p>
+            <div style="margin-top: 12px; display: inline-flex; align-items: center; background: #334155; padding: 6px 16px; border-radius: 9999px; font-size: 0.85rem;">
                 <span style="display: inline-block; width: 8px; height: 8px; background: #00d4aa; border-radius: 50%; margin-right: 6px; animation: pulse 2s infinite;"></span>
-                Listo para GitHub Pages • Sin frameworks
+                Optimizado para iPhone 14
             </div>
         </header>
 
         <div class="card section">
-            <h2 style="margin-bottom: 24px; font-size: 1.5rem; display: flex; align-items: center;">
-                📊 Datos de los equipos
-            </h2>
+            <h2 style="margin-bottom: 24px; font-size: 1.4rem;">📊 Datos de los equipos</h2>
 
             <div class="grid-2">
-                <!-- EQUIPO LOCAL -->
                 <div>
-                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-                        <div style="width: 32px; height: 32px; background: #00d4aa; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #0f172a; font-weight: 700; font-size: 1.1rem;">🏠</div>
-                        <h3 style="font-size: 1.35rem; margin: 0;">Equipo Local</h3>
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+                        <span style="font-size: 1.2rem;">🏠</span>
+                        <h3 style="font-size: 1.2rem; margin: 0;">Local</h3>
                     </div>
-                    
-                    <label>Goles a favor (promedio por partido)</label>
-                    <input type="number" id="gf-home" value="1.65" step="0.01" min="0">
-
-                    <label style="margin-top: 16px;">Goles en contra (promedio por partido)</label>
-                    <input type="number" id="ga-home" value="1.15" step="0.01" min="0">
-
-                    <label style="margin-top: 16px;">xG Local (esperados por partido) <span class="badge">OPCIONAL</span></label>
-                    <input type="number" id="xg-home" value="1.72" step="0.01" min="0">
+                    <label>Goles a favor</label>
+                    <input type="number" id="gf-home" value="1.65" step="0.01">
+                    <label style="margin-top: 16px;">Goles en contra</label>
+                    <input type="number" id="ga-home" value="1.15" step="0.01">
+                    <label style="margin-top: 16px;">xG Local <span class="badge">OPCIONAL</span></label>
+                    <input type="number" id="xg-home" value="1.72" step="0.01">
                 </div>
 
-                <!-- EQUIPO VISITANTE -->
                 <div>
-                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-                        <div style="width: 32px; height: 32px; background: #f97316; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 1.1rem;">✈️</div>
-                        <h3 style="font-size: 1.35rem; margin: 0;">Equipo Visitante</h3>
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+                        <span style="font-size: 1.2rem;">✈️</span>
+                        <h3 style="font-size: 1.2rem; margin: 0;">Visitante</h3>
                     </div>
-                    
-                    <label>Goles a favor (promedio por partido)</label>
-                    <input type="number" id="gf-away" value="1.18" step="0.01" min="0">
-
-                    <label style="margin-top: 16px;">Goles en contra (promedio por partido)</label>
-                    <input type="number" id="ga-away" value="1.48" step="0.01" min="0">
-
-                    <label style="margin-top: 16px;">xG Visitante (esperados por partido) <span class="badge">OPCIONAL</span></label>
-                    <input type="number" id="xg-away" value="1.09" step="0.01" min="0">
+                    <label>Goles a favor</label>
+                    <input type="number" id="gf-away" value="1.18" step="0.01">
+                    <label style="margin-top: 16px;">Goles en contra</label>
+                    <input type="number" id="ga-away" value="1.48" step="0.01">
+                    <label style="margin-top: 16px;">xG Visitante <span class="badge">OPCIONAL</span></label>
+                    <input type="number" id="xg-away" value="1.09" step="0.01">
                 </div>
             </div>
 
             <div style="margin-top: 28px;">
-                <label>Promedio de goles por partido en la liga</label>
-                <input type="number" id="avg-league" value="2.78" step="0.01" min="0.5" style="max-width: 220px;">
+                <label>Promedio goles liga</label>
+                <input type="number" id="avg-league" value="2.78" step="0.01" style="max-width: 150px;">
 
                 <div class="toggle-container">
-                    <label style="margin: 0; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <label class="toggle">
                         <input type="checkbox" id="use-xg" checked>
                         <span class="slider"></span>
-                        Usar <strong>xG</strong> en lugar de goles reales para calcular la fuerza de ataque
                     </label>
-                    <span style="font-size: 0.85rem; color: #64748b; margin-left: auto;">(más preciso con datos esperados)</span>
+                    <span style="font-size: 0.9rem; color: #cbd5e1; cursor: pointer;" onclick="document.getElementById('use-xg').click()">Usar <strong>xG</strong> en el cálculo</span>
                 </div>
             </div>
 
@@ -339,178 +374,130 @@
             </button>
         </div>
 
-        <!-- RESULTADOS -->
         <div id="resultados" class="results" style="display: none;">
-            <!-- El contenido de resultados se mantiene igual -->
             <div>
                 <div class="card">
-                    <h3 style="margin-bottom: 20px; font-size: 1.3rem;">📈 Parámetros calculados</h3>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: 0.95rem;">
-                        <div><div style="color: #64748b;">Fuerza ataque local</div><div id="attack-home-val" class="summary-value" style="font-size: 1.4rem; margin-top: 4px;">—</div></div>
-                        <div><div style="color: #64748b;">Fuerza ataque visitante</div><div id="attack-away-val" class="summary-value" style="font-size: 1.4rem; margin-top: 4px;">—</div></div>
-                        <div><div style="color: #64748b;">Fuerza defensa local</div><div id="defense-home-val" class="summary-value" style="font-size: 1.4rem; margin-top: 4px;">—</div></div>
-                        <div><div style="color: #64748b;">Fuerza defensa visitante</div><div id="defense-away-val" class="summary-value" style="font-size: 1.4rem; margin-top: 4px;">—</div></div>
+                    <h3 style="margin-bottom: 16px; font-size: 1.2rem;">📈 Parámetros</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.85rem;">
+                        <div><div style="color: #64748b;">Ataque L</div><div id="attack-home-val" class="summary-value" style="font-size: 1.2rem;">—</div></div>
+                        <div><div style="color: #64748b;">Ataque V</div><div id="attack-away-val" class="summary-value" style="font-size: 1.2rem;">—</div></div>
+                        <div><div style="color: #64748b;">Defensa L</div><div id="defense-home-val" class="summary-value" style="font-size: 1.2rem;">—</div></div>
+                        <div><div style="color: #64748b;">Defensa V</div><div id="defense-away-val" class="summary-value" style="font-size: 1.2rem;">—</div></div>
                     </div>
-
-                    <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #334155; display: flex; justify-content: space-between;">
-                        <div>
-                            <div style="color: #64748b; font-size: 0.9rem;">λ Local</div>
-                            <div id="lambda-home" style="font-size: 2.2rem; font-weight: 700; color: #00d4aa;">—</div>
-                        </div>
-                        <div>
-                            <div style="color: #64748b; font-size: 0.9rem;">λ Visitante</div>
-                            <div id="lambda-away" style="font-size: 2.2rem; font-weight: 700; color: #f97316;">—</div>
-                        </div>
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #334155; display: flex; justify-content: space-between;">
+                        <div><div style="color: #64748b; font-size: 0.8rem;">λ Local</div><div id="lambda-home" style="font-size: 1.8rem; font-weight: 700; color: #00d4aa;">—</div></div>
+                        <div><div style="color: #64748b; font-size: 0.8rem;">λ Visitante</div><div id="lambda-away" style="font-size: 1.8rem; font-weight: 700; color: #f97316;">—</div></div>
                     </div>
                 </div>
 
                 <div class="card" style="margin-top: 24px;">
-                    <h3 style="margin-bottom: 20px; font-size: 1.3rem;">🎯 Probabilidades clave</h3>
+                    <h3 style="margin-bottom: 16px; font-size: 1.2rem;">🎯 Probabilidades</h3>
                     <div class="summary-grid">
-                        <div class="summary-card"><div class="summary-label">🏆 Local gana</div><div id="prob-home" class="summary-value">—</div></div>
-                        <div class="summary-card"><div class="summary-label">⚖️ Empate</div><div id="prob-draw" class="summary-value">—</div></div>
-                        <div class="summary-card"><div class="summary-label">✈️ Visitante gana</div><div id="prob-away" class="summary-value">—</div></div>
-                        <div class="summary-card"><div class="summary-label">🔥 BTTS</div><div id="prob-btts" class="summary-value">—</div></div>
-                        <div class="summary-card"><div class="summary-label">📈 Over 2.5</div><div id="prob-over" class="summary-value">—</div></div>
-                        <div class="summary-card"><div class="summary-label">📉 Under 2.5</div><div id="prob-under" class="summary-value">—</div></div>
+                        <div class="summary-card"><div class="summary-label">Local</div><div id="prob-home" class="summary-value">—</div></div>
+                        <div class="summary-card"><div class="summary-label">Empate</div><div id="prob-draw" class="summary-value">—</div></div>
+                        <div class="summary-card"><div class="summary-label">Visita</div><div id="prob-away" class="summary-value">—</div></div>
+                        <div class="summary-card"><div class="summary-label">BTTS</div><div id="prob-btts" class="summary-value">—</div></div>
+                        <div class="summary-card"><div class="summary-label">Over 2.5</div><div id="prob-over" class="summary-value">—</div></div>
+                        <div class="summary-card"><div class="summary-label">Under 2.5</div><div id="prob-under" class="summary-value">—</div></div>
                     </div>
                 </div>
             </div>
 
             <div class="card">
-                <h3 style="margin-bottom: 12px; font-size: 1.3rem;">📋 Matriz de resultados (0-5 goles)</h3>
+                <h3 style="margin-bottom: 12px; font-size: 1.2rem;">📋 Matriz (0-5)</h3>
                 <div class="matrix-container">
                     <table id="matrix-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 60px;">Local \ Visitante</th>
-                                <th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th>
-                            </tr>
-                        </thead>
+                        <thead><tr><th style="width: 50px;">L \ V</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr></thead>
                         <tbody id="matrix-body"></tbody>
                     </table>
                 </div>
 
                 <div style="margin-top: 32px;">
-                    <h3 style="margin-bottom: 16px; font-size: 1.3rem;">📊 Distribución de goles esperados</h3>
+                    <h3 style="margin-bottom: 16px; font-size: 1.2rem;">📊 Distribución</h3>
                     <div class="canvas-container">
                         <div class="canvas-card">
-                            <div style="margin-bottom: 12px; font-weight: 600; color: #00d4aa;">🏠 Local • λ = <span id="lambda-chart-home"></span></div>
+                            <div style="margin-bottom: 8px; font-size: 0.9rem; color: #00d4aa; font-weight: 600;">🏠 Local λ: <span id="lambda-chart-home"></span></div>
                             <canvas id="chart-home"></canvas>
                         </div>
                         <div class="canvas-card">
-                            <div style="margin-bottom: 12px; font-weight: 600; color: #f97316;">✈️ Visitante • λ = <span id="lambda-chart-away"></span></div>
+                            <div style="margin-bottom: 8px; font-size: 0.9rem; color: #f97316; font-weight: 600;">✈️ Visita λ: <span id="lambda-chart-away"></span></div>
                             <canvas id="chart-away"></canvas>
                         </div>
                     </div>
                 </div>
 
                 <div style="margin-top: 32px;">
-                    <h3 style="margin-bottom: 16px; font-size: 1.3rem;">💰 Valor Esperado (EV)</h3>
+                    <h3 style="margin-bottom: 16px; font-size: 1.2rem;">💰 Valor Esperado (EV)</h3>
                     <div class="ev-row">
-                        <div style="flex:1;"><label>Cuota Local (1)</label><input type="number" id="odd-home" value="1.85" step="0.01" style="background:#1e2937;border:none;padding:10px 14px;width:100%;"></div>
-                        <div style="flex:1;"><label>Cuota Empate (X)</label><input type="number" id="odd-draw" value="3.60" step="0.01" style="background:#1e2937;border:none;padding:10px 14px;width:100%;"></div>
-                        <div style="flex:1;"><label>Cuota Visitante (2)</label><input type="number" id="odd-away" value="4.10" step="0.01" style="background:#1e2937;border:none;padding:10px 14px;width:100%;"></div>
+                        <div style="flex: 1;"><label>Cuota 1</label><input type="number" id="odd-home" value="1.85" step="0.01"></div>
+                        <div style="flex: 1;"><label>Cuota X</label><input type="number" id="odd-draw" value="3.60" step="0.01"></div>
+                        <div style="flex: 1;"><label>Cuota 2</label><input type="number" id="odd-away" value="4.10" step="0.01"></div>
                     </div>
                     <div class="ev-row">
-                        <div style="flex:1;"><label>Cuota Over 2.5</label><input type="number" id="odd-over" value="1.95" step="0.01" style="background:#1e2937;border:none;padding:10px 14px;width:100%;"></div>
-                        <div style="flex:1;"><label>Cuota Under 2.5</label><input type="number" id="odd-under" value="1.85" step="0.01" style="background:#1e2937;border:none;padding:10px 14px;width:100%;"></div>
+                        <div style="flex: 1;"><label>Over 2.5</label><input type="number" id="odd-over" value="1.95" step="0.01"></div>
+                        <div style="flex: 1;"><label>Under 2.5</label><input type="number" id="odd-under" value="1.85" step="0.01"></div>
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
-                        <div id="ev-home" style="background:#1e2937;padding:16px;border-radius:12px;text-align:center;"></div>
-                        <div id="ev-draw" style="background:#1e2937;padding:16px;border-radius:12px;text-align:center;"></div>
-                        <div id="ev-away" style="background:#1e2937;padding:16px;border-radius:12px;text-align:center;"></div>
-                        <div id="ev-over" style="background:#1e2937;padding:16px;border-radius:12px;text-align:center;"></div>
-                        <div id="ev-under" style="background:#1e2937;padding:16px;border-radius:12px;text-align:center;"></div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-top: 15px;">
+                        <div id="ev-home" style="background:#1e2937; padding:12px; border-radius:10px; text-align:center;"></div>
+                        <div id="ev-draw" style="background:#1e2937; padding:12px; border-radius:10px; text-align:center;"></div>
+                        <div id="ev-away" style="background:#1e2937; padding:12px; border-radius:10px; text-align:center;"></div>
+                        <div id="ev-over" style="background:#1e2937; padding:12px; border-radius:10px; text-align:center;"></div>
+                        <div id="ev-under" style="background:#1e2937; padding:12px; border-radius:10px; text-align:center;"></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <footer>
-        Poisson Predictor • HTML + CSS + Vanilla JS puro
-    </footer>
+    <footer>Poisson Predictor • BetAGS Engine • 2026</footer>
 
     <script>
-        // ==================== UTILIDADES MATEMÁTICAS ====================
         function factorial(n) {
             if (n === 0 || n === 1) return 1;
-            let result = 1;
-            for (let i = 2; i <= n; i++) result *= i;
-            return result;
+            let res = 1; for (let i = 2; i <= n; i++) res *= i;
+            return res;
         }
 
         function poissonProbability(lambda, k) {
-            if (lambda <= 0 || k < 0) return 0;
             return (Math.exp(-lambda) * Math.pow(lambda, k)) / factorial(k);
         }
 
         function getPoissonProbs(lambda, maxGoals = 5) {
             const probs = [];
-            for (let k = 0; k <= maxGoals; k++) {
-                probs.push(poissonProbability(lambda, k));
-            }
+            for (let k = 0; k <= maxGoals; k++) probs.push(poissonProbability(lambda, k));
             return probs;
         }
 
-        // ==================== GRÁFICOS ====================
         function drawGoalDistribution(canvasId, probs, color, lambda) {
             const canvas = document.getElementById(canvasId);
-            if (!canvas) return;
             const ctx = canvas.getContext('2d');
-            
-            const parentWidth = canvas.parentElement.clientWidth || 300;
+            const parentWidth = canvas.parentElement.clientWidth;
             canvas.width = parentWidth - 40;
-            canvas.height = 260;
-
+            canvas.height = 250;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             const maxProb = Math.max(...probs);
             const barWidth = Math.floor(canvas.width / 7);
-            const paddingLeft = 30;
-            const paddingBottom = 45;
+            const paddingBottom = 30;
 
-            // Eje Y
-            ctx.strokeStyle = '#64748b';
-            ctx.beginPath();
-            ctx.moveTo(paddingLeft, 20);
-            ctx.lineTo(paddingLeft, canvas.height - paddingBottom);
-            ctx.stroke();
-
-            // Barras
-            probs.forEach((prob, index) => {
-                const barHeight = (prob / maxProb) * (canvas.height - paddingBottom - 50);
-                const x = paddingLeft + 10 + index * barWidth;
+            probs.forEach((prob, i) => {
+                const barHeight = (prob / maxProb) * (canvas.height - 70);
+                const x = 35 + i * barWidth;
                 const y = canvas.height - paddingBottom - barHeight;
 
-                const gradient = ctx.createLinearGradient(x, y, x, canvas.height - paddingBottom);
-                gradient.addColorStop(0, color);
-                gradient.addColorStop(1, '#1e2937');
-
-                ctx.fillStyle = gradient;
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = color;
-                ctx.fillRect(x, y, barWidth - 18, barHeight);
-                ctx.shadowBlur = 0;
-
-                ctx.strokeStyle = '#f1f5f9';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(x, y, barWidth - 18, barHeight);
-
+                ctx.fillStyle = color;
+                ctx.globalAlpha = 0.8;
+                ctx.fillRect(x, y, barWidth - 10, barHeight);
+                ctx.globalAlpha = 1.0;
+                
                 ctx.fillStyle = '#f1f5f9';
-                ctx.font = '600 15px Inter';
+                ctx.font = 'bold 11px Inter';
                 ctx.textAlign = 'center';
-                ctx.fillText(index.toString(), x + (barWidth - 18)/2, canvas.height - paddingBottom + 28);
-                ctx.fillText((prob*100).toFixed(1)+'%', x + (barWidth - 18)/2, y - 8);
+                ctx.fillText((prob * 100).toFixed(0) + '%', x + (barWidth-10)/2, y - 5);
+                ctx.fillText(i, x + (barWidth-10)/2, canvas.height - 10);
             });
-
-            ctx.fillStyle = '#64748b';
-            ctx.font = '500 13px Inter';
-            ctx.fillText(`λ = ${lambda.toFixed(2)}`, paddingLeft + 10, 18);
         }
 
-        // ==================== CÁLCULO PRINCIPAL ====================
         function calcularPrediccion() {
             const gfHome = parseFloat(document.getElementById('gf-home').value) || 0;
             const gaHome = parseFloat(document.getElementById('ga-home').value) || 0;
@@ -521,84 +508,68 @@
             const avgLeague = parseFloat(document.getElementById('avg-league').value) || 2.5;
             const useXg = document.getElementById('use-xg').checked;
 
-            if (avgLeague <= 0) {
-                alert('El promedio de goles de la liga debe ser mayor a 0');
-                return;
-            }
+            let attH = (useXg && xgHome > 0) ? xgHome / avgLeague : gfHome / avgLeague;
+            let attA = (useXg && xgAway > 0) ? xgAway / avgLeague : gfAway / avgLeague;
+            let defH = gaHome / avgLeague;
+            let defA = gaAway / avgLeague;
 
-            let attackHome = gfHome / avgLeague;
-            let attackAway = gfAway / avgLeague;
-            if (useXg && xgHome > 0) attackHome = xgHome / avgLeague;
-            if (useXg && xgAway > 0) attackAway = xgAway / avgLeague;
+            const lambH = attH * defA * avgLeague;
+            const lambA = attA * defH * avgLeague;
 
-            const defenseHome = gaHome / avgLeague;
-            const defenseAway = gaAway / avgLeague;
+            const hProbs = getPoissonProbs(lambH);
+            const aProbs = getPoissonProbs(lambA);
 
-            const lambdaHome = attackHome * defenseAway * avgLeague;
-            const lambdaAway = attackAway * defenseHome * avgLeague;
+            let winH = 0, draw = 0, winA = 0, btts = 0, over = 0;
+            let mHtml = "";
 
-            const MAX_GOALS = 5;
-            const homeProbs = getPoissonProbs(lambdaHome, MAX_GOALS);
-            const awayProbs = getPoissonProbs(lambdaAway, MAX_GOALS);
-
-            let homeWinProb = 0, drawProb = 0, awayWinProb = 0, bttsProb = 0, overProb = 0, totalProb = 0;
-            const matrixHTML = [];
-
-            for (let h = 0; h <= MAX_GOALS; h++) {
-                let rowHTML = `<tr><td style="background:#0f172a; font-weight:600; color:#e2e8f0;">${h}</td>`;
-                for (let a = 0; a <= MAX_GOALS; a++) {
-                    const p = homeProbs[h] * awayProbs[a];
-                    totalProb += p;
-
-                    const intensity = Math.min(90, Math.max(25, p * 120));
-                    const bgColor = `hsl(160, 85%, ${intensity}%)`;
-                    const textColor = p > 0.08 ? '#0f172a' : '#f1f5f9';
-
-                    rowHTML += `<td class="prob-cell" style="background:${bgColor}; color:${textColor};">${(p*100).toFixed(1)}%</td>`;
-
-                    if (h > a) homeWinProb += p;
-                    else if (h === a) drawProb += p;
-                    else awayWinProb += p;
-
-                    if (h > 0 && a > 0) bttsProb += p;
-                    if (h + a >= 3) overProb += p;
+            for (let h = 0; h <= 5; h++) {
+                mHtml += `<tr><td style="background:#0f172a; font-weight:bold;">${h}</td>`;
+                for (let a = 0; a <= 5; a++) {
+                    const p = hProbs[h] * aProbs[a];
+                    const opac = Math.min(0.9, p * 8);
+                    mHtml += `<td style="background: rgba(0, 212, 170, ${opac}); color: ${p > 0.1 ? '#000' : '#fff'}">${(p * 100).toFixed(1)}%</td>`;
+                    if (h > a) winH += p; else if (h === a) draw += p; else winA += p;
+                    if (h > 0 && a > 0) btts += p;
+                    if (h + a > 2.5) over += p;
                 }
-                rowHTML += '</tr>';
-                matrixHTML.push(rowHTML);
+                mHtml += "</tr>";
             }
-
-            const underProb = totalProb - overProb;
 
             document.getElementById('resultados').style.display = 'grid';
+            document.getElementById('attack-home-val').innerText = attH.toFixed(2);
+            document.getElementById('attack-away-val').innerText = attA.toFixed(2);
+            document.getElementById('defense-home-val').innerText = defH.toFixed(2);
+            document.getElementById('defense-away-val').innerText = defA.toFixed(2);
+            document.getElementById('lambda-home').innerText = lambH.toFixed(2);
+            document.getElementById('lambda-away').innerText = lambA.toFixed(2);
+            document.getElementById('prob-home').innerText = (winH * 100).toFixed(1) + "%";
+            document.getElementById('prob-draw').innerText = (draw * 100).toFixed(1) + "%";
+            document.getElementById('prob-away').innerText = (winA * 100).toFixed(1) + "%";
+            document.getElementById('prob-btts').innerText = (btts * 100).toFixed(1) + "%";
+            document.getElementById('prob-over').innerText = (over * 100).toFixed(1) + "%";
+            document.getElementById('prob-under').innerText = ((1 - over) * 100).toFixed(1) + "%";
+            document.getElementById('matrix-body').innerHTML = mHtml;
+            document.getElementById('lambda-chart-home').innerText = lambH.toFixed(2);
+            document.getElementById('lambda-chart-away').innerText = lambA.toFixed(2);
 
-            document.getElementById('attack-home-val').textContent = attackHome.toFixed(2);
-            document.getElementById('attack-away-val').textContent = attackAway.toFixed(2);
-            document.getElementById('defense-home-val').textContent = defenseHome.toFixed(2);
-            document.getElementById('defense-away-val').textContent = defenseAway.toFixed(2);
-            document.getElementById('lambda-home').textContent = lambdaHome.toFixed(2);
-            document.getElementById('lambda-away').textContent = lambdaAway.toFixed(2);
+            drawGoalDistribution('chart-home', hProbs, '#00d4aa', lambH);
+            drawGoalDistribution('chart-away', aProbs, '#f97316', lambA);
 
-            document.getElementById('prob-home').textContent = (homeWinProb*100).toFixed(1) + '%';
-            document.getElementById('prob-draw').textContent = (drawProb*100).toFixed(1) + '%';
-            document.getElementById('prob-away').textContent = (awayWinProb*100).toFixed(1) + '%';
-            document.getElementById('prob-btts').textContent = (bttsProb*100).toFixed(1) + '%';
-            document.getElementById('prob-over').textContent = (overProb*100).toFixed(1) + '%';
-            document.getElementById('prob-under').textContent = (underProb*100).toFixed(1) + '%';
+            const oH = parseFloat(document.getElementById('odd-home').value) || 0;
+            const oD = parseFloat(document.getElementById('odd-draw').value) || 0;
+            const oA = parseFloat(document.getElementById('odd-away').value) || 0;
+            const oO = parseFloat(document.getElementById('odd-over').value) || 0;
+            const oU = parseFloat(document.getElementById('odd-under').value) || 0;
 
-            document.getElementById('matrix-body').innerHTML = matrixHTML.join('');
-
-            document.getElementById('lambda-chart-home').textContent = lambdaHome.toFixed(2);
-            document.getElementById('lambda-chart-away').textContent = lambdaAway.toFixed(2);
-
-            drawGoalDistribution('chart-home', homeProbs, '#00d4aa', lambdaHome);
-            drawGoalDistribution('chart-away', awayProbs, '#f97316', lambdaAway);
-
-            console.log('%c✅ Predicción calculada correctamente', 'color:#00d4aa; font-weight:700');
+            const calcEV = (p, o, id, lbl) => {
+                const ev = (p * o) - 1;
+                document.getElementById(id).innerHTML = `<div style="font-size:0.7rem;">${lbl}</div><div class="${ev > 0 ? 'ev-positive' : 'ev-negative'}">${(ev * 100).toFixed(1)}%</div>`;
+            };
+            calcEV(winH, oH, 'ev-home', 'L'); calcEV(draw, oD, 'ev-draw', 'X'); calcEV(winA, oA, 'ev-away', 'V');
+            calcEV(over, oO, 'ev-over', 'O2.5'); calcEV(1 - over, oU, 'ev-under', 'U2.5');
         }
 
-        window.onload = function() {
-            setTimeout(calcularPrediccion, 500);
-        };
+        window.onload = () => setTimeout(calcularPrediccion, 500);
     </script>
 </body>
 </html>
