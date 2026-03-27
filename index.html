@@ -3,499 +3,405 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Poisson xG - El Gurú de las Apuestas</title>
+    <title>Quantum Poisson Engine | Análisis de Apuestas</title>
     <style>
         :root {
             --primary: #00d4ff;
+            --secondary: #0055ff;
             --bg: #0f172a;
-            --glass: rgba(255, 255, 255, 0.05);
-            --border: rgba(255, 255, 255, 0.1);
-            --success: #22c55e;
-            --warning: #eab308;
-            --danger: #f43f5e;
-            --info: #06b6d4;
-            --purple: #a855f7;
+            --card: rgba(30, 41, 59, 0.7);
+            --text: #f8fafc;
+            --accent: #22c55e;
+            --danger: #ef4444;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg);
-            color: white;
+            background-image: radial-gradient(circle at top right, #1e293b, #0f172a);
+            color: var(--text);
             margin: 0;
+            padding: 20px;
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            background: radial-gradient(circle at top right, #1e293b, #0f172a);
+            justify-content: center;
         }
 
         .container {
-            width: 95%;
-            max-width: 1100px;
-            margin: 40px 0;
-            padding: 20px;
-            background: var(--glass);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
-        }
-
-        h1 { text-align: center; color: var(--primary); font-weight: 300; margin-bottom: 5px; }
-        .subtitle { text-align: center; font-size: 0.9em; color: #94a3b8; margin-bottom: 20px; }
-
-        .db-status {
-            text-align: center;
-            font-size: 0.8em;
-            margin-bottom: 20px;
-            color: var(--success);
-            background: rgba(34, 197, 94, 0.1);
-            padding: 5px;
-            border-radius: 5px;
-        }
-
-        textarea {
+            max-width: 1000px;
             width: 100%;
-            height: 100px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--border);
-            color: #00ffcc;
-            border-radius: 10px;
-            padding: 10px;
-            box-sizing: border-box;
-            font-family: monospace;
-            margin-bottom: 15px;
         }
 
-        .controls {
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            letter-spacing: -1px;
+            background: linear-gradient(90deg, var(--primary), #fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Layout Grid */
+        .dashboard {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .input-group label {
-            font-size: 0.75em;
-            color: var(--primary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        select, button, input {
-            padding: 12px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            font-size: 14px;
-            background: #334155;
-            color: white;
-            border: 1px solid var(--border);
-        }
-
-        input { width: 100%; box-sizing: border-box; }
-        input:focus { outline: 1px solid var(--primary); }
-
-        button {
-            background: var(--primary);
-            color: #0f172a;
-            font-weight: bold;
-            transition: 0.3s;
-            border: none;
-        }
-
-        button:hover { opacity: 0.8; transform: translateY(-2px); }
-
-        .btn-danger { background: #450a0a; color: #f87171; font-size: 11px; margin-top: 30px;}
-
-        .results {
-            margin-top: 30px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            grid-template-columns: 1fr 2fr;
             gap: 20px;
         }
 
+        @media (max-width: 850px) {
+            .dashboard { grid-template-columns: 1fr; }
+        }
+
+        /* Glassmorphism Cards */
         .card {
-            background: rgba(255, 255, 255, 0.03);
+            background: var(--card);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
             padding: 20px;
-            border-radius: 15px;
-            border-top: 3px solid var(--primary);
-            transition: 0.3s;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
         }
 
-        .card:hover { background: rgba(255, 255, 255, 0.05); }
-
-        .card h3 { margin-top: 0; color: var(--primary); font-size: 1.1em; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 15px; }
-
-        .prob-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 8px 0;
-        }
-
-        .odd-input-mini {
-            width: 60px !important;
-            padding: 4px !important;
-            font-size: 11px !important;
-            background: rgba(0,0,0,0.2) !important;
-            text-align: center;
-        }
-
-        .odd-container { text-align: right; display: flex; flex-direction: column; align-items: flex-end; }
-
-        .odd-tag {
-            font-size: 0.75em;
-            color: #94a3b8;
-            background: rgba(255,255,255,0.05);
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
-
-        .value-badge {
-            font-size: 0.7em;
-            color: var(--success);
-            font-weight: bold;
-            display: block;
-            margin-top: 2px;
-            background: rgba(34, 197, 94, 0.1);
-            padding: 2px 4px;
-            border-radius: 3px;
-        }
-
-        .stake-badge {
-            font-size: 0.75em;
-            color: #fff;
-            background: var(--purple);
-            padding: 1px 5px;
-            border-radius: 3px;
-            margin-top: 2px;
-            font-weight: bold;
-        }
-
-        .prob-bar {
-            height: 6px;
-            background: #444;
-            border-radius: 3px;
-            margin-bottom: 10px;
-            overflow: hidden;
-        }
-
-        .fill { height: 100%; background: var(--primary); transition: width 0.5s; }
-        
-        .badge {
-            background: rgba(255,255,255,0.1);
-            padding: 5px 10px;
-            border-radius: 5px;
-            text-align: center;
-        }
-
-        .market-inputs {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 5px;
+        .input-group {
             margin-bottom: 15px;
-            background: rgba(0,0,0,0.1);
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+            color: #94a3b8;
+        }
+
+        input {
+            width: 100%;
             padding: 10px;
             border-radius: 8px;
-        }
-
-        .alert-btn {
-            background: #f59e0b;
+            border: 1px solid #334155;
+            background: #0f172a;
             color: white;
-            border: none;
-            padding: 3px 6px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 10px;
-            margin-top: 5px;
+            box-sizing: border-box;
+            transition: border 0.3s;
         }
 
-        b { color: var(--primary); }
-        
-        .nav-links {
-            margin-bottom: 20px;
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .toggle-container {
             display: flex;
+            align-items: center;
             gap: 10px;
+            margin: 15px 0;
+            cursor: pointer;
         }
-        
-        .nav-links a {
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: transform 0.2s;
+        }
+
+        button:active { transform: scale(0.98); }
+
+        /* Tables & Matrix */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-box {
+            text-align: center;
+            padding: 15px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+        }
+
+        .stat-val {
+            font-size: 1.5rem;
+            font-weight: bold;
             color: var(--primary);
-            text-decoration: none;
-            font-size: 14px;
-            border: 1px solid var(--primary);
-            padding: 5px 15px;
-            border-radius: 20px;
         }
+
+        .matrix-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        th { background: rgba(0,0,0,0.2); }
+
+        .prob-high { background: rgba(34, 197, 94, 0.2); }
+        .prob-mid { background: rgba(234, 179, 8, 0.2); }
+
+        .ev-positive { color: var(--accent); font-weight: bold; }
+        .ev-negative { color: var(--danger); }
+
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="nav-links">
-        <a href="alertas.html" target="_blank">🔔 Ver Mis Alertas / Stats</a>
-    </div>
-    <h1>📊 El Gurú de las Apuestas</h1>
-    <div class="subtitle">Calculadora Poisson xG - Kelly Stake (20% Kelly, Max 3u)</div>
-    
-    <div id="dbStatus" class="db-status">Partidos en memoria: 0</div>
-    
-    <textarea id="csvData" placeholder="Pega aquí los nuevos xG para actualizar la base de datos..."></textarea>
-    
-    <div class="controls">
-        <button onclick="processData()">1. Actualizar Datos</button>
-        <select id="leagueSelector" onchange="updateTeams()">
-            <option value="">Selecciona Liga</option>
-        </select>
-        <button onclick="calculateEverything()" style="background: var(--success); color: white;">2. Calcular Pronóstico</button>
-    </div>
+    <header>
+        <h1>EL GURÚ DE LAS APUESTAS</h1>
+        <p>Motor de Inferencia Poisson v2.0</p>
+    </header>
 
-    <div class="controls">
-        <div class="input-group">
-            <label>Local</label>
-            <select id="homeTeam"><option value="">Selecciona Local</option></select>
+    <div class="dashboard">
+        <div class="card">
+            <h3>Parámetros del Encuentro</h3>
+            
+            <div class="input-group">
+                <label>Promedio Goles Liga (Goles/Partido)</label>
+                <input type="number" id="leagueAvg" value="2.5" step="0.1">
+            </div>
+
+            <hr style="border: 0.5px solid #334155; margin: 20px 0;">
+
+            <div id="statsInputs">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="input-group">
+                        <label>Goles Favor Local</label>
+                        <input type="number" id="homeGF" value="20">
+                    </div>
+                    <div class="input-group">
+                        <label>Goles Contra Local</label>
+                        <input type="number" id="homeGC" value="15">
+                    </div>
+                    <div class="input-group">
+                        <label>Goles Favor Visita</label>
+                        <input type="number" id="awayGF" value="18">
+                    </div>
+                    <div class="input-group">
+                        <label>Goles Contra Visita</label>
+                        <input type="number" id="awayGC" value="22">
+                    </div>
+                </div>
+            </div>
+
+            <label class="toggle-container">
+                <input type="checkbox" id="useXG" style="width: auto;"> Usar xG Avanzado
+            </label>
+
+            <div id="xgInputs" style="display: none; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="input-group">
+                    <label>xG Local</label>
+                    <input type="number" id="homeXG" value="1.5" step="0.1">
+                </div>
+                <div class="input-group">
+                    <label>xG Visita</label>
+                    <input type="number" id="awayXG" value="1.2" step="0.1">
+                </div>
+            </div>
+
+            <div class="input-group" style="margin-top: 10px;">
+                <label>Cuotas 1 - X - 2 (Opcional para EV)</label>
+                <div style="display: flex; gap: 5px;">
+                    <input type="number" id="odds1" placeholder="Local" step="0.01">
+                    <input type="number" id="oddsX" placeholder="Empate" step="0.01">
+                    <input type="number" id="odds2" placeholder="Visita" step="0.01">
+                </div>
+            </div>
+
+            <button onclick="calculatePoisson()">Calcular Probabilidades</button>
         </div>
-        <div class="input-group">
-            <label>Visitante</label>
-            <select id="awayTeam"><option value="">Selecciona Visitante</option></select>
+
+        <div class="card" id="resultsPanel" style="display: none;">
+            <h3>Proyecciones de Resultado</h3>
+            <div class="results-grid">
+                <div class="stat-box">
+                    <label>λ Local (Goles Esp.)</label>
+                    <div id="expLocal" class="stat-val">0.00</div>
+                </div>
+                <div class="stat-box">
+                    <label>λ Visita (Goles Esp.)</label>
+                    <div id="expAway" class="stat-val">0.00</div>
+                </div>
+            </div>
+
+            <div class="results-grid">
+                <div class="stat-box">
+                    <label>Local (1)</label>
+                    <div id="prob1" class="stat-val">0%</div>
+                    <div id="ev1" class="ev-tag"></div>
+                </div>
+                <div class="stat-box">
+                    <label>Empate (X)</label>
+                    <div id="probX" class="stat-val">0%</div>
+                    <div id="evX" class="ev-tag"></div>
+                </div>
+                <div class="stat-box">
+                    <label>Visita (2)</label>
+                    <div id="prob2" class="stat-val">0%</div>
+                    <div id="ev2" class="ev-tag"></div>
+                </div>
+            </div>
+
+            <div class="results-grid">
+                <div class="stat-box">
+                    <label>Over 2.5</label>
+                    <div id="probOver" class="stat-val">0%</div>
+                </div>
+                <div class="stat-box">
+                    <label>BTTS (Ambos Marcan)</label>
+                    <div id="probBTTS" class="stat-val">0%</div>
+                </div>
+            </div>
+
+            <div class="matrix-container">
+                <label>Matriz de Probabilidades (Resultados Exactos)</label>
+                <table id="matrixTable">
+                    </table>
+            </div>
         </div>
     </div>
-
-    <div class="market-inputs">
-        <div class="input-group">
-            <label style="font-size: 0.65em;">Cuota 1</label>
-            <input type="number" id="odd_1" step="0.01" class="odd-input-mini" placeholder="Local">
-        </div>
-        <div class="input-group">
-            <label style="font-size: 0.65em;">Cuota X</label>
-            <input type="number" id="odd_X" step="0.01" class="odd-input-mini" placeholder="Empate">
-        </div>
-        <div class="input-group">
-            <label style="font-size: 0.65em;">Cuota 2</label>
-            <input type="number" id="odd_2" step="0.01" class="odd-input-mini" placeholder="Visita">
-        </div>
-        <div class="input-group">
-            <label style="font-size: 0.65em;">Cuota O2.5</label>
-            <input type="number" id="odd_O25" step="0.01" class="odd-input-mini" placeholder="+2.5">
-        </div>
-        <div class="input-group">
-            <label style="font-size: 0.65em;">Cuota BTTS</label>
-            <input type="number" id="odd_BTTS" step="0.01" class="odd-input-mini" placeholder="Ambos">
-        </div>
-        <div class="input-group">
-            <label style="font-size: 0.65em;">Cuota O0.5 HT</label>
-            <input type="number" id="odd_HT05" step="0.01" class="odd-input-mini" placeholder="HT">
-        </div>
-    </div>
-
-    <div id="output" class="results"></div>
-
-    <button class="btn-danger" onclick="clearDatabase()">Limpiar Base de Datos</button>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('guru_poisson_db')) || {};
-    let processedIds = new Set(JSON.parse(localStorage.getItem('guru_ids')) || []);
+    // Mostrar/Ocultar xG
+    document.getElementById('useXG').addEventListener('change', function(e) {
+        document.getElementById('xgInputs').style.display = e.target.checked ? 'grid' : 'none';
+    });
 
-    window.onload = () => {
-        updateLeagueSelector();
-        updateStatus();
-    };
-
-    function updateStatus() {
-        document.getElementById('dbStatus').innerText = `Partidos únicos guardados: ${processedIds.size}`;
+    /**
+     * Función factorial
+     */
+    function factorial(n) {
+        if (n === 0 || n === 1) return 1;
+        let res = 1;
+        for (let i = 2; i <= n; i++) res *= i;
+        return res;
     }
 
-    function processData() {
-        const text = document.getElementById('csvData').value.trim();
-        const lines = text.split('\n');
-        if (lines.length < 2) return alert("Pega datos válidos");
-
-        let newMatches = 0;
-        lines.slice(1).forEach(line => {
-            const cols = line.split('\t');
-            if (cols.length < 13) return;
-            const matchId = cols[0];
-            if (processedIds.has(matchId)) return; 
-            const league = `${cols[2]} - ${cols[3]}`; 
-            const home = cols[5]; const away = cols[6];
-            const xg = {
-                ftH: parseFloat(cols[7]), ftA: parseFloat(cols[8]),
-                h1H: parseFloat(cols[9]), h1A: parseFloat(cols[10]),
-                h2H: parseFloat(cols[11]), h2A: parseFloat(cols[12])
-            };
-            if (!db[league]) db[league] = {};
-            [home, away].forEach(t => {
-                if (!db[league][t]) db[league][t] = { ft_gf: [], ft_gc: [], h1_gf: [], h1_gc: [], h2_gf: [], h2_gc: [] };
-            });
-            db[league][home].ft_gf.push(xg.ftH); db[league][home].ft_gc.push(xg.ftA);
-            db[league][home].h1_gf.push(xg.h1H); db[league][home].h1_gc.push(xg.h1A);
-            db[league][home].h2_gf.push(xg.h2H); db[league][home].h2_gc.push(xg.h2A);
-            db[league][away].ft_gf.push(xg.ftA); db[league][away].ft_gc.push(xg.ftH);
-            db[league][away].h1_gf.push(xg.h1A); db[league][away].h1_gc.push(xg.h1H);
-            db[league][away].h2_gf.push(xg.h2A); db[league][away].h2_gc.push(xg.h2H);
-            processedIds.add(matchId);
-            newMatches++;
-        });
-        saveToLocal(); updateLeagueSelector(); updateStatus();
-        document.getElementById('csvData').value = "";
-        alert(`Se han añadido ${newMatches} partidos.`);
+    /**
+     * Fórmula de Distribución de Poisson
+     */
+    function poisson(lambda, x) {
+        return (Math.exp(-lambda) * Math.pow(lambda, x)) / factorial(x);
     }
 
-    function saveToLocal() {
-        localStorage.setItem('guru_poisson_db', JSON.stringify(db));
-        localStorage.setItem('guru_ids', JSON.stringify(Array.from(processedIds)));
-    }
-
-    function updateLeagueSelector() {
-        const selector = document.getElementById('leagueSelector');
-        selector.innerHTML = '<option value="">Selecciona Liga</option>';
-        Object.keys(db).sort().forEach(l => { selector.innerHTML += `<option value="${l}">${l}</option>`; });
-    }
-
-    function updateTeams() {
-        const league = document.getElementById('leagueSelector').value;
-        const hSelect = document.getElementById('homeTeam');
-        const aSelect = document.getElementById('awayTeam');
-        hSelect.innerHTML = ''; aSelect.innerHTML = '';
-        if (db[league]) {
-            Object.keys(db[league]).sort().forEach(team => {
-                const opt = `<option value="${team}">${team}</option>`;
-                hSelect.innerHTML += opt; aSelect.innerHTML += opt;
-            });
-        }
-    }
-
-    function clearDatabase() {
-        if(confirm("¿Seguro que quieres borrar todo el historial?")) { localStorage.clear(); location.reload(); }
-    }
-
-    function factorial(n) { if (n === 0) return 1; let res = 1; for (let i = 2; i <= n; i++) res *= i; return res; }
-    function poisson(k, lambda) { return (Math.exp(-lambda) * Math.pow(lambda, k)) / factorial(k); }
-
-    function getProbabilities(lH, lA) {
-        let pHome = 0, pAway = 0, pDraw = 0, pO25 = 0, pBTTS = 0;
-        for (let i = 0; i < 9; i++) {
-            for (let j = 0; j < 9; j++) {
-                const p = poisson(i, lH) * poisson(j, lA);
-                if (i > j) pHome += p; else if (j > i) pAway += p; else pDraw += p;
-                if (i + j > 2.5) pO25 += p; if (i > 0 && j > 0) pBTTS += p;
-            }
-        }
-        return { pHome, pAway, pDraw, pO25, pBTTS };
-    }
-
-    function calcHalfOvers(lH, lA) {
-        const p0 = poisson(0, lH) * poisson(0, lA);
-        const p1 = (poisson(1, lH) * poisson(0, lA)) + (poisson(0, lH) * poisson(1, lA));
-        const o05 = 1 - p0;
-        return { o05, o075: (o05 * 0.7) + ((1-p0-p1) * 0.3), o10: (o05 * 0.4) + ((1-p0-p1) * 0.6) };
-    }
-
-    function calculateKelly(myProb, bookieOdd) {
-        if (!bookieOdd || bookieOdd <= 1) return 0;
-        const b = bookieOdd - 1;
-        const q = 1 - myProb;
-        const fullKelly = (b * myProb - q) / b;
-        if (fullKelly <= 0) return 0;
-        let suggestedStake = fullKelly * 0.20 * 100; 
-        return Math.min(suggestedStake, 3.0).toFixed(1);
-    }
-
-    function sendToAlerts(market, prob, odd, stake) {
-        const league = document.getElementById('leagueSelector').value;
-        const h = document.getElementById('homeTeam').value;
-        const a = document.getElementById('awayTeam').value;
+    function calculatePoisson() {
+        const leagueAvg = parseFloat(document.getElementById('leagueAvg').value);
+        const useXG = document.getElementById('useXG').checked;
         
-        const newAlert = {
-            id: Date.now(),
-            league: league,
-            event: `${h} vs ${a}`,
-            market: market,
-            prob: (prob * 100).toFixed(1) + '%',
-            odd: odd,
-            stake: stake,
-            status: 'pendiente'
-        };
+        let lambdaHome, lambdaAway;
 
-        let alerts = JSON.parse(localStorage.getItem('guru_alerts')) || [];
-        alerts.push(newAlert);
-        localStorage.setItem('guru_alerts', JSON.stringify(alerts));
-        alert("Alerta enviada correctamente.");
-    }
+        if (useXG) {
+            // Uso directo de xG como lambda
+            lambdaHome = parseFloat(document.getElementById('homeXG').value);
+            lambdaAway = parseFloat(document.getElementById('awayXG').value);
+        } else {
+            // Cálculo tradicional por ataque/defensa
+            const homeGF = parseFloat(document.getElementById('homeGF').value);
+            const homeGC = parseFloat(document.getElementById('homeGC').value);
+            const awayGF = parseFloat(document.getElementById('awayGF').value);
+            const awayGC = parseFloat(document.getElementById('awayGC').value);
 
-    function checkValue(myProb, bookieOdd, marketName) {
-        if (!bookieOdd || isNaN(bookieOdd) || bookieOdd <= 1) return "";
-        const bookieProb = 1 / bookieOdd;
-        if (myProb > bookieProb) {
-            const edge = ((myProb - bookieProb) * 100).toFixed(1);
-            const stake = calculateKelly(myProb, bookieOdd);
-            return `
-                <span class="value-badge">VALOR (+${edge}%)</span>
-                <span class="stake-badge">Stake: ${stake}u</span>
-                <button class="alert-btn" onclick="sendToAlerts('${marketName}', ${myProb}, ${bookieOdd}, ${stake})">🔔 Enviar</button>
-            `;
+            const attackHome = (homeGF / 10) / leagueAvg; // Asumiendo muestra de 10 partidos
+            const defenseHome = (homeGC / 10) / leagueAvg;
+            const attackAway = (awayGF / 10) / leagueAvg;
+            const defenseAway = (awayGC / 10) / leagueAvg;
+
+            lambdaHome = attackHome * defenseAway * leagueAvg;
+            lambdaAway = attackAway * defenseHome * leagueAvg;
         }
-        return "";
+
+        renderResults(lambdaHome, lambdaAway);
     }
 
-    function calculateEverything() {
-        const league = document.getElementById('leagueSelector').value;
-        const t1 = document.getElementById('homeTeam').value;
-        const t2 = document.getElementById('awayTeam').value;
-        const o1 = parseFloat(document.getElementById('odd_1').value);
-        const oX = parseFloat(document.getElementById('odd_X').value);
-        const o2 = parseFloat(document.getElementById('odd_2').value);
-        const oO25 = parseFloat(document.getElementById('odd_O25').value);
-        const oBTTS = parseFloat(document.getElementById('odd_BTTS').value);
-        const oHT05 = parseFloat(document.getElementById('odd_HT05').value);
+    function renderResults(lH, lA) {
+        document.getElementById('resultsPanel').style.display = 'block';
+        document.getElementById('expLocal').innerText = lH.toFixed(2);
+        document.getElementById('expAway').innerText = lA.toFixed(2);
 
-        if (!t1 || !t2 || t1 === t2) return alert("Selecciona equipos válidos");
+        let distHome = [];
+        let distAway = [];
+        
+        // Calcular distribuciones 0-5
+        for (let i = 0; i <= 5; i++) {
+            distHome.push(poisson(lH, i));
+            distAway.push(poisson(lA, i));
+        }
 
-        const getAvg = (arr) => arr.length ? arr.reduce((a,b) => a+b, 0) / arr.length : 0;
-        const calcLambda = (teamH, teamA, type) => (getAvg(db[league][teamH][type + '_gf']) + getAvg(db[league][teamA][type + '_gc'])) / 2;
+        // 1X2, Over/Under y BTTS
+        let pHome = 0, pDraw = 0, pAway = 0;
+        let pOver25 = 0;
+        let pBTTS = (1 - distHome[0]) * (1 - distAway[0]);
 
-        const lFT_H = calcLambda(t1, t2, 'ft'); const lFT_A = calcLambda(t2, t1, 'ft');
-        const l1H_H = calcLambda(t1, t2, 'h1'); const l1H_A = calcLambda(t2, t1, 'h1');
-        const l2H_H = calcLambda(t1, t2, 'h2'); const l2H_A = calcLambda(t2, t1, 'h2');
+        // Generar Matriz y calcular mercados
+        let matrixHtml = '<tr><th>L \\ V</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr>';
+        
+        for (let i = 0; i <= 5; i++) {
+            matrixHtml += `<tr><td><strong>${i}</strong></td>`;
+            for (let j = 0; j <= 5; j++) {
+                let pRes = distHome[i] * distAway[j];
+                let probPct = (pRes * 100).toFixed(1);
+                
+                // Clasificar colores
+                let cellClass = pRes > 0.1 ? 'prob-high' : (pRes > 0.05 ? 'prob-mid' : '');
+                matrixHtml += `<td class="${cellClass}">${probPct}%</td>`;
 
-        const ft = getProbabilities(lFT_H, lFT_A);
-        const ht = calcHalfOvers(l1H_H, l1H_A);
-        const st = calcHalfOvers(l2H_H, l2H_A);
+                // Sumar mercados
+                if (i > j) pHome += pRes;
+                else if (i === j) pDraw += pRes;
+                else pAway += pRes;
 
-        const toPct = (v) => (v * 100).toFixed(1) + '%';
-        const toOdd = (v) => v > 0 ? (1 / v).toFixed(2) : 'N/A';
+                if (i + j > 2.5) pOver25 += pRes;
+            }
+            matrixHtml += '</tr>';
+        }
 
-        document.getElementById('output').innerHTML = `
-            <div class="card">
-                <h3>1X2 & Valor</h3>
-                <div class="prob-row"><span>Local (${t1})</span> <div class="odd-container"><b>${toPct(ft.pHome)}</b> <span class="odd-tag">@${toOdd(ft.pHome)}</span> ${checkValue(ft.pHome, o1, 'Local')}</div></div>
-                <div class="prob-bar"><div class="fill" style="width:${toPct(ft.pHome)}"></div></div>
-                <div class="prob-row"><span>Empate</span> <div class="odd-container"><b>${toPct(ft.pDraw)}</b> <span class="odd-tag">@${toOdd(ft.pDraw)}</span> ${checkValue(ft.pDraw, oX, 'Empate')}</div></div>
-                <div class="prob-bar"><div class="fill" style="width:${toPct(ft.pDraw)}; background:#64748b"></div></div>
-                <div class="prob-row"><span>Visitante (${t2})</span> <div class="odd-container"><b>${toPct(ft.pAway)}</b> <span class="odd-tag">@${toOdd(ft.pAway)}</span> ${checkValue(ft.pAway, o2, 'Visita')}</div></div>
-                <div class="prob-bar"><div class="fill" style="width:${toPct(ft.pAway)}; background:var(--danger)"></div></div>
-            </div>
-            <div class="card" style="border-top-color: var(--warning)">
-                <h3>Goles FT & BTTS</h3>
-                <div class="prob-row"><span>Over 2.5 FT</span> <div class="odd-container"><b style="color:var(--warning)">${toPct(ft.pO25)}</b> <span class="odd-tag">@${toOdd(ft.pO25)}</span> ${checkValue(ft.pO25, oO25, 'Over 2.5')}</div></div>
-                <div class="prob-bar"><div class="fill" style="width:${toPct(ft.pO25)}; background:var(--warning)"></div></div>
-                <div class="prob-row"><span>BTTS Yes</span> <div class="odd-container"><b style="color:var(--success)">${toPct(ft.pBTTS)}</b> <span class="odd-tag">@${toOdd(ft.pBTTS)}</span> ${checkValue(ft.pBTTS, oBTTS, 'BTTS')}</div></div>
-                <div class="prob-bar"><div class="fill" style="width:${toPct(ft.pBTTS)}; background:var(--success)"></div></div>
-            </div>
-            <div class="card" style="border-top-color: var(--purple)">
-                <h3>HT & 2H</h3>
-                <div class="prob-row"><span>Over 0.5 HT</span> <div class="odd-container"><b>${toPct(ht.o05)}</b> <span class="odd-tag">@${toOdd(ht.o05)}</span> ${checkValue(ht.o05, oHT05, 'Over 0.5 HT')}</div></div>
-                <div class="prob-bar"><div class="fill" style="width:${toPct(ht.o05)}; background:var(--purple)"></div></div>
-                <div class="prob-row"><span>Over 0.5 2H</span> <b>${toPct(st.o05)}</b></div>
-            </div>
-        `;
+        document.getElementById('matrixTable').innerHTML = matrixHtml;
+        document.getElementById('prob1').innerText = (pHome * 100).toFixed(1) + '%';
+        document.getElementById('probX').innerText = (pDraw * 100).toFixed(1) + '%';
+        document.getElementById('prob2').innerText = (pAway * 100).toFixed(1) + '%';
+        document.getElementById('probOver').innerText = (pOver25 * 100).toFixed(1) + '%';
+        document.getElementById('probBTTS').innerText = (pBTTS * 100).toFixed(1) + '%';
+
+        // Calcular EV si hay cuotas
+        calculateEV('odds1', pHome, 'ev1');
+        calculateEV('oddsX', pDraw, 'evX');
+        calculateEV('odds2', pAway, 'ev2');
+    }
+
+    function calculateEV(inputId, prob, displayId) {
+        const odd = parseFloat(document.getElementById(inputId).value);
+        const display = document.getElementById(displayId);
+        if (odd > 0) {
+            const ev = (prob * odd) - 1;
+            const evPct = (ev * 100).toFixed(1);
+            display.innerText = `EV: ${evPct}%`;
+            display.className = ev > 0 ? 'ev-tag ev-positive' : 'ev-tag ev-negative';
+        } else {
+            display.innerText = '';
+        }
     }
 </script>
+
 </body>
 </html>
