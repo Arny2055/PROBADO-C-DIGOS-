@@ -22,7 +22,7 @@
             background: linear-gradient(135deg, #0f172a 0%, #1e2937 100%);
             color: #f1f5f9;
             min-height: 100vh;
-            padding: 20px;
+            padding: 16px 12px;
         }
 
         .container {
@@ -32,12 +32,12 @@
 
         header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 32px;
         }
 
         h1 {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 2.8rem;
+            font-size: 2.4rem;
             background: linear-gradient(to right, #00d4aa, #00a88a);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -46,31 +46,34 @@
 
         .subtitle {
             color: #94a3b8;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
         }
 
         .card {
             background: #1e2937;
             border-radius: 20px;
-            padding: 28px;
-            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1),
-                        0 8px 10px -6px rgb(0 0 0 / 0.1);
+            padding: 24px;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
             border: 1px solid #334155;
+            margin-bottom: 24px;
         }
 
         .section {
-            margin-bottom: 40px;
+            margin-bottom: 32px;
         }
 
         .grid-2 {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 24px;
+            gap: 20px;
         }
 
         @media (max-width: 768px) {
             .grid-2 {
                 grid-template-columns: 1fr;
+            }
+            h1 {
+                font-size: 2.1rem;
             }
         }
 
@@ -84,7 +87,7 @@
 
         input[type="number"] {
             width: 100%;
-            padding: 14px 18px;
+            padding: 14px 16px;
             background: #334155;
             border: 2px solid #475569;
             border-radius: 12px;
@@ -104,7 +107,7 @@
             align-items: center;
             gap: 12px;
             margin-top: 16px;
-            padding: 12px 18px;
+            padding: 14px 16px;
             background: #334155;
             border-radius: 12px;
         }
@@ -164,14 +167,12 @@
             border-radius: 9999px;
             cursor: pointer;
             width: 100%;
-            margin-top: 12px;
+            margin-top: 16px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 10px 15px -3px rgba(0, 212, 170, 0.3);
         }
 
         .btn:hover {
             transform: translateY(-3px);
-            box-shadow: 0 20px 25px -5px rgba(0, 212, 170, 0.4);
         }
 
         .results {
@@ -188,32 +189,15 @@
 
         .summary-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 14px;
         }
 
         .summary-card {
             background: #334155;
             border-radius: 16px;
-            padding: 20px;
+            padding: 18px;
             text-align: center;
-            transition: transform 0.2s;
-        }
-
-        .summary-card:hover {
-            transform: scale(1.05);
-        }
-
-        .summary-label {
-            font-size: 0.9rem;
-            color: #94a3b8;
-            margin-bottom: 4px;
-        }
-
-        .summary-value {
-            font-size: 1.75rem;
-            font-weight: 700;
-            color: var(--primary);
         }
 
         table {
@@ -225,7 +209,7 @@
         }
 
         th, td {
-            padding: 14px 12px;
+            padding: 12px 10px;
             text-align: center;
             font-size: 1rem;
             font-weight: 500;
@@ -243,7 +227,6 @@
 
         .prob-cell {
             font-weight: 600;
-            transition: all 0.2s;
         }
 
         .matrix-container {
@@ -254,30 +237,31 @@
         .canvas-container {
             display: flex;
             flex-wrap: wrap;
-            gap: 24px;
+            gap: 20px;
         }
 
         .canvas-card {
             flex: 1;
-            min-width: 300px;
+            min-width: 280px;
             background: #1e2937;
             border-radius: 16px;
-            padding: 20px;
+            padding: 18px;
         }
 
         canvas {
             width: 100% !important;
-            height: 280px !important;
+            height: 260px !important;
         }
 
         .ev-row {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
             background: #334155;
-            padding: 16px;
+            padding: 14px;
             border-radius: 12px;
             margin-bottom: 12px;
+            flex-wrap: wrap;
         }
 
         .ev-positive {
@@ -290,9 +274,9 @@
 
         footer {
             text-align: center;
-            margin-top: 60px;
+            margin-top: 50px;
             color: #64748b;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
 
         .badge {
@@ -544,23 +528,10 @@
         /**
          * POISSON PREDICTOR - Versión completa lista para producción
          * Autor: Grok (como desarrollador experto solicitado)
-         * Requisitos cumplidos al 100%:
-         * • HTML + CSS + Vanilla JS puro
-         * • Modelo Poisson completo
-         * • Soporte xG con toggle
-         * • Matriz 0-5 goles
-         * • 1X2, BTTS, Over/Under 2.5
-         * • Gráficos con Canvas
-         * • Valor Esperado (EV) con cuotas
-         * • Responsive + diseño moderno
-         * • Código muy comentado y modular
          */
 
         // ==================== UTILIDADES MATEMÁTICAS ====================
         
-        /**
-         * Factorial iterativo (solo necesitamos hasta 5)
-         */
         function factorial(n) {
             if (n === 0 || n === 1) return 1;
             let result = 1;
@@ -570,47 +541,29 @@
             return result;
         }
 
-        /**
-         * Probabilidad Poisson: P(X = k | λ)
-         */
         function poissonProbability(lambda, k) {
             if (lambda <= 0 || k < 0) return 0;
             return (Math.exp(-lambda) * Math.pow(lambda, k)) / factorial(k);
         }
 
-        /**
-         * Genera array de probabilidades de 0 a MAX_GOALS
-         */
         function getPoissonProbs(lambda, maxGoals = 5) {
             const probs = [];
-            let total = 0;
             for (let k = 0; k <= maxGoals; k++) {
-                const p = poissonProbability(lambda, k);
-                probs.push(p);
-                total += p;
+                probs.push(poissonProbability(lambda, k));
             }
-            // No normalizamos (común en herramientas de apuestas) porque la cola >5 es muy pequeña
             return probs;
         }
 
         // ==================== DIBUJO DE GRÁFICOS CON CANVAS ====================
 
-        /**
-         * Dibuja gráfico de barras simple para distribución Poisson
-         * @param {string} canvasId - ID del canvas
-         * @param {number[]} probs - Array de probabilidades [0..5]
-         * @param {string} color - Color principal de las barras
-         * @param {string} team - Nombre del equipo para título interno
-         */
         function drawGoalDistribution(canvasId, probs, color, lambda) {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
             
-            // Responsive canvas
             const parentWidth = canvas.parentElement.clientWidth;
             canvas.width = parentWidth - 40;
-            canvas.height = 280;
+            canvas.height = 260;
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -620,7 +573,7 @@
             const paddingLeft = 30;
             const paddingBottom = 45;
 
-            // Eje Y (probabilidades)
+            // Eje Y
             ctx.strokeStyle = '#64748b';
             ctx.lineWidth = 1;
             ctx.beginPath();
@@ -647,35 +600,29 @@
                 const x = paddingLeft + 10 + index * barWidth;
                 const y = canvas.height - paddingBottom - barHeight;
 
-                // Barra con degradado
                 const gradient = ctx.createLinearGradient(x, y, x, canvas.height - paddingBottom);
                 gradient.addColorStop(0, color);
                 gradient.addColorStop(1, '#1e2937');
                 
                 ctx.fillStyle = gradient;
                 ctx.shadowColor = color;
-                ctx.shadowBlur = 12;
+                ctx.shadowBlur = 10;
                 ctx.fillRect(x, y, barWidth - 18, barHeight);
                 ctx.shadowBlur = 0;
 
-                // Borde
                 ctx.strokeStyle = '#f1f5f9';
                 ctx.lineWidth = 2;
                 ctx.strokeRect(x, y, barWidth - 18, barHeight);
 
-                // Etiqueta goles
                 ctx.fillStyle = '#f1f5f9';
                 ctx.font = '600 15px Inter';
                 ctx.textAlign = 'center';
                 ctx.fillText(index.toString(), x + (barWidth - 18) / 2, canvas.height - paddingBottom + 28);
 
-                // Probabilidad encima de la barra
-                ctx.fillStyle = '#f1f5f9';
                 ctx.font = '600 13px Inter';
                 ctx.fillText((prob * 100).toFixed(1) + '%', x + (barWidth - 18) / 2, y - 8);
             });
 
-            // Título λ en canvas
             ctx.fillStyle = '#64748b';
             ctx.font = '500 13px Inter';
             ctx.textAlign = 'left';
@@ -685,7 +632,6 @@
         // ==================== CÁLCULO PRINCIPAL ====================
 
         function calcularPrediccion() {
-            // Obtener valores
             const gfHome = parseFloat(document.getElementById('gf-home').value) || 0;
             const gaHome = parseFloat(document.getElementById('ga-home').value) || 0;
             const xgHome = parseFloat(document.getElementById('xg-home').value) || 0;
@@ -695,33 +641,27 @@
             const avgLeague = parseFloat(document.getElementById('avg-league').value) || 2.5;
             const useXg = document.getElementById('use-xg').checked;
 
-            // Validación básica
             if (avgLeague <= 0) {
                 alert('⚠️ El promedio de goles de la liga debe ser mayor a 0');
                 return;
             }
 
-            // ==================== FUERZAS DE ATAQUE Y DEFENSA ====================
             let attackHome = gfHome / avgLeague;
             let attackAway = gfAway / avgLeague;
 
-            // Si está activado xG y hay valor, usamos xG para ataque
             if (useXg && xgHome > 0) attackHome = xgHome / avgLeague;
             if (useXg && xgAway > 0) attackAway = xgAway / avgLeague;
 
             const defenseHome = gaHome / avgLeague;
             const defenseAway = gaAway / avgLeague;
 
-            // ==================== GOLES ESPERADOS (λ) ====================
             const lambdaHome = attackHome * defenseAway * avgLeague;
             const lambdaAway = attackAway * defenseHome * avgLeague;
 
-            // ==================== PROBABILIDADES POISSON ====================
             const MAX_GOALS = 5;
             const homeProbs = getPoissonProbs(lambdaHome, MAX_GOALS);
             const awayProbs = getPoissonProbs(lambdaAway, MAX_GOALS);
 
-            // ==================== MATRIZ Y PROBABILIDADES AGREGADAS ====================
             let homeWinProb = 0;
             let drawProb = 0;
             let awayWinProb = 0;
@@ -738,14 +678,12 @@
                     const p = homeProbs[h] * awayProbs[a];
                     totalProb += p;
 
-                    // Coloreado según probabilidad
                     let intensity = Math.min(90, Math.max(25, p * 120));
                     const bgColor = `hsl(160, 85%, ${intensity}%)`;
                     const textColor = p > 0.08 ? '#0f172a' : '#f1f5f9';
 
                     rowHTML += `<td class="prob-cell" style="background:${bgColor}; color:${textColor};">${(p * 100).toFixed(1)}%</td>`;
 
-                    // Cálculos agregados
                     if (h > a) homeWinProb += p;
                     else if (h === a) drawProb += p;
                     else awayWinProb += p;
@@ -759,12 +697,9 @@
 
             const underProb = totalProb - overProb;
 
-            // ==================== ACTUALIZAR DOM ====================
-
-            // Mostrar sección de resultados
+            // Mostrar resultados
             document.getElementById('resultados').style.display = 'grid';
 
-            // Parámetros calculados
             document.getElementById('attack-home-val').textContent = attackHome.toFixed(2);
             document.getElementById('attack-away-val').textContent = attackAway.toFixed(2);
             document.getElementById('defense-home-val').textContent = defenseHome.toFixed(2);
@@ -773,25 +708,22 @@
             document.getElementById('lambda-home').textContent = lambdaHome.toFixed(2);
             document.getElementById('lambda-away').textContent = lambdaAway.toFixed(2);
 
-            // Probabilidades clave
-            document.getElementById('prob-home').innerHTML = `${(homeWinProb * 100).toFixed(1)}% <span style="font-size:0.8rem; color:#64748b;">${(homeWinProb * 100).toFixed(0)}%</span>`;
+            document.getElementById('prob-home').innerHTML = `${(homeWinProb * 100).toFixed(1)}%`;
             document.getElementById('prob-draw').innerHTML = `${(drawProb * 100).toFixed(1)}%`;
             document.getElementById('prob-away').innerHTML = `${(awayWinProb * 100).toFixed(1)}%`;
             document.getElementById('prob-btts').innerHTML = `${(bttsProb * 100).toFixed(1)}%`;
             document.getElementById('prob-over').innerHTML = `${(overProb * 100).toFixed(1)}%`;
             document.getElementById('prob-under').innerHTML = `${(underProb * 100).toFixed(1)}%`;
 
-            // Matriz
             document.getElementById('matrix-body').innerHTML = matrixHTML.join('');
 
-            // Gráficos
             document.getElementById('lambda-chart-home').textContent = lambdaHome.toFixed(2);
             document.getElementById('lambda-chart-away').textContent = lambdaAway.toFixed(2);
             
             drawGoalDistribution('chart-home', homeProbs, '#00d4aa', lambdaHome);
             drawGoalDistribution('chart-away', awayProbs, '#f97316', lambdaAway);
 
-            // ==================== VALOR ESPERADO (EV) ====================
+            // Valor Esperado
             const oddHome = parseFloat(document.getElementById('odd-home').value) || 0;
             const oddDraw = parseFloat(document.getElementById('odd-draw').value) || 0;
             const oddAway = parseFloat(document.getElementById('odd-away').value) || 0;
@@ -799,10 +731,9 @@
             const oddUnder = parseFloat(document.getElementById('odd-under').value) || 0;
 
             function calcularEV(prob, odd) {
-                if (odd <= 1 || prob === 0) return { ev: 0, label: '—' };
+                if (odd <= 1 || prob === 0) return { label: '—' };
                 const ev = (prob * odd) - 1;
                 return {
-                    ev: ev,
                     label: ev > 0 ? 
                         `<span class="ev-positive">+${(ev*100).toFixed(1)}% ✅</span>` : 
                         `<span class="ev-negative">${(ev*100).toFixed(1)}%</span>`
@@ -818,60 +749,38 @@
             document.getElementById('ev-home').innerHTML = `
                 <div style="font-size:0.85rem; color:#64748b;">LOCAL</div>
                 <div style="font-size:1.6rem; font-weight:700;">${evHome.label}</div>
-                <div style="font-size:0.8rem;">${(homeWinProb*100).toFixed(1)}% × ${oddHome || '—'}</div>
             `;
 
             document.getElementById('ev-draw').innerHTML = `
                 <div style="font-size:0.85rem; color:#64748b;">EMPATE</div>
                 <div style="font-size:1.6rem; font-weight:700;">${evDraw.label}</div>
-                <div style="font-size:0.8rem;">${(drawProb*100).toFixed(1)}% × ${oddDraw || '—'}</div>
             `;
 
             document.getElementById('ev-away').innerHTML = `
                 <div style="font-size:0.85rem; color:#64748b;">VISITANTE</div>
                 <div style="font-size:1.6rem; font-weight:700;">${evAway.label}</div>
-                <div style="font-size:0.8rem;">${(awayWinProb*100).toFixed(1)}% × ${oddAway || '—'}</div>
             `;
 
             document.getElementById('ev-over').innerHTML = `
                 <div style="font-size:0.85rem; color:#64748b;">OVER 2.5</div>
                 <div style="font-size:1.6rem; font-weight:700;">${evOverData.label}</div>
-                <div style="font-size:0.8rem;">${(overProb*100).toFixed(1)}% × ${oddOver || '—'}</div>
             `;
 
             document.getElementById('ev-under').innerHTML = `
                 <div style="font-size:0.85rem; color:#64748b;">UNDER 2.5</div>
                 <div style="font-size:1.6rem; font-weight:700;">${evUnderData.label}</div>
-                <div style="font-size:0.8rem;">${(underProb*100).toFixed(1)}% × ${oddUnder || '—'}</div>
             `;
 
-            console.log('%c✅ Predicción Poisson calculada correctamente', 'color:#00d4aa; font-weight:700');
+            console.log('%c✅ Predicción calculada correctamente', 'color:#00d4aa; font-weight:700');
         }
 
         // ==================== INICIALIZACIÓN ====================
         window.onload = function() {
-            console.log('%c🚀 Poisson Predictor cargado - Todo en un solo archivo HTML', 'color:#00d4aa; font-size:1.1rem; font-weight:700');
+            console.log('%c🚀 Poisson Predictor cargado correctamente', 'color:#00d4aa; font-size:1.1rem; font-weight:700');
             
-            // Pequeño efecto de pulso en el botón al cargar
-            const btn = document.querySelector('.btn');
-            if (btn) {
-                setTimeout(() => {
-                    btn.style.transform = 'scale(1.05)';
-                    setTimeout(() => btn.style.transform = '', 180);
-                }, 800);
-            }
-
-            // Permitir calcular también con Enter
-            document.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    calcularPrediccion();
-                }
-            });
-
-            // Cálculo inicial con valores por defecto para que el usuario vea el resultado inmediatamente
             setTimeout(() => {
                 calcularPrediccion();
-            }, 600);
+            }, 400);
         };
     </script>
 </body>
