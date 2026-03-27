@@ -10,18 +10,16 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
         .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; }
-        .neon-border-green { border-color: #22c55e; box-shadow: 0 0 10px rgba(34, 197, 94, 0.2); }
         .neon-text-green { color: #22c55e; text-shadow: 0 0 5px rgba(34, 197, 94, 0.5); }
         .input-dark { background: #111827; border: 1px solid #334155; color: white; border-radius: 0.5rem; padding: 0.5rem; width: 100%; transition: all 0.3s; }
         .input-dark:focus { outline: none; border-color: #3b82f6; ring: 2px; ring-color: #3b82f6; }
-        .btn-primary { background: #3b82f6; transition: all 0.3s; font-weight: 600; }
-        .btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
         .btn-success { background: #22c55e; transition: all 0.3s; font-weight: 600; }
         .btn-success:hover { background: #16a34a; transform: translateY(-1px); }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
         .matrix-cell { transition: background 0.2s; font-size: 0.75rem; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
+        .status-pill { padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: bold; text-transform: uppercase; cursor: pointer; }
+        .status-win { background: #14532d; color: #4ade80; border: 1px solid #22c55e; }
+        .status-loss { background: #7f1d1d; color: #f87171; border: 1px solid #ef4444; }
+        .status-pending { background: #334155; color: #94a3b8; border: 1px solid #475569; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -30,9 +28,13 @@
         <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
             <div>
                 <h1 class="text-3xl font-bold neon-text-green">Poisson Bet Analyzer Pro</h1>
-                <p class="text-slate-400 text-sm">Quantum Prediction Engine & Value Finder</p>
+                <p class="text-slate-400 text-sm">Quantum Prediction Engine & Portfolio Tracker</p>
             </div>
             <div class="flex gap-4">
+                <div class="glass-card px-4 py-2 text-center min-w-[120px]">
+                    <span class="text-xs block text-slate-400 uppercase font-bold">Total Profit</span>
+                    <span id="displayProfit" class="font-bold text-white text-lg">$0.00</span>
+                </div>
                 <div class="glass-card px-4 py-2 text-center">
                     <span class="text-xs block text-slate-400 uppercase">Bankroll</span>
                     <span id="displayBankroll" class="font-bold text-blue-400">$1000.00</span>
@@ -44,17 +46,14 @@
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
             <aside class="lg:col-span-4 space-y-6">
-                
                 <div class="glass-card p-6">
                     <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
                         <span class="w-2 h-2 bg-blue-500 rounded-full"></span> Análisis de Partido
                     </h2>
-                    
                     <div class="mb-4">
                         <label class="text-xs text-slate-400 uppercase font-bold">Nombre del Encuentro</label>
                         <input type="text" id="matchName" placeholder="Ej: Real Madrid vs Barcelona" class="input-dark mt-1">
                     </div>
-
                     <div class="grid grid-cols-2 gap-4">
                         <div class="space-y-3">
                             <h3 class="text-sm font-bold text-blue-400 border-b border-blue-900/50 pb-1">🏠 LOCAL</h3>
@@ -69,7 +68,6 @@
                             <div><label class="text-[10px] text-slate-500">GC Fuera</label><input type="number" id="gcV" value="12" class="input-dark"></div>
                         </div>
                     </div>
-
                     <div class="mt-6 space-y-3">
                         <h3 class="text-sm font-bold text-slate-300 border-b border-slate-700 pb-1">🌍 LIGA (PROMEDIOS)</h3>
                         <div class="grid grid-cols-2 gap-4">
@@ -100,7 +98,6 @@
             </aside>
 
             <main class="lg:col-span-8 space-y-6">
-                
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="glass-card p-4 flex flex-col items-center justify-center">
                         <span class="text-xs text-slate-400 uppercase">xG Proyectado</span>
@@ -121,28 +118,24 @@
                                     <th class="pb-2">Acción</th>
                                 </tr>
                             </thead>
-                            <tbody id="marketBody" class="divide-y divide-slate-800">
-                                </tbody>
+                            <tbody id="marketBody" class="divide-y divide-slate-800"></tbody>
                         </table>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="glass-card p-6">
-                        <h3 class="text-sm font-bold mb-4 uppercase text-slate-400">Matriz de Resultados Correctos</h3>
-                        <div id="matrixContainer" class="grid grid-cols-7 gap-1">
-                            </div>
+                        <h3 class="text-sm font-bold mb-4 uppercase text-slate-400">Matriz de Resultados</h3>
+                        <div id="matrixContainer" class="grid grid-cols-7 gap-1"></div>
                     </div>
                     <div class="glass-card p-6">
-                        <h3 class="text-sm font-bold mb-4 uppercase text-slate-400">Probabilidad de Goles</h3>
+                        <h3 class="text-sm font-bold mb-4 uppercase text-slate-400">Distribución de Goles</h3>
                         <canvas id="goalsChart" height="200"></canvas>
                     </div>
                 </div>
 
                 <div class="glass-card p-6">
-                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
-                         📋 Tracker de Apuestas
-                    </h3>
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2">📋 Tracker de Apuestas</h3>
                     <div class="overflow-x-auto">
                         <table class="w-full text-xs text-left">
                             <thead class="bg-slate-800/50 text-slate-400">
@@ -151,14 +144,13 @@
                                     <th class="p-2">Partido</th>
                                     <th class="p-2">Mercado</th>
                                     <th class="p-2">Cuota</th>
-                                    <th class="p-2">Prob</th>
-                                    <th class="p-2">EV</th>
                                     <th class="p-2">Stake ($)</th>
-                                    <th class="p-2">Borrar</th>
+                                    <th class="p-2">Estado</th>
+                                    <th class="p-2 text-right">Profit ($)</th>
+                                    <th class="p-2">Acción</th>
                                 </tr>
                             </thead>
-                            <tbody id="trackerBody">
-                                </tbody>
+                            <tbody id="trackerBody"></tbody>
                         </table>
                     </div>
                 </div>
@@ -168,7 +160,6 @@
 
     <script>
         let goalsChart = null;
-        let lastCalculation = {};
 
         function factorial(n) {
             if (n === 0 || n === 1) return 1;
@@ -181,7 +172,6 @@
             return (Math.exp(-lambda) * Math.pow(lambda, k)) / factorial(k);
         }
 
-        // Dixon-Coles Adjustment Function
         function tau(x, y, lambda, mu, rho) {
             if (x === 0 && y === 0) return 1 - (lambda * mu * rho);
             if (x === 0 && y === 1) return 1 + (lambda * rho);
@@ -191,18 +181,17 @@
         }
 
         function calculateAll() {
-            // Inputs
             const data = {
-                pjL: parseFloat(document.getElementById('pjL').value),
-                gfL: parseFloat(document.getElementById('gfL').value),
-                gcL: parseFloat(document.getElementById('gcL').value),
-                pjV: parseFloat(document.getElementById('pjV').value),
-                gfV: parseFloat(document.getElementById('gfV').value),
-                gcV: parseFloat(document.getElementById('gcV').value),
-                avgL: parseFloat(document.getElementById('avgL').value),
-                avgV: parseFloat(document.getElementById('avgV').value),
-                bankroll: parseFloat(document.getElementById('bankroll').value),
-                kelly: parseFloat(document.getElementById('kelly').value),
+                pjL: parseFloat(document.getElementById('pjL').value) || 1,
+                gfL: parseFloat(document.getElementById('gfL').value) || 0,
+                gcL: parseFloat(document.getElementById('gcL').value) || 0,
+                pjV: parseFloat(document.getElementById('pjV').value) || 1,
+                gfV: parseFloat(document.getElementById('gfV').value) || 0,
+                gcV: parseFloat(document.getElementById('gcV').value) || 0,
+                avgL: parseFloat(document.getElementById('avgL').value) || 1.5,
+                avgV: parseFloat(document.getElementById('avgV').value) || 1.2,
+                bankroll: parseFloat(document.getElementById('bankroll').value) || 1000,
+                kelly: parseFloat(document.getElementById('kelly').value) || 0.25,
                 minEV: parseFloat(document.getElementById('minEV').value) / 100,
                 odds: {
                     '1': parseFloat(document.getElementById('odd1').value),
@@ -213,13 +202,11 @@
                 }
             };
 
-            // 1. Calculate Strength
             const attL = (data.gfL / data.pjL) / data.avgL;
             const defL = (data.gcL / data.pjL) / data.avgV;
             const attV = (data.gfV / data.pjV) / data.avgV;
             const defV = (data.gcV / data.pjV) / data.avgL;
 
-            // 2. xG
             const lambda = attL * defV * data.avgL;
             const mu = attV * defL * data.avgV;
 
@@ -227,8 +214,7 @@
             document.getElementById('xgV').innerText = mu.toFixed(2);
             document.getElementById('displayBankroll').innerText = `$${data.bankroll.toFixed(2)}`;
 
-            // 3. Matrix & Markets
-            const rho = -0.10; // Dixon-Coles constant
+            const rho = -0.10;
             let matrix = Array(7).fill().map(() => Array(7).fill(0));
             let prob1 = 0, probX = 0, prob2 = 0, probO25 = 0, probBTTS = 0;
 
@@ -236,41 +222,28 @@
                 for (let j = 0; j < 7; j++) {
                     let p = poisson(lambda, i) * poisson(mu, j) * tau(i, j, lambda, mu, rho);
                     matrix[i][j] = p;
-
-                    if (i > j) prob1 += p;
-                    else if (i === j) probX += p;
-                    else prob2 += p;
-
+                    if (i > j) prob1 += p; else if (i === j) probX += p; else prob2 += p;
                     if (i + j > 2.5) probO25 += p;
                     if (i > 0 && j > 0) probBTTS += p;
                 }
             }
 
-            const marketProbs = {
-                '1': prob1, 'X': probX, '2': prob2, 
-                'O25': probO25, 'BTTS': probBTTS
-            };
-
-            lastCalculation = { data, marketProbs, lambda, mu };
-            
             renderMatrix(matrix);
             renderChart(lambda, mu);
-            renderMarketTable(marketProbs, data);
+            renderMarketTable({ '1': prob1, 'X': probX, '2': prob2, 'O25': probO25, 'BTTS': probBTTS }, data);
         }
 
         function renderMatrix(matrix) {
             const container = document.getElementById('matrixContainer');
             container.innerHTML = '';
-            // Header Row
             container.appendChild(createCell('', 'text-slate-500 font-bold'));
             for(let i=0; i<6; i++) container.appendChild(createCell(i, 'text-slate-500 font-bold'));
-
             for (let i = 0; i < 6; i++) {
-                container.appendChild(createCell(i, 'text-slate-500 font-bold')); // Row label
+                container.appendChild(createCell(i, 'text-slate-500 font-bold'));
                 for (let j = 0; j < 6; j++) {
                     const val = (matrix[i][j] * 100).toFixed(1);
                     const alpha = Math.min(matrix[i][j] * 5, 0.8);
-                    const cell = createCell(val + '%', 'matrix-cell');
+                    const cell = createCell(val + '%', 'matrix-cell rounded');
                     cell.style.backgroundColor = `rgba(59, 130, 246, ${alpha})`;
                     container.appendChild(cell);
                 }
@@ -279,7 +252,7 @@
 
         function createCell(text, classes) {
             const div = document.createElement('div');
-            div.className = `p-1 rounded ${classes}`;
+            div.className = `p-1 ${classes}`;
             div.innerText = text;
             return div;
         }
@@ -287,12 +260,9 @@
         function renderMarketTable(probs, data) {
             const body = document.getElementById('marketBody');
             body.innerHTML = '';
-
             const markets = [
-                { id: '1', name: 'Local (1)' },
-                { id: 'X', name: 'Empate (X)' },
-                { id: '2', name: 'Visitante (2)' },
-                { id: 'O25', name: 'Over 2.5' },
+                { id: '1', name: 'Local (1)' }, { id: 'X', name: 'Empate (X)' },
+                { id: '2', name: 'Visitante (2)' }, { id: 'O25', name: 'Over 2.5' },
                 { id: 'BTTS', name: 'Ambos Anotan' }
             ];
 
@@ -300,18 +270,18 @@
                 const prob = probs[m.id];
                 const odd = data.odds[m.id];
                 const ev = (prob * odd) - 1;
-                const kellyStake = ev > 0 ? (data.bankroll * data.kelly * (ev / (odd - 1))) : 0;
-                
+                const kellyFactor = ev > 0 ? (ev / (odd - 1)) : 0;
+                const stake = data.bankroll * data.kelly * kellyFactor;
+
                 const tr = document.createElement('tr');
-                tr.className = ev > data.minEV ? 'bg-green-500/10' : '';
-                
+                if (ev > data.minEV) tr.className = 'bg-green-500/5';
                 tr.innerHTML = `
                     <td class="py-3 font-medium">${m.name}</td>
-                    <td class="text-center font-bold text-slate-300">${(prob * 100).toFixed(1)}%</td>
+                    <td class="text-center text-slate-300">${(prob * 100).toFixed(1)}%</td>
                     <td class="text-center ${ev > 0 ? 'text-green-400' : 'text-red-400'} font-bold">${(ev * 100).toFixed(1)}%</td>
-                    <td class="text-center text-blue-400 font-bold">$${kellyStake.toFixed(2)}</td>
+                    <td class="text-center text-blue-400 font-bold">$${stake.toFixed(2)}</td>
                     <td class="text-center">
-                        <button onclick="addBet('${m.name}', ${odd}, ${prob}, ${ev}, ${kellyStake})" class="px-2 py-1 bg-slate-700 rounded hover:bg-slate-600">➕</button>
+                        <button onclick="addBet('${m.name}', ${odd}, ${stake})" class="px-2 py-1 bg-slate-700 rounded hover:bg-slate-600 transition">➕</button>
                     </td>
                 `;
                 body.appendChild(tr);
@@ -321,84 +291,103 @@
         function renderChart(lambda, mu) {
             const ctx = document.getElementById('goalsChart').getContext('2d');
             const labels = [0, 1, 2, 3, 4, 5];
-            const dataL = labels.map(k => poisson(lambda, k) * 100);
-            const dataV = labels.map(k => poisson(mu, k) * 100);
-
             if (goalsChart) goalsChart.destroy();
             goalsChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: 'Local', data: dataL, borderColor: '#3b82f6', tension: 0.4, fill: true, backgroundColor: 'rgba(59, 130, 246, 0.1)' },
-                        { label: 'Visitante', data: dataV, borderColor: '#22c55e', tension: 0.4, fill: true, backgroundColor: 'rgba(34, 197, 94, 0.1)' }
+                        { label: 'Local', data: labels.map(k => poisson(lambda, k) * 100), borderColor: '#3b82f6', tension: 0.4 },
+                        { label: 'Visitante', data: labels.map(k => poisson(mu, k) * 100), borderColor: '#22c55e', tension: 0.4 }
                     ]
                 },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { labels: { color: '#94a3b8' } } },
-                    scales: {
-                        y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                        x: { ticks: { color: '#64748b' }, grid: { display: false } }
-                    }
-                }
+                options: { plugins: { legend: { labels: { color: '#94a3b8' } } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { display: false } } } }
             });
         }
 
-        // Tracker Logic
-        function addBet(market, odd, prob, ev, stake) {
+        // Betting Portfolio Logic
+        function addBet(market, odd, stake) {
             const bet = {
                 id: Date.now(),
                 date: new Date().toLocaleDateString(),
-                match: document.getElementById('matchName').value || 'Partido Sin Nombre',
-                market, odd, prob, ev, stake
+                match: document.getElementById('matchName').value || 'Partido',
+                market, odd, stake, status: 'pending', profit: 0
             };
-            let history = JSON.parse(localStorage.getItem('betHistory') || '[]');
+            let history = JSON.parse(localStorage.getItem('betHistoryPro') || '[]');
             history.unshift(bet);
-            localStorage.setItem('betHistory', JSON.stringify(history));
+            localStorage.setItem('betHistoryPro', JSON.stringify(history));
+            renderTracker();
+        }
+
+        function toggleStatus(id) {
+            let history = JSON.parse(localStorage.getItem('betHistoryPro') || '[]');
+            const bet = history.find(b => b.id === id);
+            if (!bet) return;
+
+            if (bet.status === 'pending') {
+                bet.status = 'win';
+                bet.profit = bet.stake * (bet.odd - 1);
+            } else if (bet.status === 'win') {
+                bet.status = 'loss';
+                bet.profit = -bet.stake;
+            } else {
+                bet.status = 'pending';
+                bet.profit = 0;
+            }
+
+            localStorage.setItem('betHistoryPro', JSON.stringify(history));
             renderTracker();
         }
 
         function renderTracker() {
-            const history = JSON.parse(localStorage.getItem('betHistory') || '[]');
+            const history = JSON.parse(localStorage.getItem('betHistoryPro') || '[]');
             const body = document.getElementById('trackerBody');
+            let totalProfit = 0;
             body.innerHTML = '';
+
             history.forEach(b => {
+                totalProfit += b.profit;
                 const tr = document.createElement('tr');
-                tr.className = "border-b border-slate-800 hover:bg-slate-800/30 transition";
+                tr.className = "border-b border-slate-800";
+                
+                let statusClass = b.status === 'win' ? 'status-win' : (b.status === 'loss' ? 'status-loss' : 'status-pending');
+                let profitClass = b.profit > 0 ? 'text-green-400' : (b.profit < 0 ? 'text-red-400' : 'text-slate-500');
+
                 tr.innerHTML = `
                     <td class="p-2 text-slate-500">${b.date}</td>
                     <td class="p-2 font-bold">${b.match}</td>
                     <td class="p-2">${b.market}</td>
                     <td class="p-2 font-mono">${b.odd.toFixed(2)}</td>
-                    <td class="p-2">${(b.prob * 100).toFixed(1)}%</td>
-                    <td class="p-2 text-green-400 font-bold">${(b.ev * 100).toFixed(1)}%</td>
-                    <td class="p-2 text-blue-400 font-bold">$${b.stake.toFixed(2)}</td>
-                    <td class="p-2"><button onclick="deleteBet(${b.id})" class="text-red-500 hover:scale-110 transition">✖</button></td>
+                    <td class="p-2">$${b.stake.toFixed(2)}</td>
+                    <td class="p-2">
+                        <button onclick="toggleStatus(${b.id})" class="status-pill ${statusClass}">${b.status}</button>
+                    </td>
+                    <td class="p-2 text-right font-bold ${profitClass}">$${b.profit.toFixed(2)}</td>
+                    <td class="p-2"><button onclick="deleteBet(${b.id})" class="text-slate-600 hover:text-red-400">✖</button></td>
                 `;
                 body.appendChild(tr);
             });
+
+            const profitEl = document.getElementById('displayProfit');
+            profitEl.innerText = `$${totalProfit.toFixed(2)}`;
+            profitEl.className = `font-bold text-lg ${totalProfit >= 0 ? 'text-green-400' : 'text-red-400'}`;
         }
 
         function deleteBet(id) {
-            let history = JSON.parse(localStorage.getItem('betHistory') || '[]');
+            let history = JSON.parse(localStorage.getItem('betHistoryPro') || '[]');
             history = history.filter(b => b.id !== id);
-            localStorage.setItem('betHistory', JSON.stringify(history));
+            localStorage.setItem('betHistoryPro', JSON.stringify(history));
             renderTracker();
         }
 
         function clearHistory() {
-            if(confirm('¿Estás seguro de borrar todo el historial?')) {
-                localStorage.removeItem('betHistory');
+            if(confirm('¿Borrar historial?')) {
+                localStorage.removeItem('betHistoryPro');
                 renderTracker();
             }
         }
 
-        // Initialize
-        window.onload = () => {
-            calculateAll();
-            renderTracker();
-        };
+        window.onload = () => { calculateAll(); renderTracker(); };
     </script>
 </body>
 </html>
