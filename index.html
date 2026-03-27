@@ -3,456 +3,436 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Poisson Bet Analyzer | Pro Dashboard</title>
+    <title>Poisson Bet Analyzer PRO | Quantum Engine</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-        
+        :root {
+            --neon-green: #00ff9f;
+            --sport-blue: #00c3ff;
+            --dark-bg: #0b0e14;
+            --card-bg: rgba(23, 28, 38, 0.7);
+        }
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0a0a0a;
-            color: #e5e5e5;
+            background-color: var(--dark-bg);
+            color: #e2e8f0;
+            background-image: radial-gradient(circle at top right, #1a202c, #0b0e14);
+            min-height: 100vh;
         }
-
-        .glass-card {
-            background: rgba(23, 23, 23, 0.8);
+        .glass {
+            background: var(--card-bg);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 1rem;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
-
-        .glass-card:hover {
-            box-shadow: 0 10px 30px -10px rgba(0, 255, 157, 0.1);
+        .neon-border-green { border-bottom: 3px solid var(--neon-green); }
+        .neon-border-blue { border-bottom: 3px solid var(--sport-blue); }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--neon-green), var(--sport-blue));
+            transition: all 0.3s ease;
         }
-
-        .neon-text { color: #00ff9d; }
-        .neon-border { border-color: #00ff9d; }
-        .neon-bg { background-color: #00ff9d; }
-
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 255, 159, 0.4);
         }
-
-        .heatmap-cell {
-            transition: all 0.2s ease;
-            cursor: help;
+        input, select {
+            background: rgba(0, 0, 0, 0.3) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: white !important;
         }
-
-        .fade-in {
-            animation: fadeIn 0.5s ease-out forwards;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .hidden-section { display: none; }
+        .matrix-cell:hover { background: rgba(0, 195, 255, 0.2); }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0b0e14; }
+        ::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 10px; }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
     <div class="max-w-7xl mx-auto">
-        <header class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+        <header class="flex justify-between items-center mb-8">
             <div>
-                <h1 class="text-4xl font-700 font-bold tracking-tighter italic">
-                    POISSON<span class="neon-text">BET</span> ANALYZER
+                <h1 class="text-3xl md:text-4xl font-extrabold tracking-tighter text-white">
+                    POISSON <span class="text-transparent bg-clip-text bg-gradient-to-r from-[var(--neon-green)] to-[var(--sport-blue)]">BET ANALYZER</span> PRO
                 </h1>
-                <p class="text-gray-500 text-sm">Quantum Engine v2.0 • Modelo de Probabilidad Estadístico</p>
+                <p class="text-gray-400 text-sm italic">Quantum Predictive Modeling • Dixon-Coles Adjusted</p>
             </div>
-            <div class="flex gap-3">
-                <button onclick="loadExample()" class="px-4 py-2 text-xs font-semibold uppercase tracking-wider border border-gray-700 rounded-lg hover:bg-gray-800 transition">
-                    Cargar Ejemplo
-                </button>
-                <button onclick="clearAll()" class="px-4 py-2 text-xs font-semibold uppercase tracking-wider border border-red-900/30 text-red-400 rounded-lg hover:bg-red-900/10 transition">
-                    Limpiar
-                </button>
+            <div class="flex gap-2">
+                <button onclick="exportCSV()" class="p-2 glass text-xs hover:bg-gray-700">Export CSV</button>
+                <button onclick="copyResults()" class="p-2 glass text-xs hover:bg-gray-700">Copy Results</button>
             </div>
         </header>
 
-        <main class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
-            <section class="lg:col-span-4 space-y-6">
+            <aside class="lg:col-span-4 space-y-6">
                 
-                <div class="glass-card p-6">
-                    <h2 class="text-blue-400 font-bold mb-4 flex items-center gap-2">
-                        <span class="w-2 h-2 bg-blue-400 rounded-full"></span> Datos de la Liga
+                <div class="glass p-5 neon-border-green">
+                    <h2 class="text-[var(--neon-green)] font-bold mb-4 flex items-center gap-2">
+                        🏠 EQUIPO LOCAL
                     </h2>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div><label class="block text-[10px] uppercase text-gray-400">PJ</label><input id="l_pj" type="number" value="15" class="w-full p-2 rounded"></div>
+                        <div><label class="block text-[10px] uppercase text-gray-400">GF</label><input id="l_gf" type="number" value="25" class="w-full p-2 rounded"></div>
+                        <div><label class="block text-[10px] uppercase text-gray-400">GC</label><input id="l_gc" type="number" value="12" class="w-full p-2 rounded"></div>
+                    </div>
+                </div>
+
+                <div class="glass p-5 neon-border-blue">
+                    <h2 class="text-[var(--sport-blue)] font-bold mb-4 flex items-center gap-2">
+                        🚀 EQUIPO VISITANTE
+                    </h2>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div><label class="block text-[10px] uppercase text-gray-400">PJ</label><input id="v_pj" type="number" value="15" class="w-full p-2 rounded"></div>
+                        <div><label class="block text-[10px] uppercase text-gray-400">GF</label><input id="v_gf" type="number" value="18" class="w-full p-2 rounded"></div>
+                        <div><label class="block text-[10px] uppercase text-gray-400">GC</label><input id="v_gc" type="number" value="20" class="w-full p-2 rounded"></div>
+                    </div>
+                </div>
+
+                <div class="glass p-5">
+                    <h2 class="text-white font-bold mb-4 text-sm">PROMEDIOS LIGA</h2>
                     <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs text-gray-400 mb-1">Prom. Goles Local</label>
-                            <input type="number" id="l_avg_h" step="0.01" class="w-full bg-black border border-gray-800 rounded-md p-2 focus:neon-border outline-none transition" placeholder="1.50">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-gray-400 mb-1">Prom. Goles Visita</label>
-                            <input type="number" id="l_avg_a" step="0.01" class="w-full bg-black border border-gray-800 rounded-md p-2 focus:neon-border outline-none transition" placeholder="1.20">
-                        </div>
+                        <div><label class="block text-[10px] text-gray-400">AVG GF LOCAL</label><input id="avg_l" type="number" step="0.01" value="1.50" class="w-full p-2 rounded text-sm"></div>
+                        <div><label class="block text-[10px] text-gray-400">AVG GF VIS</label><input id="avg_v" type="number" step="0.01" value="1.20" class="w-full p-2 rounded text-sm"></div>
                     </div>
                 </div>
 
-                <div class="glass-card p-6">
-                    <h2 class="text-neon-text font-bold mb-4 flex items-center gap-2">
-                        <span class="w-2 h-2 neon-bg rounded-full"></span> Estadísticas Equipos
-                    </h2>
+                <div class="glass p-5">
+                    <h2 class="text-white font-bold mb-4 text-sm">PARÁMETROS AVANZADOS</h2>
                     <div class="space-y-4">
-                        <p class="text-xs font-bold uppercase text-gray-500 border-b border-gray-800 pb-1">Equipo Local</p>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs text-gray-400 mb-1">Goles a Favor</label>
-                                <input type="number" id="h_gf" step="0.01" class="w-full bg-black border border-gray-800 rounded-md p-2 focus:neon-border outline-none transition">
-                            </div>
-                            <div>
-                                <label class="block text-xs text-gray-400 mb-1">Goles en Contra</label>
-                                <input type="number" id="h_ga" step="0.01" class="w-full bg-black border border-gray-800 rounded-md p-2 focus:neon-border outline-none transition">
-                            </div>
+                        <div>
+                            <label class="flex justify-between text-[10px] text-gray-400">FACTOR FORMA <span id="val_forma">1.0</span></label>
+                            <input id="forma" type="range" min="0.8" max="1.2" step="0.05" value="1" class="w-full accent-[var(--neon-green)]">
                         </div>
-
-                        <p class="text-xs font-bold uppercase text-gray-500 border-b border-gray-800 pb-1 pt-2">Equipo Visitante</p>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs text-gray-400 mb-1">Goles a Favor</label>
-                                <input type="number" id="a_gf" step="0.01" class="w-full bg-black border border-gray-800 rounded-md p-2 focus:neon-border outline-none transition">
-                            </div>
-                            <div>
-                                <label class="block text-xs text-gray-400 mb-1">Goles en Contra</label>
-                                <input type="number" id="a_ga" step="0.01" class="w-full bg-black border border-gray-800 rounded-md p-2 focus:neon-border outline-none transition">
+                        <div>
+                            <label class="flex justify-between text-[10px] text-gray-400">CORRELACIÓN (ρ) <span id="val_rho">0.0</span></label>
+                            <input id="rho" type="range" min="-0.2" max="0.2" step="0.01" value="0" class="w-full accent-[var(--sport-blue)]">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 uppercase">Cuota Mercado (1X2)</label>
+                            <div class="flex gap-2">
+                                <input id="odd_l" type="number" step="0.01" placeholder="L" class="w-1/3 p-2 rounded text-xs">
+                                <input id="odd_x" type="number" step="0.01" placeholder="X" class="w-1/3 p-2 rounded text-xs">
+                                <input id="odd_v" type="number" step="0.01" placeholder="V" class="w-1/3 p-2 rounded text-xs">
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="glass-card p-6">
-                    <h2 class="text-purple-400 font-bold mb-4 flex items-center gap-2">
-                        <span class="w-2 h-2 bg-purple-400 rounded-full"></span> Cuotas & Bankroll
-                    </h2>
-                    <div class="grid grid-cols-3 gap-3 mb-4">
-                        <input type="number" id="odd_1" step="0.01" class="bg-black border border-gray-800 rounded-md p-2 text-center" placeholder="Cuota 1">
-                        <input type="number" id="odd_x" step="0.01" class="bg-black border border-gray-800 rounded-md p-2 text-center" placeholder="Cuota X">
-                        <input type="number" id="odd_2" step="0.01" class="bg-black border border-gray-800 rounded-md p-2 text-center" placeholder="Cuota 2">
-                    </div>
-                    <div class="grid grid-cols-2 gap-3 mb-4">
-                        <input type="number" id="odd_over" step="0.01" class="bg-black border border-gray-800 rounded-md p-2 text-center" placeholder="Cuota O2.5">
-                        <input type="number" id="odd_btts" step="0.01" class="bg-black border border-gray-800 rounded-md p-2 text-center" placeholder="Cuota BTTS Si">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1">Tu Bankroll ($)</label>
-                        <input type="number" id="user_bankroll" class="w-full bg-black border border-purple-900/40 rounded-md p-2 focus:border-purple-500 outline-none" placeholder="1000">
-                    </div>
-                </div>
-
-                <button onclick="calculate()" class="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-xl transition transform active:scale-95 shadow-lg shadow-emerald-500/20">
-                    CALCULAR PROBABILIDADES
+                <button onclick="mainCalculation()" class="w-full p-4 rounded-xl font-bold text-black btn-primary uppercase tracking-widest">
+                    Ejecutar Simulación
                 </button>
+            </aside>
 
-            </section>
-
-            <section id="results-area" class="lg:col-span-8 space-y-6 hidden-section">
+            <main class="lg:col-span-8 space-y-6">
                 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="glass-card p-6 md:col-span-2">
-                        <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 text-center">Probabilidad de Resultado (1X2)</h3>
-                        <div class="flex items-end justify-between gap-4 h-48">
-                            <div class="flex-1 flex flex-col items-center gap-2">
-                                <span id="val-1" class="text-2xl font-bold text-emerald-400">0%</span>
-                                <div id="bar-1" class="w-full bg-emerald-500/20 rounded-t-lg transition-all duration-1000" style="height: 0%"></div>
-                                <span class="text-xs font-bold">LOCAL</span>
-                            </div>
-                            <div class="flex-1 flex flex-col items-center gap-2">
-                                <span id="val-x" class="text-2xl font-bold text-gray-400">0%</span>
-                                <div id="bar-x" class="w-full bg-gray-500/20 rounded-t-lg transition-all duration-1000" style="height: 0%"></div>
-                                <span class="text-xs font-bold">EMPATE</span>
-                            </div>
-                            <div class="flex-1 flex flex-col items-center gap-2">
-                                <span id="val-2" class="text-2xl font-bold text-red-400">0%</span>
-                                <div id="bar-2" class="w-full bg-red-500/20 rounded-t-lg transition-all duration-1000" style="height: 0%"></div>
-                                <span class="text-xs font-bold">VISITA</span>
-                            </div>
-                        </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="glass p-4 text-center">
+                        <span class="text-[10px] text-gray-400 block">xG LOCAL</span>
+                        <span id="res_xg_l" class="text-3xl font-black text-[var(--neon-green)]">0.00</span>
                     </div>
-
-                    <div class="space-y-4">
-                        <div class="glass-card p-4 flex flex-col justify-center items-center text-center">
-                            <span class="text-[10px] text-gray-500 uppercase">Over 2.5 Goles</span>
-                            <span id="val-o25" class="text-3xl font-bold text-blue-400">0%</span>
-                        </div>
-                        <div class="glass-card p-4 flex flex-col justify-center items-center text-center">
-                            <span class="text-[10px] text-gray-500 uppercase">BTTS (Ambos Anotan)</span>
-                            <span id="val-btts" class="text-3xl font-bold text-blue-400">0%</span>
-                        </div>
-                        <div class="glass-card p-4 flex flex-col justify-center items-center text-center">
-                            <span class="text-[10px] text-gray-500 uppercase">Goles 1er Tiempo (O0.5)</span>
-                            <span id="val-ht" class="text-3xl font-bold text-orange-400">0%</span>
-                        </div>
+                    <div class="glass p-4 text-center">
+                        <span class="text-[10px] text-gray-400 block">xG VISITA</span>
+                        <span id="res_xg_v" class="text-3xl font-black text-[var(--sport-blue)]">0.00</span>
                     </div>
-                </div>
-
-                <div class="glass-card p-6 overflow-x-auto">
-                    <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Matriz de Marcador Correcto (%)</h3>
-                    <table class="w-full text-[10px] border-separate border-spacing-1">
-                        <thead>
-                            <tr id="heatmap-header">
-                                <th class="p-1">L \ V</th>
-                                </tr>
-                        </thead>
-                        <tbody id="heatmap-body">
-                            </tbody>
-                    </table>
-                    <div id="top-scores" class="mt-4 flex flex-wrap gap-2 justify-center">
-                        </div>
+                    <div class="glass p-4 text-center">
+                        <span class="text-[10px] text-gray-400 block">PROB. OVER 2.5</span>
+                        <span id="res_o25" class="text-3xl font-black text-white">0%</span>
+                    </div>
+                    <div class="glass p-4 text-center">
+                        <span class="text-[10px] text-gray-400 block">BTTS (Ambos)</span>
+                        <span id="res_btts" class="text-3xl font-black text-white">0%</span>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="glass-card p-6 border-l-4 border-emerald-500">
-                        <h3 class="text-sm font-bold text-emerald-400 uppercase mb-4">Análisis de Valor (Expected Value)</h3>
-                        <div id="value-list" class="space-y-3 text-sm">
-                            <p class="text-gray-500 italic">Introduce cuotas para analizar el valor...</p>
-                        </div>
+                    <div class="glass p-4">
+                        <h3 class="text-xs font-bold mb-4 uppercase">Distribución de Goles</h3>
+                        <canvas id="goalChart" height="200"></canvas>
                     </div>
-                    <div class="glass-card p-6 border-l-4 border-purple-500">
-                        <h3 class="text-sm font-bold text-purple-400 uppercase mb-4">Gestión de Bankroll (Kelly 1/4)</h3>
-                        <div id="kelly-list" class="space-y-3 text-sm">
-                            <p class="text-gray-500 italic">Calculando gestión de riesgo...</p>
-                        </div>
+                    <div class="glass p-4 overflow-hidden">
+                        <h3 class="text-xs font-bold mb-4 uppercase">Top 5 Marcadores Exactos</h3>
+                        <div id="top_scores" class="space-y-2">
+                            </div>
                     </div>
                 </div>
 
-            </section>
-        </main>
+                <div class="glass overflow-hidden">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-800/50 text-[10px] uppercase text-gray-400">
+                            <tr>
+                                <th class="p-3">Mercado</th>
+                                <th class="p-3">Prob. %</th>
+                                <th class="p-3">Cuota Fair</th>
+                                <th class="p-3">EV %</th>
+                                <th class="p-3">Kelly (1/4)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="market_table" class="divide-y divide-gray-700/50">
+                            </tbody>
+                    </table>
+                </div>
 
-        <footer class="mt-12 pt-8 border-t border-gray-900 text-center text-gray-600 text-xs pb-10">
-            <p class="mb-2">El modelo de Poisson predice la probabilidad de eventos independientes basándose en promedios históricos.</p>
-            <p class="text-red-900/60 font-bold mb-4">ADVERTENCIA: Las apuestas deportivas conllevan riesgo. No hay garantía de éxito estadístico.</p>
-            <a href="#" class="hover:text-emerald-400 transition underline">GitHub Repository</a>
-        </footer>
+                <div class="glass p-4">
+                    <h3 class="text-xs font-bold mb-4 uppercase text-center">Heatmap de Probabilidades (Poisson Matrix)</h3>
+                    <div class="overflow-x-auto">
+                        <table id="matrix_table" class="w-full text-[10px] border-collapse">
+                            </table>
+                    </div>
+                </div>
+
+            </main>
+        </div>
     </div>
 
-    <div id="tooltip" class="fixed hidden bg-black border border-gray-700 p-2 rounded text-[10px] z-50 pointer-events-none"></div>
-
     <script>
-        // --- MATH ENGINE ---
-        const factorial = (n) => (n <= 1 ? 1 : n * factorial(n - 1));
+        // --- GLOBALS ---
+        let goalChart = null;
 
-        const poissonPMF = (k, lambda) => {
-            return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial(k);
-        };
+        // --- MATH FUNCTIONS ---
+        function factorialize(num) {
+            if (num < 0) return 1;
+            if (num === 0) return 1;
+            return num * factorialize(num - 1);
+        }
 
-        // --- CORE FUNCTIONS ---
-        function calculate() {
+        function poisson(k, lambda) {
+            return (Math.exp(-lambda) * Math.pow(lambda, k)) / factorialize(k);
+        }
+
+        function getDixonColesTau(x, y, lambda, mu, rho) {
+            if (x === 0 && y === 0) return 1 - (lambda * mu * rho);
+            if (x === 0 && y === 1) return 1 + (lambda * rho);
+            if (x === 1 && y === 0) return 1 + (mu * rho);
+            if (x === 1 && y === 1) return 1 - rho;
+            return 1;
+        }
+
+        // --- CORE LOGIC ---
+        function mainCalculation() {
+            // Inputs
             const inputs = {
-                l_h: parseFloat(document.getElementById('l_avg_h').value),
-                l_a: parseFloat(document.getElementById('l_avg_a').value),
-                h_gf: parseFloat(document.getElementById('h_gf').value),
-                h_ga: parseFloat(document.getElementById('h_ga').value),
-                a_gf: parseFloat(document.getElementById('a_gf').value),
-                a_ga: parseFloat(document.getElementById('a_ga').value)
+                l_pj: parseInt(document.getElementById('l_pj').value),
+                l_gf: parseInt(document.getElementById('l_gf').value),
+                l_gc: parseInt(document.getElementById('l_gc').value),
+                v_pj: parseInt(document.getElementById('v_pj').value),
+                v_gf: parseInt(document.getElementById('v_gf').value),
+                v_gc: parseInt(document.getElementById('v_gc').value),
+                avg_l: parseFloat(document.getElementById('avg_l').value),
+                avg_v: parseFloat(document.getElementById('avg_v').value),
+                forma: parseFloat(document.getElementById('forma').value),
+                rho: parseFloat(document.getElementById('rho').value)
             };
 
-            if (Object.values(inputs).some(v => isNaN(v) || v < 0)) {
-                alert("Por favor, introduce valores numéricos válidos mayores a 0.");
-                return;
-            }
+            // 1. Calcular Fuerzas
+            const att_l = (inputs.l_gf / inputs.l_pj) / inputs.avg_l;
+            const def_l = (inputs.l_gc / inputs.l_pj) / inputs.avg_v;
+            const att_v = (inputs.v_gf / inputs.v_pj) / inputs.avg_v;
+            const def_v = (inputs.v_gc / inputs.v_pj) / inputs.avg_l;
 
-            // Poisson Model logic
-            const league_avg_total = inputs.l_h + inputs.l_a;
-            const lambda_home = (inputs.h_gf * inputs.a_ga) / league_avg_total;
-            const lambda_away = (inputs.a_gf * inputs.h_ga) / league_avg_total;
+            // 2. xG Esperado
+            let xG_l = att_l * def_v * inputs.avg_l * inputs.forma;
+            let xG_v = att_v * def_l * inputs.avg_v;
 
-            // Matrix generation (7x7: 0-6 goals)
-            let matrix = [];
-            let prob_1 = 0, prob_x = 0, prob_2 = 0;
-            let prob_o25 = 0, prob_btts = 0;
-            let allScores = [];
+            document.getElementById('res_xg_l').innerText = xG_l.toFixed(2);
+            document.getElementById('res_xg_v').innerText = xG_v.toFixed(2);
 
-            for (let i = 0; i <= 6; i++) {
-                matrix[i] = [];
-                const p_h = poissonPMF(i, lambda_home);
-                for (let j = 0; j <= 6; j++) {
-                    const p_a = poissonPMF(j, lambda_away);
-                    const p_score = p_h * p_a;
-                    matrix[i][j] = p_score;
+            // 3. Matriz de Poisson 0-7
+            let matrix = Array(8).fill().map(() => Array(8).fill(0));
+            let probL = 0, probX = 0, probV = 0;
+            let over25 = 0, btts = 0;
+            let scores = [];
 
-                    if (i > j) prob_1 += p_score;
-                    else if (i === j) prob_x += p_score;
-                    else prob_2 += p_score;
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    let pI = poisson(i, xG_l);
+                    let pJ = poisson(j, xG_v);
+                    let prob = pI * pJ;
 
-                    if (i + j > 2.5) prob_o25 += p_score;
-                    if (i > 0 && j > 0) prob_btts += p_score;
+                    // Ajuste Dixon-Coles
+                    prob *= getDixonColesTau(i, j, xG_l, xG_v, inputs.rho);
+                    
+                    matrix[i][j] = prob;
 
-                    allScores.push({ score: `${i}-${j}`, prob: p_score });
+                    if (i > j) probL += prob;
+                    else if (i === j) probX += prob;
+                    else probV += prob;
+
+                    if (i + j > 2.5) over25 += prob;
+                    if (i > 0 && j > 0) btts += prob;
+
+                    scores.push({ score: `${i}-${j}`, prob: prob });
                 }
             }
 
-            // First Half Prob
-            const lambda_ht = (lambda_home + lambda_away) / 2;
-            const prob_ht_o05 = 1 - Math.exp(-lambda_ht);
+            // Monte Carlo Sim (Validation)
+            runMonteCarlo(xG_l, xG_v);
 
-            displayResults({
-                prob_1, prob_x, prob_2, 
-                prob_o25, prob_btts, prob_ht_o05,
-                matrix, allScores
-            });
+            // Render UI
+            updateUI(probL, probX, probV, over25, btts, scores, matrix, xG_l, xG_v);
+            saveData();
         }
 
-        function displayResults(data) {
-            const resultsArea = document.getElementById('results-area');
-            resultsArea.classList.remove('hidden-section');
-            resultsArea.classList.add('fade-in');
+        function runMonteCarlo(l, v) {
+            let win = 0, draw = 0, loss = 0;
+            const sims = 10000;
+            for(let i=0; i<sims; i++) {
+                // Generar goles aleatorios usando xG como lambda
+                const gL = Math.random() < 0.5 ? poissonSample(l) : poissonSample(l);
+                const gV = poissonSample(v);
+                if(gL > gV) win++; else if(gL === gV) draw++; else loss++;
+            }
+            console.log("Monte Carlo 1X2 Check:", (win/sims).toFixed(2), (draw/sims).toFixed(2), (loss/sims).toFixed(2));
+        }
 
-            // 1X2 Update
-            updateBar('1', data.prob_1);
-            updateBar('x', data.prob_x);
-            updateBar('2', data.prob_2);
+        function poissonSample(lambda) {
+            let L = Math.exp(-lambda);
+            let p = 1.0;
+            let k = 0;
+            do {
+                k++;
+                p *= Math.random();
+            } while (p > L);
+            return k - 1;
+        }
 
-            // Minor Stats
-            document.getElementById('val-o25').innerText = (data.prob_o25 * 100).toFixed(2) + "%";
-            document.getElementById('val-btts').innerText = (data.prob_btts * 100).toFixed(2) + "%";
-            document.getElementById('val-ht').innerText = (data.prob_ht_o05 * 100).toFixed(2) + "%";
+        function updateUI(pL, pX, pV, o25, btts, scores, matrix, xGl, xGv) {
+            document.getElementById('res_o25').innerText = (o25 * 100).toFixed(1) + "%";
+            document.getElementById('res_btts').innerText = (btts * 100).toFixed(1) + "%";
 
-            // Heatmap
-            renderHeatmap(data.matrix);
+            // Chart
+            const ctx = document.getElementById('goalChart').getContext('2d');
+            if(goalChart) goalChart.destroy();
+            
+            const labels = [0,1,2,3,4,5,6];
+            goalChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Local', data: labels.map(k => poisson(k, xGl)*100), borderColor: '#00ff9f', tension: 0.4 },
+                        { label: 'Visita', data: labels.map(k => poisson(k, xGv)*100), borderColor: '#00c3ff', tension: 0.4 }
+                    ]
+                },
+                options: { responsive: true, plugins: { legend: { labels: { color: '#fff' } } } }
+            });
+
+            // Market Table
+            const odds = [
+                parseFloat(document.getElementById('odd_l').value) || 0,
+                parseFloat(document.getElementById('odd_x').value) || 0,
+                parseFloat(document.getElementById('odd_v').value) || 0
+            ];
+            
+            const markets = [
+                { name: 'Victoria Local (1)', p: pL, o: odds[0] },
+                { name: 'Empate (X)', p: pX, o: odds[1] },
+                { name: 'Victoria Visita (2)', p: pV, o: odds[2] },
+                { name: 'Over 2.5 Goles', p: o25, o: 0 },
+                { name: 'BTTS - Sí', p: btts, o: 0 }
+            ];
+
+            let html = '';
+            markets.forEach(m => {
+                const fair = 1 / m.p;
+                const ev = m.o > 0 ? (m.p * m.o) - 1 : 0;
+                const kelly = ev > 0 ? (ev / (m.o - 1)) * 0.25 : 0; // Kelly al 25% (fuerza 1/4)
+                
+                html += `<tr>
+                    <td class="p-3 font-semibold">${m.name}</td>
+                    <td class="p-3">${(m.p * 100).toFixed(1)}%</td>
+                    <td class="p-3 text-gray-400">${fair.toFixed(2)}</td>
+                    <td class="p-3 ${ev > 0 ? 'text-green-400 font-bold' : 'text-red-400'}">${(ev * 100).toFixed(1)}%</td>
+                    <td class="p-3">${(kelly * 100).toFixed(1)}%</td>
+                </tr>`;
+            });
+            document.getElementById('market_table').innerHTML = html;
 
             // Top Scores
-            const top5 = data.allScores.sort((a, b) => b.prob - a.prob).slice(0, 5);
-            const container = document.getElementById('top-scores');
-            container.innerHTML = '<span class="text-[10px] w-full text-center text-gray-500 uppercase mb-2">Marcadores más probables</span>';
-            top5.forEach(s => {
-                container.innerHTML += `<span class="px-3 py-1 bg-gray-800 rounded-full text-xs border border-gray-700"><b class="neon-text">${s.score}</b> (${(s.prob * 100).toFixed(1)}%)</span>`;
+            const top5 = scores.sort((a,b) => b.prob - a.prob).slice(0, 5);
+            document.getElementById('top_scores').innerHTML = top5.map(s => `
+                <div class="flex justify-between items-center bg-black/40 p-2 rounded">
+                    <span class="font-bold text-[var(--sport-blue)]">${s.score}</span>
+                    <span class="text-xs font-mono">${(s.prob * 100).toFixed(1)}%</span>
+                </div>
+            `).join('');
+
+            // Matrix
+            renderMatrix(matrix);
+        }
+
+        function renderMatrix(matrix) {
+            let html = '<thead><tr><th class="p-1">L\\V</th>';
+            for(let j=0; j<7; j++) html += `<th class="p-1">${j}</th>`;
+            html += '</tr></thead><tbody>';
+
+            for(let i=0; i<7; i++) {
+                html += `<tr><th class="bg-gray-800 p-1">${i}</th>`;
+                for(let j=0; j<7; j++) {
+                    const val = (matrix[i][j] * 100).toFixed(1);
+                    const alpha = Math.min(matrix[i][j] * 5, 1);
+                    html += `<td class="matrix-cell p-2 text-center border border-white/5" style="background: rgba(0, 255, 159, ${alpha})">${val}%</td>`;
+                }
+                html += '</tr>';
+            }
+            html += '</tbody>';
+            document.getElementById('matrix_table').innerHTML = html;
+        }
+
+        // --- EXTRAS ---
+        function saveData() {
+            const data = {};
+            document.querySelectorAll('input').forEach(i => data[i.id] = i.value);
+            localStorage.setItem('poisson_bet_data', JSON.stringify(data));
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('poisson_bet_data');
+            if(saved) {
+                const data = JSON.parse(saved);
+                Object.keys(data).forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.value = data[id];
+                });
+            }
+        }
+
+        function copyResults() {
+            const text = `Poisson Analyzer PRO Results:\nxG Local: ${document.getElementById('res_xg_l').innerText}\nxG Visita: ${document.getElementById('res_xg_v').innerText}\nOver 2.5: ${document.getElementById('res_o25').innerText}`;
+            navigator.clipboard.writeText(text);
+            alert("Resultados copiados al portapapeles");
+        }
+
+        function exportCSV() {
+            let csv = "Mercado,Probabilidad,Cuota Fair\n";
+            const rows = document.querySelectorAll('#market_table tr');
+            rows.forEach(row => {
+                const cols = row.querySelectorAll('td');
+                if(cols.length > 0) csv += `${cols[0].innerText},${cols[1].innerText},${cols[2].innerText}\n`;
             });
-
-            // Value Analysis
-            runValueAnalysis(data);
-
-            // Scroll
-            resultsArea.scrollIntoView({ behavior: 'smooth' });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'analysis_results.csv');
+            a.click();
         }
 
-        function updateBar(id, val) {
-            const percent = (val * 100).toFixed(2);
-            document.getElementById(`val-${id}`).innerText = percent + "%";
-            document.getElementById(`bar-${id}`).style.height = (val * 100) + "%";
-        }
+        // --- LISTENERS ---
+        document.getElementById('forma').addEventListener('input', (e) => {
+            document.getElementById('val_forma').innerText = e.target.value;
+            mainCalculation();
+        });
+        document.getElementById('rho').addEventListener('input', (e) => {
+            document.getElementById('val_rho').innerText = e.target.value;
+            mainCalculation();
+        });
 
-        function renderHeatmap(matrix) {
-            const header = document.getElementById('heatmap-header');
-            const body = document.getElementById('heatmap-body');
-            header.innerHTML = '<th class="p-1 text-gray-600">L \\ V</th>';
-            body.innerHTML = '';
-
-            for (let v = 0; v <= 6; v++) header.innerHTML += `<th class="p-1">${v}</th>`;
-
-            for (let l = 0; l <= 6; l++) {
-                let row = `<tr><th class="p-1 text-gray-400">${l}</th>`;
-                for (let v = 0; v <= 6; v++) {
-                    const p = matrix[l][v];
-                    const alpha = Math.min(p * 5, 0.9); // Opacidad según prob
-                    const color = `rgba(0, 255, 157, ${alpha})`;
-                    row += `<td class="heatmap-cell border border-gray-900 text-center p-2" 
-                                style="background-color: ${color}; color: ${alpha > 0.4 ? '#000' : '#888'}"
-                                onmouseover="showTooltip(event, '${(p*100).toFixed(2)}%')" 
-                                onmouseout="hideTooltip()">
-                                ${(p * 100).toFixed(1)}
-                            </td>`;
-                }
-                row += '</tr>';
-                body.innerHTML += row;
-            }
-        }
-
-        function runValueAnalysis(data) {
-            const odds = {
-                "1": parseFloat(document.getElementById('odd_1').value),
-                "X": parseFloat(document.getElementById('odd_x').value),
-                "2": parseFloat(document.getElementById('odd_2').value),
-                "Over 2.5": parseFloat(document.getElementById('odd_over').value),
-                "BTTS Si": parseFloat(document.getElementById('odd_btts').value)
-            };
-
-            const probs = {
-                "1": data.prob_1, "X": data.prob_x, "2": data.prob_2,
-                "Over 2.5": data.prob_o25, "BTTS Si": data.prob_btts
-            };
-
-            const bankroll = parseFloat(document.getElementById('user_bankroll').value) || 0;
-            const valueList = document.getElementById('value-list');
-            const kellyList = document.getElementById('kelly-list');
-            
-            valueList.innerHTML = '';
-            kellyList.innerHTML = '';
-
-            let hasValue = false;
-
-            for (let key in odds) {
-                if (!isNaN(odds[key]) && odds[key] > 1) {
-                    hasValue = true;
-                    const ev = (probs[key] * odds[key]) - 1;
-                    const evPercent = (ev * 100).toFixed(2);
-                    const colorClass = ev > 0 ? 'text-emerald-400' : 'text-red-500';
-                    
-                    valueList.innerHTML += `
-                        <div class="flex justify-between items-center border-b border-gray-800 pb-1">
-                            <span>Mercado ${key}:</span>
-                            <span class="font-bold ${colorClass}">${evPercent}% EV</span>
-                        </div>
-                    `;
-
-                    if (ev > 0 && bankroll > 0) {
-                        const q = odds[key];
-                        const p = probs[key];
-                        // Kelly Criterion (1/4 stake fraction)
-                        const kelly = ((p * q) - 1) / (q - 1);
-                        const recommendedStake = bankroll * (kelly * 0.25);
-                        
-                        kellyList.innerHTML += `
-                            <div class="flex justify-between items-center border-b border-gray-800 pb-1">
-                                <span>Apuesta ${key}:</span>
-                                <span class="font-bold text-purple-400">$${recommendedStake.toFixed(2)} <small class="text-gray-500">(${(kelly * 0.25 * 100).toFixed(1)}%)</small></span>
-                            </div>
-                        `;
-                    }
-                }
-            }
-
-            if (!hasValue) {
-                valueList.innerHTML = '<p class="text-gray-500 italic">Introduce cuotas y bankroll para ver recomendaciones.</p>';
-            }
-        }
-
-        // --- UI HELPERS ---
-        function loadExample() {
-            document.getElementById('l_avg_h').value = 1.54;
-            document.getElementById('l_avg_a').value = 1.31;
-            document.getElementById('h_gf').value = 2.45;
-            document.getElementById('h_ga').value = 0.85;
-            document.getElementById('a_gf').value = 1.65;
-            document.getElementById('a_ga').value = 1.15;
-            document.getElementById('odd_1').value = 1.85;
-            document.getElementById('odd_x').value = 3.60;
-            document.getElementById('odd_2').value = 4.20;
-            document.getElementById('odd_over').value = 1.75;
-            document.getElementById('odd_btts').value = 1.90;
-            document.getElementById('user_bankroll').value = 1000;
-            calculate();
-        }
-
-        function clearAll() {
-            document.querySelectorAll('input').forEach(i => i.value = '');
-            document.getElementById('results-area').classList.add('hidden-section');
-        }
-
-        function showTooltip(e, text) {
-            const tip = document.getElementById('tooltip');
-            tip.innerText = text;
-            tip.style.left = (e.pageX + 10) + 'px';
-            tip.style.top = (e.pageY + 10) + 'px';
-            tip.classList.remove('hidden');
-        }
-
-        function hideTooltip() {
-            document.getElementById('tooltip').classList.add('hidden');
-        }
+        window.onload = () => {
+            loadData();
+            mainCalculation();
+        };
     </script>
 </body>
 </html>
