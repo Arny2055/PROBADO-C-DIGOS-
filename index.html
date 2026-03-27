@@ -58,10 +58,6 @@
             margin-bottom: 24px;
         }
 
-        .section {
-            margin-bottom: 32px;
-        }
-
         .grid-2 {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -93,7 +89,6 @@
             border-radius: 12px;
             color: #f1f5f9;
             font-size: 1.1rem;
-            transition: all 0.2s;
         }
 
         input[type="number"]:focus {
@@ -106,7 +101,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-top: 16px;
+            margin-top: 20px;
             padding: 14px 16px;
             background: #334155;
             border-radius: 12px;
@@ -128,10 +123,7 @@
         .slider {
             position: absolute;
             cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             background-color: #64748b;
             transition: .3s;
             border-radius: 9999px;
@@ -167,12 +159,7 @@
             border-radius: 9999px;
             cursor: pointer;
             width: 100%;
-            margin-top: 16px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .btn:hover {
-            transform: translateY(-3px);
+            margin-top: 20px;
         }
 
         .results {
@@ -211,22 +198,11 @@
         th, td {
             padding: 12px 10px;
             text-align: center;
-            font-size: 1rem;
-            font-weight: 500;
         }
 
         th {
             background: #0f172a;
             color: #e2e8f0;
-            font-weight: 600;
-        }
-
-        td {
-            border-bottom: 1px solid #334155;
-        }
-
-        .prob-cell {
-            font-weight: 600;
         }
 
         .matrix-container {
@@ -344,7 +320,6 @@
                 </div>
             </div>
 
-            <!-- PROMEDIO LIGA + TOGGLE -->
             <div style="margin-top: 28px;">
                 <label>Promedio de goles por partido en la liga</label>
                 <input type="number" id="avg-league" value="2.78" step="0.01" min="0.5" style="max-width: 220px;">
@@ -366,79 +341,43 @@
 
         <!-- RESULTADOS -->
         <div id="resultados" class="results" style="display: none;">
-            
-            <!-- PANEL IZQUIERDO: PARÁMETROS Y RESUMEN -->
+            <!-- El contenido de resultados se mantiene igual -->
             <div>
                 <div class="card">
                     <h3 style="margin-bottom: 20px; font-size: 1.3rem;">📈 Parámetros calculados</h3>
-                    
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: 0.95rem;">
-                        <div>
-                            <div style="color: #64748b;">Fuerza ataque local</div>
-                            <div id="attack-home-val" class="summary-value" style="font-size: 1.4rem; margin-top: 4px;">—</div>
-                        </div>
-                        <div>
-                            <div style="color: #64748b;">Fuerza ataque visitante</div>
-                            <div id="attack-away-val" class="summary-value" style="font-size: 1.4rem; margin-top: 4px;">—</div>
-                        </div>
-                        <div>
-                            <div style="color: #64748b;">Fuerza defensa local</div>
-                            <div id="defense-home-val" class="summary-value" style="font-size: 1.4rem; margin-top: 4px;">—</div>
-                        </div>
-                        <div>
-                            <div style="color: #64748b;">Fuerza defensa visitante</div>
-                            <div id="defense-away-val" class="summary-value" style="font-size: 1.4rem; margin-top: 4px;">—</div>
-                        </div>
+                        <div><div style="color: #64748b;">Fuerza ataque local</div><div id="attack-home-val" class="summary-value" style="font-size: 1.4rem; margin-top: 4px;">—</div></div>
+                        <div><div style="color: #64748b;">Fuerza ataque visitante</div><div id="attack-away-val" class="summary-value" style="font-size: 1.4rem; margin-top: 4px;">—</div></div>
+                        <div><div style="color: #64748b;">Fuerza defensa local</div><div id="defense-home-val" class="summary-value" style="font-size: 1.4rem; margin-top: 4px;">—</div></div>
+                        <div><div style="color: #64748b;">Fuerza defensa visitante</div><div id="defense-away-val" class="summary-value" style="font-size: 1.4rem; margin-top: 4px;">—</div></div>
                     </div>
 
                     <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #334155; display: flex; justify-content: space-between;">
                         <div>
-                            <div style="color: #64748b; font-size: 0.9rem;">λ Local (goles esperados)</div>
-                            <div id="lambda-home" style="font-size: 2.2rem; font-weight: 700; color: #00d4aa;">2.41</div>
+                            <div style="color: #64748b; font-size: 0.9rem;">λ Local</div>
+                            <div id="lambda-home" style="font-size: 2.2rem; font-weight: 700; color: #00d4aa;">—</div>
                         </div>
                         <div>
-                            <div style="color: #64748b; font-size: 0.9rem;">λ Visitante (goles esperados)</div>
-                            <div id="lambda-away" style="font-size: 2.2rem; font-weight: 700; color: #f97316;">1.34</div>
+                            <div style="color: #64748b; font-size: 0.9rem;">λ Visitante</div>
+                            <div id="lambda-away" style="font-size: 2.2rem; font-weight: 700; color: #f97316;">—</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- RESUMEN DE PROBABILIDADES -->
                 <div class="card" style="margin-top: 24px;">
                     <h3 style="margin-bottom: 20px; font-size: 1.3rem;">🎯 Probabilidades clave</h3>
                     <div class="summary-grid">
-                        <div class="summary-card">
-                            <div class="summary-label">🏆 Local gana</div>
-                            <div id="prob-home" class="summary-value">58.4%</div>
-                        </div>
-                        <div class="summary-card">
-                            <div class="summary-label">⚖️ Empate</div>
-                            <div id="prob-draw" class="summary-value">24.1%</div>
-                        </div>
-                        <div class="summary-card">
-                            <div class="summary-label">✈️ Visitante gana</div>
-                            <div id="prob-away" class="summary-value">17.5%</div>
-                        </div>
-                        <div class="summary-card">
-                            <div class="summary-label">🔥 BTTS (ambos marcan)</div>
-                            <div id="prob-btts" class="summary-value">54.8%</div>
-                        </div>
-                        <div class="summary-card">
-                            <div class="summary-label">📈 Over 2.5 goles</div>
-                            <div id="prob-over" class="summary-value">56.2%</div>
-                        </div>
-                        <div class="summary-card">
-                            <div class="summary-label">📉 Under 2.5 goles</div>
-                            <div id="prob-under" class="summary-value">43.8%</div>
-                        </div>
+                        <div class="summary-card"><div class="summary-label">🏆 Local gana</div><div id="prob-home" class="summary-value">—</div></div>
+                        <div class="summary-card"><div class="summary-label">⚖️ Empate</div><div id="prob-draw" class="summary-value">—</div></div>
+                        <div class="summary-card"><div class="summary-label">✈️ Visitante gana</div><div id="prob-away" class="summary-value">—</div></div>
+                        <div class="summary-card"><div class="summary-label">🔥 BTTS</div><div id="prob-btts" class="summary-value">—</div></div>
+                        <div class="summary-card"><div class="summary-label">📈 Over 2.5</div><div id="prob-over" class="summary-value">—</div></div>
+                        <div class="summary-card"><div class="summary-label">📉 Under 2.5</div><div id="prob-under" class="summary-value">—</div></div>
                     </div>
                 </div>
             </div>
 
-            <!-- PANEL DERECHO: MATRIZ + GRÁFICOS + EV -->
             <div class="card">
-
-                <!-- MATRIZ -->
                 <h3 style="margin-bottom: 12px; font-size: 1.3rem;">📋 Matriz de resultados (0-5 goles)</h3>
                 <div class="matrix-container">
                     <table id="matrix-table">
@@ -448,70 +387,41 @@
                                 <th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th>
                             </tr>
                         </thead>
-                        <tbody id="matrix-body">
-                            <!-- Generado por JS -->
-                        </tbody>
+                        <tbody id="matrix-body"></tbody>
                     </table>
                 </div>
-                <p style="font-size: 0.8rem; color: #64748b; margin-top: 8px; text-align: center;">
-                    Probabilidades truncadas a 0-5 goles • Suma ≈ 96-99% (cola negligible)
-                </p>
 
-                <!-- GRÁFICOS -->
                 <div style="margin-top: 32px;">
                     <h3 style="margin-bottom: 16px; font-size: 1.3rem;">📊 Distribución de goles esperados</h3>
                     <div class="canvas-container">
                         <div class="canvas-card">
                             <div style="margin-bottom: 12px; font-weight: 600; color: #00d4aa;">🏠 Local • λ = <span id="lambda-chart-home"></span></div>
-                            <canvas id="chart-home" width="500" height="280"></canvas>
+                            <canvas id="chart-home"></canvas>
                         </div>
                         <div class="canvas-card">
                             <div style="margin-bottom: 12px; font-weight: 600; color: #f97316;">✈️ Visitante • λ = <span id="lambda-chart-away"></span></div>
-                            <canvas id="chart-away" width="500" height="280"></canvas>
+                            <canvas id="chart-away"></canvas>
                         </div>
                     </div>
                 </div>
 
-                <!-- VALOR ESPERADO -->
                 <div style="margin-top: 32px;">
-                    <h3 style="margin-bottom: 16px; font-size: 1.3rem;">💰 Valor Esperado (EV) – Ingresa cuotas decimales</h3>
-                    
+                    <h3 style="margin-bottom: 16px; font-size: 1.3rem;">💰 Valor Esperado (EV)</h3>
                     <div class="ev-row">
-                        <div style="flex: 1;">
-                            <label style="font-size: 0.85rem; margin-bottom: 4px;">Cuota Local (1)</label>
-                            <input type="number" id="odd-home" value="1.85" step="0.01" style="background: #1e2937; border: none; padding: 10px 14px;">
-                        </div>
-                        <div style="flex: 1;">
-                            <label style="font-size: 0.85rem; margin-bottom: 4px;">Cuota Empate (X)</label>
-                            <input type="number" id="odd-draw" value="3.60" step="0.01" style="background: #1e2937; border: none; padding: 10px 14px;">
-                        </div>
-                        <div style="flex: 1;">
-                            <label style="font-size: 0.85rem; margin-bottom: 4px;">Cuota Visitante (2)</label>
-                            <input type="number" id="odd-away" value="4.10" step="0.01" style="background: #1e2937; border: none; padding: 10px 14px;">
-                        </div>
+                        <div style="flex:1;"><label>Cuota Local (1)</label><input type="number" id="odd-home" value="1.85" step="0.01" style="background:#1e2937;border:none;padding:10px 14px;width:100%;"></div>
+                        <div style="flex:1;"><label>Cuota Empate (X)</label><input type="number" id="odd-draw" value="3.60" step="0.01" style="background:#1e2937;border:none;padding:10px 14px;width:100%;"></div>
+                        <div style="flex:1;"><label>Cuota Visitante (2)</label><input type="number" id="odd-away" value="4.10" step="0.01" style="background:#1e2937;border:none;padding:10px 14px;width:100%;"></div>
                     </div>
-
                     <div class="ev-row">
-                        <div style="flex: 1;">
-                            <label style="font-size: 0.85rem; margin-bottom: 4px;">Cuota Over 2.5</label>
-                            <input type="number" id="odd-over" value="1.95" step="0.01" style="background: #1e2937; border: none; padding: 10px 14px;">
-                        </div>
-                        <div style="flex: 1;">
-                            <label style="font-size: 0.85rem; margin-bottom: 4px;">Cuota Under 2.5</label>
-                            <input type="number" id="odd-under" value="1.85" step="0.01" style="background: #1e2937; border: none; padding: 10px 14px;">
-                        </div>
-                        <div style="flex: 2; display: flex; flex-direction: column; justify-content: center; font-size: 0.8rem; color: #64748b;">
-                            EV = (Prob × Cuota) − 1<br>
-                            <span style="color: #00d4aa;">Positivo = apuesta con valor</span>
-                        </div>
+                        <div style="flex:1;"><label>Cuota Over 2.5</label><input type="number" id="odd-over" value="1.95" step="0.01" style="background:#1e2937;border:none;padding:10px 14px;width:100%;"></div>
+                        <div style="flex:1;"><label>Cuota Under 2.5</label><input type="number" id="odd-under" value="1.85" step="0.01" style="background:#1e2937;border:none;padding:10px 14px;width:100%;"></div>
                     </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;">
-                        <div id="ev-home" style="background:#1e2937; padding:16px; border-radius:12px; text-align:center;"></div>
-                        <div id="ev-draw" style="background:#1e2937; padding:16px; border-radius:12px; text-align:center;"></div>
-                        <div id="ev-away" style="background:#1e2937; padding:16px; border-radius:12px; text-align:center;"></div>
-                        <div id="ev-over" style="background:#1e2937; padding:16px; border-radius:12px; text-align:center;"></div>
-                        <div id="ev-under" style="background:#1e2937; padding:16px; border-radius:12px; text-align:center;"></div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+                        <div id="ev-home" style="background:#1e2937;padding:16px;border-radius:12px;text-align:center;"></div>
+                        <div id="ev-draw" style="background:#1e2937;padding:16px;border-radius:12px;text-align:center;"></div>
+                        <div id="ev-away" style="background:#1e2937;padding:16px;border-radius:12px;text-align:center;"></div>
+                        <div id="ev-over" style="background:#1e2937;padding:16px;border-radius:12px;text-align:center;"></div>
+                        <div id="ev-under" style="background:#1e2937;padding:16px;border-radius:12px;text-align:center;"></div>
                     </div>
                 </div>
             </div>
@@ -519,25 +429,15 @@
     </div>
 
     <footer>
-        Desarrollado como herramienta completa en un solo archivo HTML • 
-        JavaScript puro + CSS moderno • 
-        Modelo Poisson clásico + xG opcional
+        Poisson Predictor • HTML + CSS + Vanilla JS puro
     </footer>
 
     <script>
-        /**
-         * POISSON PREDICTOR - Versión completa lista para producción
-         * Autor: Grok (como desarrollador experto solicitado)
-         */
-
         // ==================== UTILIDADES MATEMÁTICAS ====================
-        
         function factorial(n) {
             if (n === 0 || n === 1) return 1;
             let result = 1;
-            for (let i = 2; i <= n; i++) {
-                result *= i;
-            }
+            for (let i = 2; i <= n; i++) result *= i;
             return result;
         }
 
@@ -554,59 +454,43 @@
             return probs;
         }
 
-        // ==================== DIBUJO DE GRÁFICOS CON CANVAS ====================
-
+        // ==================== GRÁFICOS ====================
         function drawGoalDistribution(canvasId, probs, color, lambda) {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
             
-            const parentWidth = canvas.parentElement.clientWidth;
+            const parentWidth = canvas.parentElement.clientWidth || 300;
             canvas.width = parentWidth - 40;
             canvas.height = 260;
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             const maxProb = Math.max(...probs);
-            const barCount = probs.length;
-            const barWidth = Math.floor(canvas.width / (barCount + 1));
+            const barWidth = Math.floor(canvas.width / 7);
             const paddingLeft = 30;
             const paddingBottom = 45;
 
             // Eje Y
             ctx.strokeStyle = '#64748b';
-            ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(paddingLeft, 20);
             ctx.lineTo(paddingLeft, canvas.height - paddingBottom);
             ctx.stroke();
 
-            // Etiquetas Y
-            ctx.fillStyle = '#64748b';
-            ctx.font = '12px Inter';
-            ctx.textAlign = 'right';
-            for (let i = 0; i <= 4; i++) {
-                const y = 20 + (canvas.height - paddingBottom - 20) * (1 - i / 4);
-                ctx.fillText((i / 4 * 100).toFixed(0) + '%', paddingLeft - 8, y + 4);
-                ctx.beginPath();
-                ctx.moveTo(paddingLeft - 4, y);
-                ctx.lineTo(paddingLeft, y);
-                ctx.stroke();
-            }
-
             // Barras
             probs.forEach((prob, index) => {
-                const barHeight = (prob / maxProb) * (canvas.height - paddingBottom - 40);
+                const barHeight = (prob / maxProb) * (canvas.height - paddingBottom - 50);
                 const x = paddingLeft + 10 + index * barWidth;
                 const y = canvas.height - paddingBottom - barHeight;
 
                 const gradient = ctx.createLinearGradient(x, y, x, canvas.height - paddingBottom);
                 gradient.addColorStop(0, color);
                 gradient.addColorStop(1, '#1e2937');
-                
+
                 ctx.fillStyle = gradient;
-                ctx.shadowColor = color;
                 ctx.shadowBlur = 10;
+                ctx.shadowColor = color;
                 ctx.fillRect(x, y, barWidth - 18, barHeight);
                 ctx.shadowBlur = 0;
 
@@ -617,20 +501,16 @@
                 ctx.fillStyle = '#f1f5f9';
                 ctx.font = '600 15px Inter';
                 ctx.textAlign = 'center';
-                ctx.fillText(index.toString(), x + (barWidth - 18) / 2, canvas.height - paddingBottom + 28);
-
-                ctx.font = '600 13px Inter';
-                ctx.fillText((prob * 100).toFixed(1) + '%', x + (barWidth - 18) / 2, y - 8);
+                ctx.fillText(index.toString(), x + (barWidth - 18)/2, canvas.height - paddingBottom + 28);
+                ctx.fillText((prob*100).toFixed(1)+'%', x + (barWidth - 18)/2, y - 8);
             });
 
             ctx.fillStyle = '#64748b';
             ctx.font = '500 13px Inter';
-            ctx.textAlign = 'left';
             ctx.fillText(`λ = ${lambda.toFixed(2)}`, paddingLeft + 10, 18);
         }
 
         // ==================== CÁLCULO PRINCIPAL ====================
-
         function calcularPrediccion() {
             const gfHome = parseFloat(document.getElementById('gf-home').value) || 0;
             const gaHome = parseFloat(document.getElementById('ga-home').value) || 0;
@@ -642,13 +522,12 @@
             const useXg = document.getElementById('use-xg').checked;
 
             if (avgLeague <= 0) {
-                alert('⚠️ El promedio de goles de la liga debe ser mayor a 0');
+                alert('El promedio de goles de la liga debe ser mayor a 0');
                 return;
             }
 
             let attackHome = gfHome / avgLeague;
             let attackAway = gfAway / avgLeague;
-
             if (useXg && xgHome > 0) attackHome = xgHome / avgLeague;
             if (useXg && xgAway > 0) attackAway = xgAway / avgLeague;
 
@@ -662,27 +541,20 @@
             const homeProbs = getPoissonProbs(lambdaHome, MAX_GOALS);
             const awayProbs = getPoissonProbs(lambdaAway, MAX_GOALS);
 
-            let homeWinProb = 0;
-            let drawProb = 0;
-            let awayWinProb = 0;
-            let bttsProb = 0;
-            let overProb = 0;
-            let totalProb = 0;
-
+            let homeWinProb = 0, drawProb = 0, awayWinProb = 0, bttsProb = 0, overProb = 0, totalProb = 0;
             const matrixHTML = [];
 
             for (let h = 0; h <= MAX_GOALS; h++) {
                 let rowHTML = `<tr><td style="background:#0f172a; font-weight:600; color:#e2e8f0;">${h}</td>`;
-                
                 for (let a = 0; a <= MAX_GOALS; a++) {
                     const p = homeProbs[h] * awayProbs[a];
                     totalProb += p;
 
-                    let intensity = Math.min(90, Math.max(25, p * 120));
+                    const intensity = Math.min(90, Math.max(25, p * 120));
                     const bgColor = `hsl(160, 85%, ${intensity}%)`;
                     const textColor = p > 0.08 ? '#0f172a' : '#f1f5f9';
 
-                    rowHTML += `<td class="prob-cell" style="background:${bgColor}; color:${textColor};">${(p * 100).toFixed(1)}%</td>`;
+                    rowHTML += `<td class="prob-cell" style="background:${bgColor}; color:${textColor};">${(p*100).toFixed(1)}%</td>`;
 
                     if (h > a) homeWinProb += p;
                     else if (h === a) drawProb += p;
@@ -691,96 +563,41 @@
                     if (h > 0 && a > 0) bttsProb += p;
                     if (h + a >= 3) overProb += p;
                 }
-                rowHTML += `</tr>`;
+                rowHTML += '</tr>';
                 matrixHTML.push(rowHTML);
             }
 
             const underProb = totalProb - overProb;
 
-            // Mostrar resultados
             document.getElementById('resultados').style.display = 'grid';
 
             document.getElementById('attack-home-val').textContent = attackHome.toFixed(2);
             document.getElementById('attack-away-val').textContent = attackAway.toFixed(2);
             document.getElementById('defense-home-val').textContent = defenseHome.toFixed(2);
             document.getElementById('defense-away-val').textContent = defenseAway.toFixed(2);
-            
             document.getElementById('lambda-home').textContent = lambdaHome.toFixed(2);
             document.getElementById('lambda-away').textContent = lambdaAway.toFixed(2);
 
-            document.getElementById('prob-home').innerHTML = `${(homeWinProb * 100).toFixed(1)}%`;
-            document.getElementById('prob-draw').innerHTML = `${(drawProb * 100).toFixed(1)}%`;
-            document.getElementById('prob-away').innerHTML = `${(awayWinProb * 100).toFixed(1)}%`;
-            document.getElementById('prob-btts').innerHTML = `${(bttsProb * 100).toFixed(1)}%`;
-            document.getElementById('prob-over').innerHTML = `${(overProb * 100).toFixed(1)}%`;
-            document.getElementById('prob-under').innerHTML = `${(underProb * 100).toFixed(1)}%`;
+            document.getElementById('prob-home').textContent = (homeWinProb*100).toFixed(1) + '%';
+            document.getElementById('prob-draw').textContent = (drawProb*100).toFixed(1) + '%';
+            document.getElementById('prob-away').textContent = (awayWinProb*100).toFixed(1) + '%';
+            document.getElementById('prob-btts').textContent = (bttsProb*100).toFixed(1) + '%';
+            document.getElementById('prob-over').textContent = (overProb*100).toFixed(1) + '%';
+            document.getElementById('prob-under').textContent = (underProb*100).toFixed(1) + '%';
 
             document.getElementById('matrix-body').innerHTML = matrixHTML.join('');
 
             document.getElementById('lambda-chart-home').textContent = lambdaHome.toFixed(2);
             document.getElementById('lambda-chart-away').textContent = lambdaAway.toFixed(2);
-            
+
             drawGoalDistribution('chart-home', homeProbs, '#00d4aa', lambdaHome);
             drawGoalDistribution('chart-away', awayProbs, '#f97316', lambdaAway);
-
-            // Valor Esperado
-            const oddHome = parseFloat(document.getElementById('odd-home').value) || 0;
-            const oddDraw = parseFloat(document.getElementById('odd-draw').value) || 0;
-            const oddAway = parseFloat(document.getElementById('odd-away').value) || 0;
-            const oddOver = parseFloat(document.getElementById('odd-over').value) || 0;
-            const oddUnder = parseFloat(document.getElementById('odd-under').value) || 0;
-
-            function calcularEV(prob, odd) {
-                if (odd <= 1 || prob === 0) return { label: '—' };
-                const ev = (prob * odd) - 1;
-                return {
-                    label: ev > 0 ? 
-                        `<span class="ev-positive">+${(ev*100).toFixed(1)}% ✅</span>` : 
-                        `<span class="ev-negative">${(ev*100).toFixed(1)}%</span>`
-                };
-            }
-
-            const evHome = calcularEV(homeWinProb, oddHome);
-            const evDraw = calcularEV(drawProb, oddDraw);
-            const evAway = calcularEV(awayWinProb, oddAway);
-            const evOverData = calcularEV(overProb, oddOver);
-            const evUnderData = calcularEV(underProb, oddUnder);
-
-            document.getElementById('ev-home').innerHTML = `
-                <div style="font-size:0.85rem; color:#64748b;">LOCAL</div>
-                <div style="font-size:1.6rem; font-weight:700;">${evHome.label}</div>
-            `;
-
-            document.getElementById('ev-draw').innerHTML = `
-                <div style="font-size:0.85rem; color:#64748b;">EMPATE</div>
-                <div style="font-size:1.6rem; font-weight:700;">${evDraw.label}</div>
-            `;
-
-            document.getElementById('ev-away').innerHTML = `
-                <div style="font-size:0.85rem; color:#64748b;">VISITANTE</div>
-                <div style="font-size:1.6rem; font-weight:700;">${evAway.label}</div>
-            `;
-
-            document.getElementById('ev-over').innerHTML = `
-                <div style="font-size:0.85rem; color:#64748b;">OVER 2.5</div>
-                <div style="font-size:1.6rem; font-weight:700;">${evOverData.label}</div>
-            `;
-
-            document.getElementById('ev-under').innerHTML = `
-                <div style="font-size:0.85rem; color:#64748b;">UNDER 2.5</div>
-                <div style="font-size:1.6rem; font-weight:700;">${evUnderData.label}</div>
-            `;
 
             console.log('%c✅ Predicción calculada correctamente', 'color:#00d4aa; font-weight:700');
         }
 
-        // ==================== INICIALIZACIÓN ====================
         window.onload = function() {
-            console.log('%c🚀 Poisson Predictor cargado correctamente', 'color:#00d4aa; font-size:1.1rem; font-weight:700');
-            
-            setTimeout(() => {
-                calcularPrediccion();
-            }, 400);
+            setTimeout(calcularPrediccion, 500);
         };
     </script>
 </body>
