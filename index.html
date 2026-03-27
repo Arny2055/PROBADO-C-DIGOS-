@@ -3,1069 +3,390 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Poisson Bivariado • Predicción Fútbol</title>
+    <title>Quantum Poisson Engine | Football Predictor</title>
     <style>
         :root {
-            --primary: #10b981;
-            --primary-dark: #059669;
-            --text: #1f2937;
-            --bg: #f8fafc;
-            --card: #ffffff;
+            --primary: #00f2fe;
+            --secondary: #4facfe;
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text: #f8fafc;
+            --border: rgba(255, 255, 255, 0.1);
+            --accent: #fbbf24;
         }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
         body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: var(--bg);
+            background: radial-gradient(circle at top right, #1e293b, #0f172a);
             color: var(--text);
-            line-height: 1.5;
-        }
-        
-        .container {
-            max-width: 1280px;
-            margin: 0 auto;
+            margin: 0;
             padding: 20px;
+            min-height: 100vh;
         }
-        
+
+        .container { max-width: 1100px; margin: 0 auto; }
+
         header {
-            background: white;
-            border-radius: 16px;
-            padding: 24px;
-            box-shadow: 0 10px 15px -3px rgb(16 185 129 / 0.1);
-            margin-bottom: 24px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 20px;
         }
-        
-        .logo {
-            background: var(--primary);
-            color: white;
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            font-weight: 700;
-        }
-        
-        h1 {
-            font-size: 28px;
-            font-weight: 700;
-        }
-        
-        .subtitle {
-            color: #64748b;
-            font-size: 15px;
-        }
-        
-        .main-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-        }
-        
-        @media (max-width: 1024px) {
-            .main-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-        
+
+        h1 { margin: 0; background: linear-gradient(to right, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2.5rem; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px; }
+
         .card {
-            background: var(--card);
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
             border-radius: 16px;
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05);
-            padding: 24px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-        
-        .section-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
+
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--secondary); }
+
         textarea {
             width: 100%;
-            min-height: 220px;
-            padding: 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-            font-size: 14px;
-            resize: vertical;
-            transition: all 0.2s;
+            height: 150px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: #fff;
+            padding: 10px;
+            font-family: monospace;
+            resize: none;
         }
-        
-        textarea:focus {
-            border-color: var(--primary);
-            outline: none;
-            box-shadow: 0 0 0 3px rgb(16 185 129 / 0.2);
+
+        select, input {
+            width: 100%;
+            padding: 12px;
+            background: #1e293b;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: white;
+            margin-bottom: 15px;
         }
-        
+
         .btn {
-            background: var(--primary);
-            color: white;
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
             border: none;
-            padding: 14px 28px;
-            font-size: 16px;
-            font-weight: 600;
-            border-radius: 12px;
+            color: #0f172a;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-weight: bold;
             cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .btn:hover {
-            background: var(--primary-dark);
-            transform: translateY(-2px);
-        }
-        
-        .btn-secondary {
-            background: #64748b;
-        }
-        
-        .select-container {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        
-        select, input[type="number"] {
-            padding: 12px 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            font-size: 16px;
-        }
-        
-        select:focus, input:focus {
-            border-color: var(--primary);
-            outline: none;
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 16px;
-            margin-top: 16px;
-        }
-        
-        .stat-card {
-            background: #f8fafc;
-            border-radius: 12px;
-            padding: 16px;
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--primary);
-        }
-        
-        .stat-label {
-            font-size: 13px;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .result-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 16px;
-        }
-        
-        .result-box {
-            background: #f8fafc;
-            border-radius: 16px;
-            padding: 24px;
-            text-align: center;
-            border: 3px solid transparent;
-        }
-        
-        .result-box.home {
-            border-color: #10b981;
-        }
-        
-        .result-box.draw {
-            border-color: #64748b;
-        }
-        
-        .result-box.away {
-            border-color: #ef4444;
-        }
-        
-        .result-perc {
-            font-size: 42px;
-            font-weight: 700;
-            line-height: 1;
-        }
-        
-        .matrix-container {
-            overflow-x: auto;
-            margin-top: 24px;
-        }
-        
-        table {
             width: 100%;
-            border-collapse: collapse;
-            min-width: 620px;
+            font-size: 1.1rem;
+            transition: transform 0.2s;
         }
-        
-        th, td {
-            padding: 10px 8px;
-            text-align: center;
-            font-size: 14px;
-            border: 1px solid #e2e8f0;
-        }
-        
-        th {
-            background: #f1f5f9;
-            font-weight: 600;
-            color: #64748b;
-        }
-        
-        .matrix-cell {
-            font-weight: 600;
-            position: relative;
-        }
-        
-        .matrix-cell.highlight {
-            background: #10b981;
-            color: white;
-            box-shadow: 0 0 0 3px rgb(16 185 129 / 0.3);
-        }
-        
-        .slider-container {
-            margin: 20px 0;
-        }
-        
-        input[type="range"] {
-            width: 100%;
-            accent-color: var(--primary);
-        }
-        
-        .value-display {
-            font-size: 18px;
-            font-weight: 700;
-            text-align: center;
-            margin: 8px 0;
-        }
-        
-        .alert {
-            padding: 12px 16px;
-            border-radius: 12px;
-            font-size: 14px;
-            margin-bottom: 16px;
-        }
-        
-        .alert-error {
-            background: #fee2e2;
-            color: #b91c1c;
-            border: 1px solid #fecaca;
-        }
-        
-        .alert-success {
-            background: #ecfdf5;
-            color: #10b981;
-            border: 1px solid #a7f3d0;
-        }
-        
-        footer {
-            margin-top: 40px;
-            text-align: center;
-            color: #64748b;
-            font-size: 13px;
-        }
-        
-        .divider {
-            height: 1px;
-            background: #e2e8f0;
-            margin: 32px 0;
-        }
+
+        .btn:hover { transform: translateY(-2px); opacity: 0.9; }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: center; }
+        .stat-box { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; }
+        .stat-val { font-size: 1.5rem; font-weight: bold; color: var(--primary); }
+        .stat-label { font-size: 0.8rem; text-transform: uppercase; opacity: 0.7; }
+
+        table.matrix { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
+        .matrix td, .matrix th { border: 1px solid var(--border); padding: 8px; text-align: center; }
+        .matrix th { background: rgba(255,255,255,0.1); }
+        .high-prob { background: rgba(16, 185, 129, 0.3); font-weight: bold; border: 1px solid #10b981; }
+
+        .market-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+        .market-row:last-child { border: 0; }
+        .ev-badge { color: var(--accent); font-weight: bold; }
+
+        @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- HEADER -->
-        <header>
-            <div class="logo">⚽</div>
-            <div>
-                <h1>Poisson Bivariado</h1>
-                <p class="subtitle">Herramienta profesional de predicción de partidos de fútbol • Modelo Bivariado con correlación</p>
-            </div>
-            <div style="margin-left: auto; text-align: right; font-size: 13px; color: #64748b;">
-                HTML + CSS + JS puro<br>
-                Listo para GitHub Pages
-            </div>
-        </header>
 
-        <!-- INPUTS -->
+<div class="container">
+    <header>
+        <h1>Quantum Poisson Engine</h1>
+        <p>Análisis Estadístico Avanzado para Apuestas de Fútbol</p>
+    </header>
+
+    <div class="grid">
         <div class="card">
-            <h2 class="section-title">📥 Pegar tablas de resultados</h2>
-            <div class="main-grid">
-                <!-- Tabla Local -->
+            <label>Tabla Local (Home Table Data)</label>
+            <textarea id="homeRaw" placeholder="Pega aquí la tabla de local... (Equipo, GP, GF, GA)"></textarea>
+            <label style="margin-top: 15px;">Tabla Visitante (Away Table Data)</label>
+            <textarea id="awayRaw" placeholder="Pega aquí la tabla de visitante..."></textarea>
+            <button class="btn" onclick="processTables()" style="margin-top: 15px;">1. Procesar Datos</button>
+        </div>
+
+        <div class="card">
+            <label>Equipo Local</label>
+            <select id="homeSelect"></select>
+            <label>Equipo Visitante</label>
+            <select id="awaySelect"></select>
+            
+            <div style="margin: 15px 0;">
+                <label>Correlación (Rho): <span id="rhoVal">0</span></label>
+                <input type="range" id="rhoInput" min="-0.2" max="0.2" step="0.01" value="0" oninput="document.getElementById('rhoVal').innerText = this.value">
+                <small style="opacity: 0.6;">Ajusta para corregir empates (0.05 - 0.1 común)</small>
+            </div>
+
+            <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
-                    <label style="font-weight: 600; display: block; margin-bottom: 8px; color: #1f2937;">
-                        🏠 Tabla Local (Home table)
-                    </label>
-                    <textarea id="homeTable" placeholder="Pega aquí la tabla de la liga local (ejemplo):&#10;Equipo GP GF GA&#10;Barcelona 15 32 12&#10;Real Madrid 15 28 14&#10;..."></textarea>
-                    <p style="font-size: 12px; color: #64748b; margin-top: 6px;">Formato aceptado: cualquier tabla con nombre + GP + GF + GA (separadores: espacios, tab, | , ;)</p>
+                    <label>Cuota Local</label>
+                    <input type="number" id="oddH" step="0.01" placeholder="Ej: 2.10">
                 </div>
-                
-                <!-- Tabla Visitante -->
                 <div>
-                    <label style="font-weight: 600; display: block; margin-bottom: 8px; color: #1f2937;">
-                        ✈️ Tabla Visitante (Away table)
-                    </label>
-                    <textarea id="awayTable" placeholder="Pega aquí la tabla de la liga visitante (ejemplo):&#10;Equipo GP GF GA&#10;Atlético 15 18 22&#10;Betis 15 20 19&#10;..."></textarea>
-                    <p style="font-size: 12px; color: #64748b; margin-top: 6px;">Solo se necesitan columnas GP, GF y GA. El parser ignora el resto.</p>
+                    <label>Cuota Visita</label>
+                    <input type="number" id="oddA" step="0.01" placeholder="Ej: 3.40">
                 </div>
             </div>
             
-            <div style="margin-top: 20px; display: flex; gap: 12px; align-items: center;">
-                <button id="parseBtn" class="btn">
-                    <span>🔄 Parsear Tablas y Cargar Equipos</span>
-                </button>
-                <button id="resetBtn" class="btn btn-secondary">Limpiar todo</button>
-                
-                <div id="parseResult" style="flex: 1; font-size: 15px;"></div>
-            </div>
+            <button class="btn" id="calcBtn" onclick="calculatePoisson()" disabled>2. Calcular Probabilidades</button>
         </div>
-
-        <!-- SELECTORES Y ESTADÍSTICAS -->
-        <div id="teamSection" class="card" style="margin-top: 24px; display: none;">
-            <h2 class="section-title">👥 Selecciona equipos</h2>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                <!-- Equipo Local -->
-                <div class="select-container">
-                    <label style="font-weight: 600;">Equipo Local (Home)</label>
-                    <select id="homeTeam" style="width: 100%;"></select>
-                </div>
-                
-                <!-- Equipo Visitante -->
-                <div class="select-container">
-                    <label style="font-weight: 600;">Equipo Visitante (Away)</label>
-                    <select id="awayTeam" style="width: 100%;"></select>
-                </div>
-            </div>
-
-            <!-- Estadísticas de liga -->
-            <div class="stats-grid" id="leagueStats">
-                <!-- Se llenan con JS -->
-            </div>
-
-            <!-- Fuerzas y xG -->
-            <div style="margin-top: 24px;">
-                <h3 style="font-size: 16px; margin-bottom: 12px;">Fuerzas de equipo y xG</h3>
-                <div class="stats-grid" id="teamStats">
-                    <!-- Se llenan con JS -->
-                </div>
-            </div>
-
-            <!-- Parámetros del modelo -->
-            <div class="slider-container card" style="margin-top: 24px; background: #f8fafc;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <span style="font-weight: 600;">Correlación (rho) del modelo bivariado</span>
-                    <span id="rhoValue" class="value-display">0.10</span>
-                </div>
-                <input type="range" id="rhoSlider" min="-0.20" max="0.20" step="0.01" value="0.10">
-                <div style="font-size: 12px; color: #64748b; display: flex; justify-content: space-between;">
-                    <span>-0.20 (negativa)</span>
-                    <span>0.00 (independiente)</span>
-                    <span>+0.20 (positiva)</span>
-                </div>
-                <p style="font-size: 12px; color: #64748b; margin-top: 8px;">• El modelo usa Poisson bivariado con parámetro λ₁₂ = rho × √(xG_local × xG_visitante)</p>
-            </div>
-
-            <div style="text-align: center; margin-top: 24px;">
-                <button id="calculateBtn" class="btn" style="font-size: 18px; padding: 16px 48px;">
-                    🚀 Calcular Predicción Completa
-                </button>
-            </div>
-        </div>
-
-        <!-- RESULTADOS -->
-        <div id="resultsSection" class="card" style="margin-top: 24px; display: none;">
-            <h2 class="section-title">🎯 Resultados de la predicción</h2>
-            
-            <!-- Probabilidades 1X2 -->
-            <div class="result-grid" id="prob1X2">
-                <!-- Llenado por JS -->
-            </div>
-
-            <div class="divider"></div>
-
-            <!-- Mercados -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
-                <div>
-                    <h3 style="margin-bottom: 12px;">⚽ Over / Under 2.5</h3>
-                    <div style="display: flex; gap: 16px;">
-                        <div class="result-box" style="flex: 1;">
-                            <div style="font-size: 13px; color: #64748b;">OVER 2.5</div>
-                            <div id="over25Perc" class="result-perc">52%</div>
-                        </div>
-                        <div class="result-box" style="flex: 1;">
-                            <div style="font-size: 13px; color: #64748b;">UNDER 2.5</div>
-                            <div id="under25Perc" class="result-perc">48%</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div>
-                    <h3 style="margin-bottom: 12px;">🤝 BTTS (Ambos marcan)</h3>
-                    <div style="display: flex; gap: 16px;">
-                        <div class="result-box" style="flex: 1;">
-                            <div style="font-size: 13px; color: #64748b;">SÍ</div>
-                            <div id="bttsYesPerc" class="result-perc">54%</div>
-                        </div>
-                        <div class="result-box" style="flex: 1;">
-                            <div style="font-size: 13px; color: #64748b;">NO</div>
-                            <div id="bttsNoPerc" class="result-perc">46%</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div>
-                    <h3 style="margin-bottom: 12px;">🏆 Marcador más probable</h3>
-                    <div id="mostLikelyScore" style="font-size: 32px; font-weight: 700; text-align: center; padding: 16px; background: #ecfdf5; border-radius: 12px;">
-                        2 - 1 (18.4%)
-                    </div>
-                </div>
-            </div>
-
-            <!-- Matriz de probabilidades -->
-            <div style="margin-top: 32px;">
-                <h3 class="section-title">📊 Matriz completa de marcadores (0-8 goles)</h3>
-                <div class="matrix-container">
-                    <table id="probMatrix">
-                        <!-- Generado por JS -->
-                    </table>
-                </div>
-                <p style="font-size: 12px; color: #64748b; text-align: center; margin-top: 8px;">
-                    Probabilidades normalizadas • Suma total = 100%
-                </p>
-            </div>
-
-            <div class="divider"></div>
-
-            <!-- Bonus: Valor Esperado -->
-            <h2 class="section-title">💰 Valor Esperado (EV) según cuotas</h2>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
-                <!-- 1X2 -->
-                <div class="card">
-                    <h4 style="margin-bottom: 16px;">1X2</h4>
-                    <div style="display: flex; flex-direction: column; gap: 12px;">
-                        <div style="display: grid; grid-template-columns: 80px 1fr 100px; align-items: center; gap: 12px;">
-                            <span style="font-weight: 600; color: #10b981;">Local</span>
-                            <input type="number" id="oddsHome" step="0.01" value="2.10" style="width: 100%;">
-                            <span id="evHome" style="font-weight: 700; font-size: 18px; text-align: right;">+0.12</span>
-                        </div>
-                        <div style="display: grid; grid-template-columns: 80px 1fr 100px; align-items: center; gap: 12px;">
-                            <span style="font-weight: 600; color: #64748b;">Empate</span>
-                            <input type="number" id="oddsDraw" step="0.01" value="3.40" style="width: 100%;">
-                            <span id="evDraw" style="font-weight: 700; font-size: 18px; text-align: right;">-0.05</span>
-                        </div>
-                        <div style="display: grid; grid-template-columns: 80px 1fr 100px; align-items: center; gap: 12px;">
-                            <span style="font-weight: 600; color: #ef4444;">Visitante</span>
-                            <input type="number" id="oddsAway" step="0.01" value="3.60" style="width: 100%;">
-                            <span id="evAway" style="font-weight: 700; font-size: 18px; text-align: right;">+0.08</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Over/Under -->
-                <div class="card">
-                    <h4 style="margin-bottom: 16px;">Over / Under 2.5</h4>
-                    <div style="display: flex; flex-direction: column; gap: 12px;">
-                        <div style="display: grid; grid-template-columns: 100px 1fr 100px; align-items: center; gap: 12px;">
-                            <span style="font-weight: 600;">Over 2.5</span>
-                            <input type="number" id="oddsOver" step="0.01" value="1.95" style="width: 100%;">
-                            <span id="evOver" style="font-weight: 700; font-size: 18px; text-align: right;">+0.04</span>
-                        </div>
-                        <div style="display: grid; grid-template-columns: 100px 1fr 100px; align-items: center; gap: 12px;">
-                            <span style="font-weight: 600;">Under 2.5</span>
-                            <input type="number" id="oddsUnder" step="0.01" value="1.85" style="width: 100%;">
-                            <span id="evUnder" style="font-weight: 700; font-size: 18px; text-align: right;">-0.09</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- BTTS -->
-                <div class="card">
-                    <h4 style="margin-bottom: 16px;">BTTS</h4>
-                    <div style="display: flex; flex-direction: column; gap: 12px;">
-                        <div style="display: grid; grid-template-columns: 100px 1fr 100px; align-items: center; gap: 12px;">
-                            <span style="font-weight: 600;">Sí</span>
-                            <input type="number" id="oddsBttsYes" step="0.01" value="1.80" style="width: 100%;">
-                            <span id="evBttsYes" style="font-weight: 700; font-size: 18px; text-align: right;">+0.15</span>
-                        </div>
-                        <div style="display: grid; grid-template-columns: 100px 1fr 100px; align-items: center; gap: 12px;">
-                            <span style="font-weight: 600;">No</span>
-                            <input type="number" id="oddsBttsNo" step="0.01" value="1.95" style="width: 100%;">
-                            <span id="evBttsNo" style="font-weight: 700; font-size: 18px; text-align: right;">-0.03</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <footer>
-            Modelo Poisson Bivariado completo • Ataque/Defensa relativa • xG • Correlación ajustable • 
-            100% JavaScript puro • Sin librerías externas<br>
-            Desarrollado como herramienta experta para analistas de apuestas deportivas
-        </footer>
     </div>
 
-    <script>
-        // =============================================
-        // CONFIGURACIÓN GLOBAL
-        // =============================================
-        const MAX_GOALS = 8;
-        let factorial = new Array(MAX_GOALS + 1).fill(1);
-        for (let i = 1; i <= MAX_GOALS; i++) {
-            factorial[i] = factorial[i - 1] * i;
-        }
-        
-        // Datos almacenados
-        let homeTeamsData = [];
-        let awayTeamsData = [];
-        let currentProbs = {
-            home: 0,
-            draw: 0,
-            away: 0,
-            over25: 0,
-            under25: 0,
-            bttsYes: 0,
-            bttsNo: 0
-        };
-        
-        // =============================================
-        // PARSER ROBUSTO DE TABLAS
-        // =============================================
-        function parseTable(text) {
-            const teams = [];
-            const lines = text.trim().split('\n');
-            
-            for (let line of lines) {
-                let cleaned = line.trim();
-                if (!cleaned) continue;
-                
-                // Normalizamos separadores comunes
-                cleaned = cleaned.replace(/[|;,]/g, ' ');
-                const parts = cleaned.split(/\s+/).filter(p => p.length > 0);
-                
-                if (parts.length < 4) continue;
-                
-                // Últimos 3 elementos deben ser números
-                const gpStr = parts[parts.length - 3];
-                const gfStr = parts[parts.length - 2];
-                const gaStr = parts[parts.length - 1];
-                
-                const gp = parseFloat(gpStr);
-                const gf = parseFloat(gfStr);
-                const ga = parseFloat(gaStr);
-                
-                if (isNaN(gp) || isNaN(gf) || isNaN(ga) || gp <= 0) continue;
-                
-                // Nombre del equipo = todo lo anterior
-                let nameParts = parts.slice(0, parts.length - 3);
-                let name = nameParts.join(' ').trim();
-                
-                // Limpiamos número de posición si existe (ej: "1. Barcelona")
-                name = name.replace(/^\d+\.?\s*/, '').trim();
-                
-                if (!name) continue;
-                
-                teams.push({
-                    name: name,
-                    gp: gp,
-                    gf: gf,
-                    ga: ga
-                });
-            }
-            
-            // Eliminamos posibles duplicados
-            const unique = new Map();
-            teams.forEach(t => {
-                if (!unique.has(t.name)) unique.set(t.name, t);
-            });
-            
-            return Array.from(unique.values());
-        }
-        
-        // =============================================
-        // CÁLCULO DE PROMEDIOS DE LIGA
-        // =============================================
-        function computeLeagueAvgs(teams) {
-            if (teams.length === 0) return { avgScored: 0, avgConceded: 0, totalGP: 0 };
-            
-            const totalGP = teams.reduce((sum, t) => sum + t.gp, 0);
-            const totalGF = teams.reduce((sum, t) => sum + t.gf, 0);
-            const totalGA = teams.reduce((sum, t) => sum + t.ga, 0);
-            
-            return {
-                avgScored: totalGP > 0 ? totalGF / totalGP : 0,
-                avgConceded: totalGP > 0 ? totalGA / totalGP : 0,
-                totalGP: totalGP
-            };
-        }
-        
-        // =============================================
-        // POISSON BIVARIADO
-        // =============================================
-        function bivariatePoissonPMF(h, a, lambda1, lambda2, lambda12) {
-            if (h < 0 || a < 0 || h > MAX_GOALS || a > MAX_GOALS) return 0;
-            
-            const expTerm = Math.exp(-(lambda1 + lambda2 + lambda12));
-            let sum = 0;
-            const minK = Math.min(h, a);
-            
-            for (let k = 0; k <= minK; k++) {
-                const t1 = Math.pow(lambda1, h - k) / factorial[h - k];
-                const t2 = Math.pow(lambda2, a - k) / factorial[a - k];
-                const t3 = Math.pow(lambda12, k) / factorial[k];
-                sum += t1 * t2 * t3;
-            }
-            return expTerm * sum;
-        }
-        
-        // =============================================
-        // FUNCIÓN PRINCIPAL DE CÁLCULO
-        // =============================================
-        function calculatePrediction(homeTeamObj, awayTeamObj, rho) {
-            const homeAvgs = computeLeagueAvgs(homeTeamsData);
-            const awayAvgs = computeLeagueAvgs(awayTeamsData);
-            
-            if (homeAvgs.totalGP === 0 || awayAvgs.totalGP === 0) {
-                return { error: "No hay datos suficientes en las tablas." };
-            }
-            
-            // Fuerzas relativas
-            const homeAttack = (homeTeamObj.gf / homeTeamObj.gp) / homeAvgs.avgScored;
-            const homeDefense = (homeTeamObj.ga / homeTeamObj.gp) / homeAvgs.avgConceded;
-            const awayAttack = (awayTeamObj.gf / awayTeamObj.gp) / awayAvgs.avgScored;
-            const awayDefense = (awayTeamObj.ga / awayTeamObj.gp) / awayAvgs.avgConceded;
-            
-            // xG
-            const xGHome = homeAttack * awayDefense * homeAvgs.avgScored;
-            const xGAway = awayAttack * homeDefense * awayAvgs.avgScored;
-            
-            // Correlación
-            let lambda12 = 0;
-            if (rho > 0) {
-                lambda12 = rho * Math.sqrt(xGHome * xGAway);
-            }
-            let lambda1 = xGHome - lambda12;
-            let lambda2 = xGAway - lambda12;
-            
-            // Seguridad contra valores negativos (raro pero posible con rho alto)
-            if (lambda1 < 0 || lambda2 < 0) {
-                lambda1 = xGHome;
-                lambda2 = xGAway;
-                lambda12 = 0;
-            }
-            
-            // Matriz de probabilidades
-            const matrix = Array.from({ length: MAX_GOALS + 1 }, () => Array(MAX_GOALS + 1).fill(0));
-            let totalProb = 0;
-            
-            for (let h = 0; h <= MAX_GOALS; h++) {
-                for (let a = 0; a <= MAX_GOALS; a++) {
-                    const p = bivariatePoissonPMF(h, a, lambda1, lambda2, lambda12);
-                    matrix[h][a] = p;
-                    totalProb += p;
-                }
-            }
-            
-            // Normalización
-            if (totalProb > 0) {
-                for (let h = 0; h <= MAX_GOALS; h++) {
-                    for (let a = 0; a <= MAX_GOALS; a++) {
-                        matrix[h][a] /= totalProb;
-                    }
-                }
-            }
-            
-            // Cálculo de mercados
-            let pHome = 0, pDraw = 0, pAway = 0;
-            let pOver25 = 0, pUnder25 = 0;
-            let pBTTS = 0;
-            let maxP = 0;
-            let mostH = 0, mostA = 0;
-            
-            for (let h = 0; h <= MAX_GOALS; h++) {
-                for (let a = 0; a <= MAX_GOALS; a++) {
-                    const p = matrix[h][a];
-                    
-                    if (h > a) pHome += p;
-                    else if (h < a) pAway += p;
-                    else pDraw += p;
-                    
-                    if (h + a >= 3) pOver25 += p;
-                    else pUnder25 += p;
-                    
-                    if (h >= 1 && a >= 1) pBTTS += p;
-                    
-                    if (p > maxP) {
-                        maxP = p;
-                        mostH = h;
-                        mostA = a;
-                    }
-                }
-            }
-            
-            // Guardamos probabilidades globales
-            currentProbs = {
-                home: pHome,
-                draw: pDraw,
-                away: pAway,
-                over25: pOver25,
-                under25: pUnder25,
-                bttsYes: pBTTS,
-                bttsNo: 1 - pBTTS
-            };
-            
-            // Retornamos todo para render
-            return {
-                success: true,
-                xGHome: xGHome,
-                xGAway: xGAway,
-                homeAttack: homeAttack,
-                homeDefense: homeDefense,
-                awayAttack: awayAttack,
-                awayDefense: awayDefense,
-                matrix: matrix,
-                pHome: pHome,
-                pDraw: pDraw,
-                pAway: pAway,
-                pOver25: pOver25,
-                pUnder25: pUnder25,
-                pBTTS: pBTTS,
-                mostLikely: { h: mostH, a: mostA, prob: maxP }
-            };
-        }
-        
-        // =============================================
-        // RENDER DE MATRIZ
-        // =============================================
-        function renderMatrix(matrix) {
-            const table = document.getElementById('probMatrix');
-            table.innerHTML = `
-                <thead>
-                    <tr>
-                        <th style="background:#ecfdf5;">Local \\ Visitante</th>
-                        ${Array.from({length: MAX_GOALS + 1}, (_, i) => `<th>${i}</th>`).join('')}
-                    </tr>
-                </thead>
-                <tbody>
-                    ${matrix.map((row, h) => `
-                        <tr>
-                            <th style="background:#ecfdf5; text-align:center;">${h}</th>
-                            ${row.map((p, a) => {
-                                const perc = (p * 100).toFixed(1);
-                                const isMax = p > 0.08; // highlight si >8%
-                                return `<td class="matrix-cell ${isMax ? 'highlight' : ''}">${perc}%</td>`;
-                            }).join('')}
-                        </tr>
-                    `).join('')}
-                </tbody>
-            `;
-        }
-        
-        // =============================================
-        // RENDER RESULTADOS 1X2
-        // =============================================
-        function render1X2(pHome, pDraw, pAway) {
-            const container = document.getElementById('prob1X2');
-            container.innerHTML = `
-                <div class="result-box home">
-                    <div style="font-size:13px;color:#10b981;margin-bottom:4px;">VICTORIA LOCAL</div>
-                    <div class="result-perc">${(pHome * 100).toFixed(1)}%</div>
-                </div>
-                <div class="result-box draw">
-                    <div style="font-size:13px;color:#64748b;margin-bottom:4px;">EMPATE</div>
-                    <div class="result-perc">${(pDraw * 100).toFixed(1)}%</div>
-                </div>
-                <div class="result-box away">
-                    <div style="font-size:13px;color:#ef4444;margin-bottom:4px;">VICTORIA VISITANTE</div>
-                    <div class="result-perc">${(pAway * 100).toFixed(1)}%</div>
-                </div>
-            `;
-        }
-        
-        // =============================================
-        // ACTUALIZAR ESTADÍSTICAS DE LIGA
-        // =============================================
-        function updateLeagueStats() {
-            const homeAvgs = computeLeagueAvgs(homeTeamsData);
-            const awayAvgs = computeLeagueAvgs(awayTeamsData);
-            
-            const container = document.getElementById('leagueStats');
-            container.innerHTML = `
-                <div class="stat-card">
-                    <div class="stat-label">Liga Local • Goles anotados por partido</div>
-                    <div class="stat-value">${homeAvgs.avgScored.toFixed(2)}</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Liga Local • Goles concedidos por partido</div>
-                    <div class="stat-value">${homeAvgs.avgConceded.toFixed(2)}</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Liga Visitante • Goles anotados por partido</div>
-                    <div class="stat-value">${awayAvgs.avgScored.toFixed(2)}</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Liga Visitante • Goles concedidos por partido</div>
-                    <div class="stat-value">${awayAvgs.avgConceded.toFixed(2)}</div>
-                </div>
-            `;
-        }
-        
-        // =============================================
-        // ACTUALIZAR ESTADÍSTICAS DE EQUIPOS (se llama después de seleccionar)
-        // =============================================
-        function updateTeamStats(homeTeamObj, awayTeamObj) {
-            if (!homeTeamObj || !awayTeamObj) return;
-            
-            const homeAvgs = computeLeagueAvgs(homeTeamsData);
-            const awayAvgs = computeLeagueAvgs(awayTeamsData);
-            
-            const homeAttack = (homeTeamObj.gf / homeTeamObj.gp) / homeAvgs.avgScored;
-            const homeDefense = (homeTeamObj.ga / homeTeamObj.gp) / homeAvgs.avgConceded;
-            const awayAttack = (awayTeamObj.gf / awayTeamObj.gp) / awayAvgs.avgScored;
-            const awayDefense = (awayTeamObj.ga / awayTeamObj.gp) / awayAvgs.avgConceded;
-            
-            const container = document.getElementById('teamStats');
-            container.innerHTML = `
-                <div class="stat-card">
-                    <div class="stat-label">Ataque Local</div>
-                    <div class="stat-value">${homeAttack.toFixed(2)}</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Defensa Local</div>
-                    <div class="stat-value">${homeDefense.toFixed(2)}</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Ataque Visitante</div>
-                    <div class="stat-value">${awayAttack.toFixed(2)}</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Defensa Visitante</div>
-                    <div class="stat-value">${awayDefense.toFixed(2)}</div>
-                </div>
-                <div class="stat-card" style="grid-column: span 2;">
-                    <div style="display:flex; justify-content:space-between;">
-                        <div>
-                            <div class="stat-label">xG LOCAL</div>
-                            <div class="stat-value" style="font-size:32px;">${(homeAttack * awayDefense * homeAvgs.avgScored).toFixed(2)}</div>
-                        </div>
-                        <div>
-                            <div class="stat-label">xG VISITANTE</div>
-                            <div class="stat-value" style="font-size:32px;">${(awayAttack * homeDefense * awayAvgs.avgScored).toFixed(2)}</div>
-                        </div>
+    <div id="resultsArea" style="display: none;">
+        <div class="grid">
+            <div class="card">
+                <h3>Probabilidades Principales (1X2)</h3>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-label">Local</div>
+                        <div class="stat-val" id="probH">-</div>
+                        <div id="evH" class="ev-badge"></div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Visitante</div>
+                        <div class="stat-val" id="probA">-</div>
+                        <div id="evA" class="ev-badge"></div>
                     </div>
                 </div>
-            `;
-        }
+                <div class="stat-box" style="margin-top:15px">
+                    <div class="stat-label">Empate</div>
+                    <div class="stat-val" id="probD">-</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Mercados Secundarios</h3>
+                <div class="market-row">
+                    <span>Over 2.5 Goles</span>
+                    <span id="over25" class="stat-val" style="font-size: 1.1rem;">-</span>
+                </div>
+                <div class="market-row">
+                    <span>Under 2.5 Goles</span>
+                    <span id="under25" class="stat-val" style="font-size: 1.1rem;">-</span>
+                </div>
+                <div class="market-row">
+                    <span>Ambos Anotan (BTTS)</span>
+                    <span id="btts" class="stat-val" style="font-size: 1.1rem;">-</span>
+                </div>
+                <div class="market-row">
+                    <span>xG Proyectado</span>
+                    <span id="xgProj" style="color: var(--accent);">-</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="overflow-x: auto;">
+            <h3>Matriz de Probabilidad de Marcadores Exactos</h3>
+            <div id="matrixContainer"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let homeData = [];
+    let awayData = [];
+    let leagueAverages = { homeGF: 0, homeGA: 0, awayGF: 0, awayGA: 0 };
+
+    // --- PARSER ---
+    function parseTable(text) {
+        const lines = text.split('\n');
+        const teams = [];
         
-        // =============================================
-        // EV CALCULATOR
-        // =============================================
-        function calculateEV(prob, odds) {
-            if (!odds || odds <= 1 || !prob) return '—';
-            const ev = (prob * (odds - 1)) - (1 - prob);
-            return ev.toFixed(2);
-        }
-        
-        function updateEVDisplays() {
-            const p = currentProbs;
+        lines.forEach(line => {
+            // Regex para capturar Nombre y números. Busca patrones comunes de tablas
+            // Grupo 1: Nombre (letras), Grupo 2: GP, Grupo 3: GF, Grupo 4: GA
+            // Adaptable a: "Team Name 20 40 10" o "1. Team Name 20 5 40 10"
+            const match = line.match(/([a-zA-Z\s.-]+)\t?(\d+)\t?\d*\t?(\d+)\t?(\d+)/);
             
-            // 1X2
-            const oH = parseFloat(document.getElementById('oddsHome').value) || 0;
-            const oD = parseFloat(document.getElementById('oddsDraw').value) || 0;
-            const oA = parseFloat(document.getElementById('oddsAway').value) || 0;
-            
-            document.getElementById('evHome').innerHTML = `<span style="color:${calculateEV(p.home, oH) > 0 ? '#10b981' : '#ef4444'}">${calculateEV(p.home, oH)}</span>`;
-            document.getElementById('evDraw').innerHTML = `<span style="color:${calculateEV(p.draw, oD) > 0 ? '#10b981' : '#ef4444'}">${calculateEV(p.draw, oD)}</span>`;
-            document.getElementById('evAway').innerHTML = `<span style="color:${calculateEV(p.away, oA) > 0 ? '#10b981' : '#ef4444'}">${calculateEV(p.away, oA)}</span>`;
-            
-            // Over / Under
-            const oOver = parseFloat(document.getElementById('oddsOver').value) || 0;
-            const oUnder = parseFloat(document.getElementById('oddsUnder').value) || 0;
-            document.getElementById('evOver').innerHTML = `<span style="color:${calculateEV(p.over25, oOver) > 0 ? '#10b981' : '#ef4444'}">${calculateEV(p.over25, oOver)}</span>`;
-            document.getElementById('evUnder').innerHTML = `<span style="color:${calculateEV(p.under25, oUnder) > 0 ? '#10b981' : '#ef4444'}">${calculateEV(p.under25, oUnder)}</span>`;
-            
-            // BTTS
-            const oBttsY = parseFloat(document.getElementById('oddsBttsYes').value) || 0;
-            const oBttsN = parseFloat(document.getElementById('oddsBttsNo').value) || 0;
-            document.getElementById('evBttsYes').innerHTML = `<span style="color:${calculateEV(p.bttsYes, oBttsY) > 0 ? '#10b981' : '#ef4444'}">${calculateEV(p.bttsYes, oBttsY)}</span>`;
-            document.getElementById('evBttsNo').innerHTML = `<span style="color:${calculateEV(p.bttsNo, oBttsN) > 0 ? '#10b981' : '#ef4444'}">${calculateEV(p.bttsNo, oBttsN)}</span>`;
-        }
-        
-        // =============================================
-        // EVENTOS PRINCIPALES
-        // =============================================
-        function init() {
-            // Cargar datos guardados de localStorage
-            const savedHome = localStorage.getItem('poissonHomeTable');
-            const savedAway = localStorage.getItem('poissonAwayTable');
-            const savedRho = localStorage.getItem('poissonRho');
-            
-            if (savedHome) document.getElementById('homeTable').value = savedHome;
-            if (savedAway) document.getElementById('awayTable').value = savedAway;
-            if (savedRho) {
-                const slider = document.getElementById('rhoSlider');
-                slider.value = savedRho;
-                document.getElementById('rhoValue').textContent = parseFloat(savedRho).toFixed(2);
+            if (match) {
+                teams.push({
+                    name: match[1].trim(),
+                    gp: parseInt(match[2]),
+                    gf: parseInt(match[3]),
+                    ga: parseInt(match[4])
+                });
             }
-            
-            // Parse button
-            document.getElementById('parseBtn').addEventListener('click', () => {
-                const homeText = document.getElementById('homeTable').value;
-                const awayText = document.getElementById('awayTable').value;
-                
-                homeTeamsData = parseTable(homeText);
-                awayTeamsData = parseTable(awayText);
-                
-                const statusEl = document.getElementById('parseResult');
-                
-                if (homeTeamsData.length === 0 || awayTeamsData.length === 0) {
-                    statusEl.innerHTML = `<div class="alert alert-error">❌ No se detectaron equipos válidos en una o ambas tablas.</div>`;
-                    return;
-                }
-                
-                // Orden alfabético
-                homeTeamsData.sort((a, b) => a.name.localeCompare(b.name, 'es'));
-                awayTeamsData.sort((a, b) => a.name.localeCompare(b.name, 'es'));
-                
-                // Popular selects
-                const homeSelect = document.getElementById('homeTeam');
-                const awaySelect = document.getElementById('awayTeam');
-                
-                homeSelect.innerHTML = `<option value="">— Selecciona equipo local —</option>` +
-                    homeTeamsData.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
-                
-                awaySelect.innerHTML = `<option value="">— Selecciona equipo visitante —</option>` +
-                    awayTeamsData.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
-                
-                // Mostrar sección
-                document.getElementById('teamSection').style.display = 'block';
-                
-                // Estadísticas de liga
-                updateLeagueStats();
-                
-                statusEl.innerHTML = `<div class="alert alert-success">✅ ${homeTeamsData.length} equipos locales y ${awayTeamsData.length} equipos visitantes cargados correctamente.</div>`;
-                
-                // Guardar en localStorage
-                localStorage.setItem('poissonHomeTable', homeText);
-                localStorage.setItem('poissonAwayTable', awayText);
-            });
-            
-            // Slider rho
-            const rhoSlider = document.getElementById('rhoSlider');
-            const rhoDisplay = document.getElementById('rhoValue');
-            rhoSlider.addEventListener('input', () => {
-                rhoDisplay.textContent = parseFloat(rhoSlider.value).toFixed(2);
-                localStorage.setItem('poissonRho', rhoSlider.value);
-            });
-            
-            // Calcular
-            document.getElementById('calculateBtn').addEventListener('click', () => {
-                const homeName = document.getElementById('homeTeam').value;
-                const awayName = document.getElementById('awayTeam').value;
-                
-                if (!homeName || !awayName) {
-                    alert('Por favor selecciona ambos equipos.');
-                    return;
-                }
-                
-                const homeObj = homeTeamsData.find(t => t.name === homeName);
-                const awayObj = awayTeamsData.find(t => t.name === awayName);
-                
-                if (!homeObj || !awayObj) {
-                    alert('Error al encontrar los equipos seleccionados.');
-                    return;
-                }
-                
-                const rho = parseFloat(rhoSlider.value);
-                
-                const result = calculatePrediction(homeObj, awayObj, rho);
-                
-                if (result.error) {
-                    alert(result.error);
-                    return;
-                }
-                
-                // Renderizar todo
-                document.getElementById('resultsSection').style.display = 'block';
-                
-                // 1X2
-                render1X2(result.pHome, result.pDraw, result.pAway);
-                
-                // Mercados
-                document.getElementById('over25Perc').textContent = (result.pOver25 * 100).toFixed(1) + '%';
-                document.getElementById('under25Perc').textContent = (result.pUnder25 * 100).toFixed(1) + '%';
-                document.getElementById('bttsYesPerc').textContent = (result.pBTTS * 100).toFixed(1) + '%';
-                document.getElementById('bttsNoPerc').textContent = ((1 - result.pBTTS) * 100).toFixed(1) + '%';
-                
-                // Marcador más probable
-                document.getElementById('mostLikelyScore').innerHTML = `
-                    <span style="color:#10b981">${result.mostLikely.h}</span> - 
-                    <span style="color:#ef4444">${result.mostLikely.a}</span> 
-                    <span style="font-size:18px;">(${(result.mostLikely.prob * 100).toFixed(1)}%)</span>
-                `;
-                
-                // Matriz
-                renderMatrix(result.matrix);
-                
-                // Estadísticas de equipo (actualizamos con los valores reales)
-                updateTeamStats(homeObj, awayObj);
-                
-                // EV inicial
-                updateEVDisplays();
-            });
-            
-            // Reset completo
-            document.getElementById('resetBtn').addEventListener('click', () => {
-                if (confirm('¿Borrar todo y reiniciar?')) {
-                    localStorage.removeItem('poissonHomeTable');
-                    localStorage.removeItem('poissonAwayTable');
-                    localStorage.removeItem('poissonRho');
-                    location.reload();
-                }
-            });
-            
-            // EV en vivo
-            const oddsInputs = [
-                'oddsHome', 'oddsDraw', 'oddsAway',
-                'oddsOver', 'oddsUnder',
-                'oddsBttsYes', 'oddsBttsNo'
-            ];
-            
-            oddsInputs.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.addEventListener('input', updateEVDisplays);
-            });
-            
-            console.log('%c✅ Herramienta Poisson Bivariado cargada correctamente. ¡Listo para predecir!', 'color:#10b981; font-weight:700');
+        });
+        return teams;
+    }
+
+    function processTables() {
+        const homeRaw = document.getElementById('homeRaw').value;
+        const awayRaw = document.getElementById('awayRaw').value;
+
+        homeData = parseTable(homeRaw);
+        awayData = parseTable(awayRaw);
+
+        if (homeData.length === 0 || awayData.length === 0) {
+            alert("No se pudieron detectar datos. Asegúrate de copiar columnas como: Equipo, GP, GF, GA.");
+            return;
         }
+
+        // Calcular promedios de liga
+        const sumHomeGF = homeData.reduce((s, t) => s + t.gf, 0);
+        const sumHomeGP = homeData.reduce((s, t) => s + t.gp, 0);
+        const sumAwayGF = awayData.reduce((s, t) => s + t.gf, 0);
+        const sumAwayGP = awayData.reduce((s, t) => s + t.gp, 0);
+
+        leagueAverages.homeGF = sumHomeGF / sumHomeGP;
+        leagueAverages.awayGF = sumAwayGF / sumAwayGP;
+
+        // Llenar selects
+        fillSelect('homeSelect', homeData);
+        fillSelect('awaySelect', awayData);
+
+        document.getElementById('calcBtn').disabled = false;
+        alert("Tablas procesadas con éxito.");
         
-        // Iniciar la aplicación
-        window.onload = init;
-    </script>
+        // Cargar últimos datos de cuotas si existen
+        document.getElementById('oddH').value = localStorage.getItem('lastOddH') || '';
+        document.getElementById('oddA').value = localStorage.getItem('lastOddA') || '';
+    }
+
+    function fillSelect(id, data) {
+        const el = document.getElementById(id);
+        el.innerHTML = "";
+        data.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.name;
+            opt.text = t.name;
+            el.appendChild(opt);
+        });
+    }
+
+    // --- ESTADÍSTICA ---
+    function factorial(n) {
+        if (n === 0) return 1;
+        let res = 1;
+        for (let i = 2; i <= n; i++) res *= i;
+        return res;
+    }
+
+    function poisson(k, lambda) {
+        return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial(k);
+    }
+
+    // Corrección Bivariada simple (Dixon-Coles style adjustment)
+    function getTau(x, y, mu, nu, rho) {
+        if (rho === 0) return 1;
+        if (x === 0 && y === 0) return 1 - (mu * nu * rho);
+        if (x === 0 && y === 1) return 1 + (mu * rho);
+        if (x === 1 && y === 0) return 1 + (nu * rho);
+        if (x === 1 && y === 1) return 1 - rho;
+        return 1;
+    }
+
+    function calculatePoisson() {
+        const hTeam = homeData.find(t => t.name === document.getElementById('homeSelect').value);
+        const aTeam = awayData.find(t => t.name === document.getElementById('awaySelect').value);
+        const rho = parseFloat(document.getElementById('rhoInput').value);
+
+        // Fuerza de Ataque y Defensa
+        const hAtk = (hTeam.gf / hTeam.gp) / leagueAverages.homeGF;
+        const hDef = (hTeam.ga / hTeam.gp) / leagueAverages.homeGF;
+        const aAtk = (aTeam.gf / aTeam.gp) / leagueAverages.awayGF;
+        const aDef = (aTeam.ga / aTeam.gp) / leagueAverages.awayGF;
+
+        // xG proyectados
+        const mu = hAtk * aDef * leagueAverages.homeGF; // Local xG
+        const nu = aAtk * hDef * leagueAverages.awayGF; // Visita xG
+
+        let matrix = [];
+        let probH = 0, probD = 0, probA = 0;
+        let over25 = 0, btts = 0;
+
+        for (let i = 0; i <= 6; i++) {
+            matrix[i] = [];
+            for (let j = 0; j <= 6; j++) {
+                let pI = poisson(i, mu);
+                let pJ = poisson(j, nu);
+                let prob = pI * pJ * getTau(i, j, mu, nu, rho);
+                
+                if (prob < 0) prob = 0; // Evitar errores por rho extremo
+                
+                matrix[i][j] = prob;
+
+                if (i > j) probH += prob;
+                else if (i === j) probD += prob;
+                else probA += prob;
+
+                if (i + j > 2.5) over25 += prob;
+                if (i > 0 && j > 0) btts += prob;
+            }
+        }
+
+        displayResults(probH, probD, probA, over25, btts, matrix, mu, nu);
+        saveState();
+    }
+
+    // --- UI DISPLAY ---
+    function displayResults(h, d, a, o25, b, matrix, xgH, xgA) {
+        document.getElementById('resultsArea').style.display = 'block';
+        
+        document.getElementById('probH').innerText = (h * 100).toFixed(1) + "%";
+        document.getElementById('probD').innerText = (d * 100).toFixed(1) + "%";
+        document.getElementById('probA').innerText = (a * 100).toFixed(1) + "%";
+        
+        document.getElementById('over25').innerText = (o25 * 100).toFixed(1) + "%";
+        document.getElementById('under25').innerText = ((1 - o25) * 100).toFixed(1) + "%";
+        document.getElementById('btts').innerText = (b * 100).toFixed(1) + "%";
+        document.getElementById('xgProj').innerText = `${xgH.toFixed(2)} - ${xgA.toFixed(2)}`;
+
+        // Valor Esperado (EV)
+        const oddH = parseFloat(document.getElementById('oddH').value);
+        const oddA = parseFloat(document.getElementById('oddA').value);
+        
+        if (oddH > 0) {
+            const evH = (h * oddH) - 1;
+            document.getElementById('evH').innerText = `EV: ${(evH * 100).toFixed(1)}%`;
+            document.getElementById('evH').style.color = evH > 0 ? "#10b981" : "#ef4444";
+        }
+        if (oddA > 0) {
+            const evA = (a * oddA) - 1;
+            document.getElementById('evA').innerText = `EV: ${(evA * 100).toFixed(1)}%`;
+            document.getElementById('evA').style.color = evA > 0 ? "#10b981" : "#ef4444";
+        }
+
+        // Generar Tabla Matrix
+        let html = `<table class="matrix"><thead><tr><th>L \\ V</th>`;
+        for(let j=0; j<=5; j++) html += `<th>${j}</th>`;
+        html += `</tr></thead><tbody>`;
+
+        for(let i=0; i<=5; i++) {
+            html += `<tr><th>${i}</th>`;
+            for(let j=0; j<=5; j++) {
+                let p = (matrix[i][j] * 100).toFixed(1);
+                let classHighlight = p > 5 ? 'high-prob' : '';
+                html += `<td class="${classHighlight}">${p}%</td>`;
+            }
+            html += `</tr>`;
+        }
+        html += `</tbody></table>`;
+        document.getElementById('matrixContainer').innerHTML = html;
+        
+        window.scrollTo({ top: document.getElementById('resultsArea').offsetTop, behavior: 'smooth' });
+    }
+
+    function saveState() {
+        localStorage.setItem('lastOddH', document.getElementById('oddH').value);
+        localStorage.setItem('lastOddA', document.getElementById('oddA').value);
+    }
+</script>
+
 </body>
 </html>
