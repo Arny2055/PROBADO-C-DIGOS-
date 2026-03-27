@@ -1,373 +1,389 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Poisson Bivariado - Predicción de Partidos</title>
+    <title>Poisson Bet Analyzer | Pro Tool</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0f172a;
-            color: #f1f5f9;
+            background-color: #0a0a0a;
+            color: #e5e7eb;
         }
         .glass-card {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(10px);
+            background: rgba(23, 23, 23, 0.8);
+            backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .accent-green { color: #22c55e; }
-        .bg-accent-green { background-color: #22c55e; }
-        .border-accent-green { border-color: #22c55e; }
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .neon-green { color: #10b981; text-shadow: 0 0 10px rgba(16, 185, 129, 0.3); }
+        .neon-blue { color: #3b82f6; text-shadow: 0 0 10px rgba(59, 130, 246, 0.3); }
+        .input-field {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid #374151;
+            transition: all 0.3s ease;
+        }
+        .input-field:focus {
+            border-color: #10b981;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+        }
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .heatmap-cell { transition: transform 0.2s; cursor: help; }
+        .heatmap-cell:hover { transform: scale(1.1); z-index: 10; }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
     <div class="max-w-6xl mx-auto">
-        <header class="mb-10 text-center">
-            <h1 class="text-4xl font-bold mb-2">⚽ Poisson Bivariado <span class="accent-green">Predicción de Partidos</span></h1>
-            <p class="text-slate-400">Modelo estadístico avanzado para análisis de xG y probabilidades de marcadores.</p>
+        <header class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-bold mb-2">
+                <span class="text-white">Poisson</span> <span class="neon-green">Bet Analyzer</span>
+            </h1>
+            <p class="text-gray-400">Análisis Cuántico de Probabilidades Deportivas</p>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            <div class="glass-card p-6 rounded-2xl">
-                <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
-                    <span class="bg-accent-green w-2 h-6 rounded-full"></span>
-                    Entrada de Datos
-                </h2>
-                
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-1 text-slate-300">Pegar Tabla Local (Home Table)</label>
-                        <textarea id="homeRaw" rows="6" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-xs font-mono focus:ring-2 focus:ring-green-500 outline-none" placeholder="Pega los datos aquí..."></textarea>
+            <div class="space-y-6">
+                <section class="glass-card p-6 rounded-2xl">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <span class="w-2 h-6 bg-blue-500 rounded-full"></span> Datos de la Liga
+                    </h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1" title="Promedio de goles anotados por equipos locales en la liga">Prom. Goles Local</label>
+                            <input type="number" id="league_home" step="0.01" value="1.50" class="input-field w-full p-3 rounded-lg text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1" title="Promedio de goles anotados por equipos visitantes en la liga">Prom. Goles Visita</label>
+                            <input type="number" id="league_away" step="0.01" value="1.20" class="input-field w-full p-3 rounded-lg text-white">
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1 text-slate-300">Pegar Tabla Visitante (Away Table)</label>
-                        <textarea id="awayRaw" rows="6" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-xs font-mono focus:ring-2 focus:ring-green-500 outline-none" placeholder="Pega los datos aquí..."></textarea>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="parseTables()" class="flex-1 bg-accent-green hover:bg-green-600 text-slate-900 font-bold py-3 rounded-lg transition-all">
-                            Cargar Tablas
-                        </button>
-                        <button onclick="loadExample()" class="bg-slate-700 hover:bg-slate-600 px-4 rounded-lg text-sm">
-                            Cargar Ejemplo
-                        </button>
-                    </div>
-                </div>
+                </section>
 
-                <div id="previews" class="mt-6 space-y-4 hidden">
-                    <div class="overflow-x-auto">
-                        <h3 class="text-sm font-bold text-green-400 mb-2 uppercase">Tabla Local Procesada</h3>
-                        <table class="w-full text-left text-xs" id="homeTablePreview"></table>
+                <section class="glass-card p-6 rounded-2xl">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <span class="w-2 h-6 bg-green-500 rounded-full"></span> Análisis de Equipos
+                    </h2>
+                    <div class="space-y-4">
+                        <p class="text-sm font-bold text-blue-400 border-b border-gray-700 pb-1">Equipo Local</p>
+                        <div class="grid grid-cols-2 gap-4">
+                            <input type="number" id="home_gf" step="0.01" placeholder="GF Local" class="input-field w-full p-3 rounded-lg text-white" title="Goles a favor del local">
+                            <input type="number" id="home_ga" step="0.01" placeholder="GC Local" class="input-field w-full p-3 rounded-lg text-white" title="Goles en contra del local">
+                        </div>
+                        <p class="text-sm font-bold text-red-400 border-b border-gray-700 pb-1 pt-2">Equipo Visitante</p>
+                        <div class="grid grid-cols-2 gap-4">
+                            <input type="number" id="away_gf" step="0.01" placeholder="GF Visita" class="input-field w-full p-3 rounded-lg text-white" title="Goles a favor de la visita">
+                            <input type="number" id="away_ga" step="0.01" placeholder="GC Visita" class="input-field w-full p-3 rounded-lg text-white" title="Goles en contra de la visita">
+                        </div>
                     </div>
-                    <div class="overflow-x-auto">
-                        <h3 class="text-sm font-bold text-green-400 mb-2 uppercase">Tabla Visitante Procesada</h3>
-                        <table class="w-full text-left text-xs" id="awayTablePreview"></table>
+                </section>
+
+                <section class="glass-card p-6 rounded-2xl">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <span class="w-2 h-6 bg-yellow-500 rounded-full"></span> Cuotas del Mercado
+                    </h2>
+                    <div class="grid grid-cols-3 gap-2 mb-4">
+                        <input type="number" id="odds_1" step="0.01" placeholder="Cuota 1" class="input-field w-full p-2 rounded-lg text-xs">
+                        <input type="number" id="odds_x" step="0.01" placeholder="Cuota X" class="input-field w-full p-2 rounded-lg text-xs">
+                        <input type="number" id="odds_2" step="0.01" placeholder="Cuota 2" class="input-field w-full p-2 rounded-lg text-xs">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="number" id="odds_o25" step="0.01" placeholder="Cuota O2.5" class="input-field w-full p-2 rounded-lg text-xs">
+                        <input type="number" id="odds_btts" step="0.01" placeholder="Cuota BTTS" class="input-field w-full p-2 rounded-lg text-xs">
+                    </div>
+                    <div class="mt-4">
+                        <label class="block text-xs text-gray-500 mb-1">Tu Bankroll ($)</label>
+                        <input type="number" id="bankroll" value="1000" class="input-field w-full p-3 rounded-lg text-white">
+                    </div>
+                </section>
+
+                <div class="flex flex-col gap-3">
+                    <button onclick="calculate()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-emerald-900/20 active:scale-95">
+                        CALCULAR PROBABILIDADES
+                    </button>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="loadExample()" class="bg-gray-800 hover:bg-gray-700 py-2 rounded-xl text-sm transition-all">Ejemplo Premier</button>
+                        <button onclick="clearAll()" class="bg-gray-800 hover:bg-gray-700 py-2 rounded-xl text-sm transition-all text-red-400">Limpiar Todo</button>
                     </div>
                 </div>
             </div>
 
-            <div class="glass-card p-6 rounded-2xl h-fit">
-                <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
-                    <span class="bg-accent-green w-2 h-6 rounded-full"></span>
-                    Configuración del Encuentro
-                </h2>
+            <div id="results-area" class="lg:col-span-2 hidden space-y-6 fade-in">
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div>
-                        <label class="block text-sm mb-1 text-slate-400">Equipo Local</label>
-                        <select id="selectHome" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 focus:border-green-500 outline-none"></select>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="glass-card p-6 rounded-2xl">
+                        <h3 class="text-lg font-bold mb-6 border-b border-gray-700 pb-2">Probabilidades 1X2</h3>
+                        <div class="space-y-6" id="prob-bars">
+                            </div>
                     </div>
-                    <div>
-                        <label class="block text-sm mb-1 text-slate-400">Equipo Visitante</label>
-                        <select id="selectAway" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 focus:border-green-500 outline-none"></select>
+
+                    <div class="glass-card p-6 rounded-2xl">
+                        <h3 class="text-lg font-bold mb-6 border-b border-gray-700 pb-2">Mercados Secundarios</h3>
+                        <div class="space-y-4" id="secondary-markets">
+                            </div>
                     </div>
                 </div>
 
-                <div class="mb-6">
-                    <label class="block text-sm mb-1 text-slate-400">Parámetro de Correlación (ρ)</label>
-                    <div class="flex items-center gap-4">
-                        <input type="range" id="rhoRange" min="0" max="0.30" step="0.01" value="0.10" class="flex-1 accent-green" oninput="rhoValue.value = this.value">
-                        <input type="number" id="rhoValue" value="0.10" class="w-16 bg-slate-800 border border-slate-700 rounded p-1 text-center" readonly>
-                    </div>
-                    <p class="text-[10px] text-slate-500 mt-2 italic">Ajusta la dependencia entre goles. Un ρ mayor suele incrementar la probabilidad de empates de pocos goles.</p>
+                <div class="glass-card p-6 rounded-2xl overflow-x-auto">
+                    <h3 class="text-lg font-bold mb-4">Matriz de Marcadores Exactos (Poisson 7x7)</h3>
+                    <div id="heatmap-container" class="min-w-[500px]"></div>
+                    <div id="top-scores" class="mt-6 flex flex-wrap gap-4"></div>
                 </div>
 
-                <button onclick="calculatePrediction()" class="w-full bg-white text-slate-900 hover:bg-green-400 font-black py-4 rounded-xl text-lg shadow-lg transition-all transform hover:scale-[1.02]">
-                    CALCULAR PREDICCIÓN
-                </button>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="glass-card p-6 rounded-2xl border-l-4 border-yellow-500">
+                        <h3 class="text-lg font-bold mb-4">Detección de Valor (+EV)</h3>
+                        <div id="value-bets" class="space-y-3"></div>
+                    </div>
+                    <div class="glass-card p-6 rounded-2xl border-l-4 border-emerald-500">
+                        <h3 class="text-lg font-bold mb-4">Gestión de Bankroll (Kelly 25%)</h3>
+                        <div id="kelly-recommendation" class="space-y-3"></div>
+                    </div>
+                </div>
             </div>
+
         </div>
 
-        <div id="results" class="mt-8 hidden">
-            <div class="glass-card p-8 rounded-2xl border-2 border-green-500/30">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    
-                    <div class="space-y-6">
-                        <div class="text-center p-4 bg-slate-900/50 rounded-xl">
-                            <span class="text-xs text-slate-400 uppercase tracking-widest">Expectativa de Goles (xG)</span>
-                            <div class="flex justify-around items-center mt-2">
-                                <div><p id="resXGHome" class="text-3xl font-bold accent-green">-</p><p class="text-[10px]">LOCAL</p></div>
-                                <div class="text-slate-600 text-2xl font-light">vs</div>
-                                <div><p id="resXGAway" class="text-3xl font-bold accent-green">-</p><p class="text-[10px]">VISITANTE</p></div>
-                            </div>
-                        </div>
-
-                        <div class="space-y-3">
-                            <div class="flex justify-between items-center bg-slate-800/40 p-3 rounded-lg">
-                                <span>Local (1)</span>
-                                <span id="prob1" class="font-bold text-green-400">-</span>
-                            </div>
-                            <div class="flex justify-between items-center bg-slate-800/40 p-3 rounded-lg">
-                                <span>Empate (X)</span>
-                                <span id="probX" class="font-bold text-slate-300">-</span>
-                            </div>
-                            <div class="flex justify-between items-center bg-slate-800/40 p-3 rounded-lg">
-                                <span>Visitante (2)</span>
-                                <span id="prob2" class="font-bold text-red-400">-</span>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2">
-                            <div class="bg-slate-800/60 p-3 rounded-lg text-center text-sm">
-                                <p class="text-slate-400 mb-1">Over 2.5</p>
-                                <p id="over25" class="font-bold">-</p>
-                            </div>
-                            <div class="bg-slate-800/60 p-3 rounded-lg text-center text-sm">
-                                <p class="text-slate-400 mb-1">BTTS (Sí)</p>
-                                <p id="btts" class="font-bold">-</p>
-                            </div>
-                        </div>
-                        
-                        <div class="p-3 bg-green-900/20 border border-green-500/20 rounded-lg text-center">
-                            <p class="text-xs text-slate-300 uppercase">Marcador más probable</p>
-                            <p id="mostLikelyScore" class="text-2xl font-black text-green-400 mt-1">-</p>
-                        </div>
-                    </div>
-
-                    <div class="lg:col-span-2 overflow-x-auto">
-                        <h3 class="text-center mb-4 text-sm font-bold uppercase tracking-widest text-slate-400">Matriz de Marcadores Correctos (0-5)</h3>
-                        <table class="w-full text-center border-collapse text-[11px]" id="matrixTable">
-                            </table>
-                    </div>
-
-                </div>
-            </div>
-
-            <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="bg-slate-800/30 p-4 rounded-lg border border-slate-700">
-                    <h4 class="font-bold text-sm text-green-400 mb-2">Fuerza de Ataque/Defensa</h4>
-                    <p class="text-[11px] text-slate-400">Calcula qué tan superior es un equipo respecto al promedio de la liga. Si el ataque es 1.20, anota un 20% más que la media.</p>
-                </div>
-                <div class="bg-slate-800/30 p-4 rounded-lg border border-slate-700">
-                    <h4 class="font-bold text-sm text-green-400 mb-2">Parámetro ρ (Rho)</h4>
-                    <p class="text-[11px] text-slate-400">Ajusta la distribución para que los goles no sean eventos totalmente independientes (Poisson Bivariado), mejorando la precisión en empates.</p>
-                </div>
-                <div class="bg-slate-800/30 p-4 rounded-lg border border-slate-700">
-                    <h4 class="font-bold text-sm text-green-400 mb-2">Expected Goals (xG)</h4>
-                    <p class="text-[11px] text-slate-400">Es el número de goles promedio que un equipo marcaría en infinitas repeticiones del partido bajo estas condiciones.</p>
-                </div>
-            </div>
-        </div>
+        <footer class="mt-16 text-center text-gray-500 text-sm border-t border-gray-800 pt-8">
+            <p class="max-w-2xl mx-auto mb-4">
+                El modelo de Poisson estima la probabilidad de un número determinado de eventos (goles) basándose en un promedio conocido. 
+                Utiliza la fuerza de ataque y defensa relativa para proyectar el resultado más probable.
+            </p>
+            <p>&copy; 2026 Poisson Bet Analyzer | <a href="#" class="hover:text-emerald-400 underline transition-colors">GitHub Repository</a></p>
+        </footer>
     </div>
 
     <script>
-        let homeData = [];
-        let awayData = [];
-
-        function parseTables() {
-            const hRaw = document.getElementById('homeRaw').value;
-            const aRaw = document.getElementById('awayRaw').value;
-
-            homeData = processRawText(hRaw);
-            awayData = processRawText(aRaw);
-
-            if (homeData.length === 0 || awayData.length === 0) {
-                alert("Error al parsear las tablas. Asegúrate de que el formato sea correcto.");
-                return;
-            }
-
-            renderPreview('homeTablePreview', homeData);
-            renderPreview('awayTablePreview', awayData);
-            populateSelects();
-
-            document.getElementById('previews').classList.remove('hidden');
-            window.scrollTo({ top: document.getElementById('previews').offsetTop, behavior: 'smooth' });
-        }
-
-        function processRawText(text) {
-            const lines = text.trim().split('\n');
-            const result = [];
-            
-            lines.forEach(line => {
-                const cleanLine = line.trim();
-                // Regex para capturar: Posición (número), Nombre (letras/espacios), y luego números
-                // Ajustado para capturar GP (columna 3), GF (columna 7), GA (columna 8) basándose en el formato
-                const parts = cleanLine.split(/\s+/);
-                
-                // Ignorar encabezados o líneas cortas
-                if (parts.length < 5 || isNaN(parts[0])) return;
-
-                const pos = parts[0];
-                // El nombre puede tener varias palabras. Buscamos hasta donde empiezan los números de las stats
-                let teamNameParts = [];
-                let i = 1;
-                while (isNaN(parts[i]) && i < parts.length) {
-                    teamNameParts.push(parts[i]);
-                    i++;
-                }
-                const teamName = teamNameParts.join(' ');
-                
-                // Basado en el formato: GP(3), W, D, L, GF(7), GA(8)
-                // Usamos índices relativos al final del nombre del equipo
-                const gp = parseInt(parts[i]);
-                const gf = parseInt(parts[i+4]);
-                const ga = parseInt(parts[i+5]);
-
-                if (!isNaN(gp) && !isNaN(gf) && !isNaN(ga)) {
-                    result.push({ pos, team: teamName, gp, gf, ga });
-                }
-            });
-            return result;
-        }
-
-        function renderPreview(id, data) {
-            const table = document.getElementById(id);
-            let html = `<thead class="text-slate-500 border-b border-slate-800">
-                <tr><th class="pb-2">Pos</th><th class="pb-2">Equipo</th><th class="pb-2">PJ</th><th class="pb-2">GF</th><th class="pb-2">GC</th></tr>
-            </thead><tbody>`;
-            data.forEach(item => {
-                html += `<tr class="border-b border-slate-800/50">
-                    <td class="py-1">${item.pos}</td>
-                    <td class="py-1 text-slate-200 font-semibold">${item.team}</td>
-                    <td class="py-1">${item.gp}</td>
-                    <td class="py-1 text-green-400">${item.gf}</td>
-                    <td class="py-1 text-red-400">${item.ga}</td>
-                </tr>`;
-            });
-            html += '</tbody>';
-            table.innerHTML = html;
-        }
-
-        function populateSelects() {
-            const sHome = document.getElementById('selectHome');
-            const sAway = document.getElementById('selectAway');
-            
-            sHome.innerHTML = homeData.map(t => `<option value="${t.team}">${t.team}</option>`).join('');
-            sAway.innerHTML = awayData.map(t => `<option value="${t.team}">${t.team}</option>`).join('');
-        }
-
-        function loadExample() {
-            const example = `1	Arsenal	15	12	2	1	35	9	+26	38	2.53
-2	Manchester City	15	11	3	1	36	11	+25	36	2.40
-3	Newcastle	16	9	6	1	28	11	+17	33	2.06
-4	Tottenham	16	9	2	5	33	21	+12	29	1.81
-5	Manchester Utd	15	9	2	4	20	20	0	29	1.93
-6	Liverpool	15	7	4	4	28	18	+10	25	1.67`;
-            document.getElementById('homeRaw').value = example;
-            document.getElementById('awayRaw').value = example;
-            parseTables();
-        }
-
+        // Funciones Matemáticas
         function factorial(n) {
+            if (n === 0 || n === 1) return 1;
             let res = 1;
             for (let i = 2; i <= n; i++) res *= i;
             return res;
         }
 
-        function poissonPMF(k, lam) {
-            return (Math.pow(lam, k) * Math.exp(-lam)) / factorial(k);
+        function poissonPMF(k, lambda) {
+            return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial(k);
         }
 
-        function calculatePrediction() {
-            const teamLocal = homeData.find(t => t.team === document.getElementById('selectHome').value);
-            const teamVisit = awayData.find(t => t.team === document.getElementById('selectAway').value);
-            const rho = parseFloat(document.getElementById('rhoRange').value);
+        function calculate() {
+            // Inputs
+            const lH = parseFloat(document.getElementById('league_home').value);
+            const lV = parseFloat(document.getElementById('league_away').value);
+            const hGF = parseFloat(document.getElementById('home_gf').value);
+            const hGA = parseFloat(document.getElementById('home_ga').value);
+            const vGF = parseFloat(document.getElementById('away_gf').value);
+            const vGA = parseFloat(document.getElementById('away_ga').value);
 
-            // Averages
-            const avgHomeGF = homeData.reduce((s, t) => s + t.gf, 0) / homeData.reduce((s, t) => s + t.gp, 0);
-            const avgHomeGA = homeData.reduce((s, t) => s + t.ga, 0) / homeData.reduce((s, t) => s + t.gp, 0);
-            const avgAwayGF = awayData.reduce((s, t) => s + t.gf, 0) / awayData.reduce((s, t) => s + t.gp, 0);
-            const avgAwayGA = awayData.reduce((s, t) => s + t.ga, 0) / awayData.reduce((s, t) => s + t.gp, 0);
+            if ([lH, lV, hGF, hGA, vGF, vGA].some(isNaN)) {
+                alert("Por favor completa todos los campos de datos de equipos.");
+                return;
+            }
 
-            // Forces
-            const attL = (teamLocal.gf / teamLocal.gp) / avgHomeGF;
-            const defL = (teamLocal.ga / teamLocal.gp) / avgHomeGA;
-            const attV = (teamVisit.gf / teamVisit.gp) / avgAwayGF;
-            const defV = (teamVisit.ga / teamVisit.gp) / avgAwayGA;
+            // Lambdas
+            const totalAvg = lH + lV;
+            const lambdaH = (hGF * vGA) / totalAvg;
+            const lambdaV = (vGF * hGA) / totalAvg;
 
-            // xG
-            const lambdaHome = attL * defV * avgHomeGF;
-            const lambdaAway = attV * defL * avgAwayGF;
-
-            // Bivariate Poisson Matrix
-            const l1 = lambdaHome - rho;
-            const l2 = lambdaAway - rho;
-            const l3 = rho;
-
-            let matrix = Array(6).fill().map(() => Array(6).fill(0));
-            let prob1 = 0, probX = 0, prob2 = 0;
+            // Matriz 7x7
+            let matrix = Array(7).fill().map(() => Array(7).fill(0));
+            let p1 = 0, pX = 0, p2 = 0;
             let over25 = 0, btts = 0;
-            let maxProb = 0, bestScore = "0-0";
 
-            for (let i = 0; i < 6; i++) {
-                for (let j = 0; j < 6; j++) {
-                    let prob = 0;
-                    for (let k = 0; k <= Math.min(i, j); k++) {
-                        prob += poissonPMF(i - k, l1) * poissonPMF(j - k, l2) * poissonPMF(k, l3);
-                    }
-                    matrix[i][j] = prob;
+            for (let h = 0; h < 7; h++) {
+                for (let v = 0; v < 7; v++) {
+                    const prob = poissonPMF(h, lambdaH) * poissonPMF(v, lambdaV);
+                    matrix[h][v] = prob;
 
-                    // Stats
-                    if (i > j) prob1 += prob;
-                    else if (i === j) probX += prob;
-                    else prob2 += prob;
+                    if (h > v) p1 += prob;
+                    else if (h === v) pX += prob;
+                    else p2 += prob;
 
-                    if (i + j > 2.5) over25 += prob;
-                    if (i > 0 && j > 0) btts += prob;
-
-                    if (prob > maxProb) {
-                        maxProb = prob;
-                        bestScore = `${i} - ${j}`;
-                    }
+                    if (h + v > 2.5) over25 += prob;
+                    if (h > 0 && v > 0) btts += prob;
                 }
             }
 
-            // Display Results
-            document.getElementById('resXGHome').innerText = lambdaHome.toFixed(2);
-            document.getElementById('resXGAway').innerText = lambdaAway.toFixed(2);
-            document.getElementById('prob1').innerText = (prob1 * 100).toFixed(1) + "%";
-            document.getElementById('probX').innerText = (probX * 100).toFixed(1) + "%";
-            document.getElementById('prob2').innerText = (prob2 * 100).toFixed(1) + "%";
-            document.getElementById('over25').innerText = (over25 * 100).toFixed(1) + "%";
-            document.getElementById('btts').innerText = (btts * 100).toFixed(1) + "%";
-            document.getElementById('mostLikelyScore').innerText = bestScore;
+            // HT Over 0.5
+            const lambdaHT = (lambdaH + lambdaV) / 2;
+            const over05HT = 1 - Math.exp(-lambdaHT);
 
-            renderMatrix(matrix);
-            document.getElementById('results').classList.remove('hidden');
-            window.scrollTo({ top: document.getElementById('results').offsetTop - 20, behavior: 'smooth' });
+            displayResults(p1, pX, p2, over25, btts, over05HT, matrix);
+            document.getElementById('results-area').classList.remove('hidden');
         }
 
-        function renderMatrix(matrix) {
-            const container = document.getElementById('matrixTable');
-            let html = `<thead><tr><th class="p-2 text-slate-500">L \\ V</th>`;
-            for (let j = 0; j < 6; j++) html += `<th class="p-2 text-slate-500">${j}</th>`;
-            html += `</tr></thead><tbody>`;
+        function displayResults(p1, pX, p2, over25, btts, over05HT, matrix) {
+            // 1X2 Bars
+            const barContainer = document.getElementById('prob-bars');
+            barContainer.innerHTML = `
+                ${renderProgressBar('Local (1)', p1, 'bg-emerald-500')}
+                ${renderProgressBar('Empate (X)', pX, 'bg-gray-500')}
+                ${renderProgressBar('Visita (2)', p2, 'bg-red-500')}
+            `;
 
-            for (let i = 0; i < 6; i++) {
-                html += `<tr><th class="p-2 text-slate-500">${i}</th>`;
-                for (let j = 0; j < 6; j++) {
-                    const p = (matrix[i][j] * 100).toFixed(1);
-                    const intensity = Math.min(matrix[i][j] * 5, 0.9);
-                    html += `<td class="p-2 border border-slate-700/50" style="background: rgba(34, 197, 94, ${intensity})">${p}%</td>`;
+            // Markets
+            const secondary = document.getElementById('secondary-markets');
+            secondary.innerHTML = `
+                <div class="flex justify-between items-center p-3 rounded-lg bg-black/30">
+                    <span>Over 2.5 Goles</span>
+                    <span class="font-bold text-blue-400">${(over25 * 100).toFixed(2)}%</span>
+                </div>
+                <div class="flex justify-between items-center p-3 rounded-lg bg-black/30">
+                    <span>Ambos Anotan (BTTS)</span>
+                    <span class="font-bold text-emerald-400">${(btts * 100).toFixed(2)}%</span>
+                </div>
+                <div class="flex justify-between items-center p-3 rounded-lg bg-black/30">
+                    <span>Over 0.5 Goles 1T</span>
+                    <span class="font-bold text-purple-400">${(over05HT * 100).toFixed(2)}%</span>
+                </div>
+            `;
+
+            // Heatmap
+            renderHeatmap(matrix);
+
+            // Value Bets & Kelly
+            checkValue(p1, pX, p2, over25, btts);
+        }
+
+        function renderProgressBar(label, val, color) {
+            const pct = (val * 100).toFixed(1);
+            return `
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm font-medium">${label}</span>
+                        <span class="text-sm font-bold">${pct}%</span>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-4">
+                        <div class="${color} h-4 rounded-full shadow-inner transition-all duration-1000" style="width: ${pct}%"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderHeatmap(matrix) {
+            const container = document.getElementById('heatmap-container');
+            let html = `<table class="w-full text-xs text-center border-collapse">
+                <thead><tr><th></th>${[0,1,2,3,4,5,6].map(i => `<th class="p-2 text-gray-500">V${i}</th>`).join('')}</tr></thead>
+                <tbody>`;
+            
+            let scores = [];
+
+            for (let h = 0; h < 7; h++) {
+                html += `<tr><td class="p-2 font-bold text-gray-500">L${h}</td>`;
+                for (let v = 0; v < 7; v++) {
+                    const prob = matrix[h][v];
+                    const alpha = Math.min(prob * 5, 0.9);
+                    scores.push({ s: `${h} - ${v}`, p: prob });
+                    html += `<td class="heatmap-cell p-3 border border-white/5" style="background: rgba(16, 185, 129, ${alpha})" title="Prob: ${(prob*100).toFixed(2)}%">
+                        ${(prob * 100).toFixed(1)}%
+                    </td>`;
                 }
                 html += `</tr>`;
             }
-            html += `</tbody>`;
+            html += `</tbody></table>`;
             container.innerHTML = html;
+
+            // Top 5 Scores
+            scores.sort((a, b) => b.p - a.p);
+            const topDiv = document.getElementById('top-scores');
+            topDiv.innerHTML = '<p class="w-full text-sm text-gray-400 mb-2">Marcadores más probables:</p>' + 
+                scores.slice(0, 5).map(s => `
+                    <div class="px-4 py-2 bg-gray-800 rounded-lg border border-emerald-500/30">
+                        <span class="font-bold text-emerald-400">${s.s}</span>
+                        <span class="ml-2 text-xs text-gray-400">(${(s.p*100).toFixed(1)}%)</span>
+                    </div>
+                `).join('');
+        }
+
+        function checkValue(p1, pX, p2, over25, btts) {
+            const bankroll = parseFloat(document.getElementById('bankroll').value) || 0;
+            const markets = [
+                { id: 'odds_1', prob: p1, name: 'Victoria Local' },
+                { id: 'odds_x', prob: pX, name: 'Empate' },
+                { id: 'odds_2', prob: p2, name: 'Victoria Visita' },
+                { id: 'odds_o25', prob: over25, name: 'Over 2.5' },
+                { id: 'odds_btts', prob: btts, name: 'BTTS Yes' }
+            ];
+
+            const valueDiv = document.getElementById('value-bets');
+            const kellyDiv = document.getElementById('kelly-recommendation');
+            valueDiv.innerHTML = '';
+            kellyDiv.innerHTML = '';
+
+            let valueFound = false;
+
+            markets.forEach(m => {
+                const odd = parseFloat(document.getElementById(m.id).value);
+                if (odd > 1) {
+                    const ev = (m.prob * odd) - 1;
+                    const evPct = (ev * 100).toFixed(2);
+                    const isValue = ev > 0;
+                    valueFound = true;
+
+                    valueDiv.innerHTML += `
+                        <div class="flex justify-between items-center text-sm">
+                            <span>${m.name}:</span>
+                            <span class="${isValue ? 'text-emerald-400 font-bold' : 'text-red-400'}">
+                                EV: ${evPct}% ${isValue ? '✓' : '✗'}
+                            </span>
+                        </div>
+                    `;
+
+                    if (isValue) {
+                        // Kelly 25% (Fractional Kelly)
+                        const f = 0.25; 
+                        const b = odd - 1;
+                        const p = m.prob;
+                        const q = 1 - p;
+                        const kelly = Math.max(0, (b * p - q) / b) * f;
+                        
+                        kellyDiv.innerHTML += `
+                            <div class="p-3 bg-emerald-900/20 rounded-lg border border-emerald-500/20 mb-2">
+                                <p class="text-xs font-bold text-emerald-400 uppercase">${m.name}</p>
+                                <p class="text-lg">Stake: <span class="font-mono">${(kelly * 100).toFixed(2)}%</span></p>
+                                <p class="text-sm text-gray-400">Importe: $${(kelly * bankroll).toFixed(2)}</p>
+                            </div>
+                        `;
+                    }
+                }
+            });
+
+            if (!valueFound) {
+                valueDiv.innerHTML = '<p class="text-sm text-gray-500 italic">Ingresa cuotas para calcular Valor Esperado y Stake Kelly.</p>';
+                kellyDiv.innerHTML = '<p class="text-sm text-gray-500 italic">Sin apuestas de valor detectadas.</p>';
+            }
+        }
+
+        function loadExample() {
+            // Ejemplo: Manchester City vs Liverpool
+            document.getElementById('league_home').value = 1.55;
+            document.getElementById('league_away').value = 1.25;
+            document.getElementById('home_gf').value = 2.80;
+            document.getElementById('home_ga').value = 0.90;
+            document.getElementById('away_gf').value = 2.40;
+            document.getElementById('away_ga').value = 1.10;
+            
+            document.getElementById('odds_1').value = 1.85;
+            document.getElementById('odds_x').value = 3.90;
+            document.getElementById('odds_2').value = 4.10;
+            document.getElementById('odds_o25').value = 1.65;
+            document.getElementById('odds_btts').value = 1.55;
+            
+            calculate();
+        }
+
+        function clearAll() {
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach(input => input.value = '');
+            document.getElementById('results-area').classList.add('hidden');
+            document.getElementById('bankroll').value = 1000;
         }
     </script>
 </body>
