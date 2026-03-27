@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Poisson Bivariado • Predictor Pro Fútbol</title>
+    <title>Poisson Bivariado • Calculadora de Probabilidades Fútbol</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500&amp;display=swap');
         
         :root {
-            --emerald: #10b981;
+            --primary: #00d4ff;
         }
         
         * {
@@ -18,970 +18,924 @@
         }
         
         body {
-            font-family: 'Inter', system_ui, sans-serif;
-            background: linear-gradient(180deg, #0a0a0a, #111111);
-            color: #f1f5f9;
+            font-family: 'Inter', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e2937 100%);
+            color: #e2e8f0;
             min-height: 100vh;
             padding: 20px;
-        }
-        
-        .header {
-            max-width: 1280px;
-            margin: 0 auto 40px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        .logo {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 28px;
-            font-weight: 500;
-            background: linear-gradient(90deg, #10b981, #34d399);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
         
         .container {
             max-width: 1280px;
             margin: 0 auto;
-            display: grid;
-            grid-template-columns: 380px 1fr;
-            gap: 24px;
+            background: #1e2937;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4);
+            overflow: hidden;
         }
         
-        .card {
-            background: #171717;
-            border-radius: 24px;
-            border: 1px solid #27272a;
-            box-shadow: 0 25px 50px -12px rgb(16 185 129 / 0.1);
-            padding: 28px;
-        }
-        
-        .section-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 20px;
-            color: #10b981;
+        header {
+            background: linear-gradient(90deg, #0f172a, #1e2937);
+            padding: 30px 40px;
             display: flex;
+            align-items: center;
+            gap: 15px;
+            border-bottom: 1px solid #334155;
+        }
+        
+        .logo {
+            background: var(--primary);
+            color: #0f172a;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 700;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        
+        h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 28px;
+            font-weight: 500;
+            letter-spacing: -0.5px;
+        }
+        
+        .subtitle {
+            font-size: 15px;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+        
+        .main {
+            padding: 40px;
+        }
+        
+        .input-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .textarea-box {
+            background: #0f172a;
+            border-radius: 16px;
+            padding: 20px;
+            border: 2px solid #334155;
+            transition: all 0.3s ease;
+        }
+        
+        .textarea-box:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.2);
+        }
+        
+        .textarea-box label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 15px;
+            color: #e2e8f0;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 220px;
+            background: #1e2937;
+            border: none;
+            border-radius: 12px;
+            padding: 16px;
+            color: #e2e8f0;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: vertical;
+            outline: none;
+        }
+        
+        .parse-btn {
+            margin-top: 15px;
+            background: var(--primary);
+            color: #0f172a;
+            border: none;
+            padding: 14px 32px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        .parse-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgb(0 212 255);
+        }
+        
+        .status {
+            margin-top: 12px;
+            font-size: 14px;
+            padding: 8px 16px;
+            border-radius: 9999px;
+            display: inline-flex;
             align-items: center;
             gap: 8px;
         }
         
-        .input-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-        
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        
-        .input-group label {
-            font-size: 13px;
-            font-weight: 500;
-            color: #a3a3a3;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .input-group input {
-            background: #27272a;
-            border: 1px solid #3f3f46;
-            border-radius: 12px;
-            padding: 14px 16px;
-            color: #f1f5f9;
-            font-size: 16px;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .input-group input:focus {
-            outline: none;
-            border-color: #10b981;
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
-        }
-        
-        .team-header {
-            background: #27272a;
-            padding: 12px 16px;
+        .match-section {
+            background: #0f172a;
             border-radius: 16px;
-            margin-bottom: 20px;
+            padding: 30px;
+            margin-bottom: 40px;
+            border: 1px solid #334155;
+        }
+        
+        .teams-row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 20px;
+            align-items: end;
+            margin-bottom: 25px;
+        }
+        
+        .team-input {
+            position: relative;
+        }
+        
+        .team-input label {
+            display: block;
+            margin-bottom: 8px;
             font-weight: 600;
-            font-size: 18px;
+            font-size: 15px;
+        }
+        
+        input[list] {
+            width: 100%;
+            padding: 16px 20px;
+            background: #1e2937;
+            border: 2px solid #334155;
+            border-radius: 12px;
+            color: #e2e8f0;
+            font-size: 17px;
+        }
+        
+        input[list]:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .vs {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary);
+            padding-bottom: 18px;
+        }
+        
+        .controls {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 30px;
+            flex-wrap: wrap;
         }
         
-        .slider-container {
-            margin-top: 20px;
-        }
-        
-        .slider-label {
+        .lambda-control {
             display: flex;
-            justify-content: space-between;
-            font-size: 13px;
-            margin-bottom: 8px;
+            align-items: center;
+            gap: 15px;
+            background: #1e2937;
+            padding: 12px 20px;
+            border-radius: 12px;
+        }
+        
+        .lambda-control label {
+            font-weight: 600;
+            white-space: nowrap;
         }
         
         input[type="range"] {
-            width: 100%;
-            accent-color: #10b981;
+            accent-color: var(--primary);
         }
         
-        .value-badge {
-            background: #10b981;
-            color: #000;
-            font-size: 13px;
-            font-weight: 600;
-            padding: 2px 10px;
-            border-radius: 9999px;
-        }
-        
-        button {
-            background: #10b981;
-            color: #000;
-            font-weight: 600;
-            padding: 16px 32px;
-            border-radius: 9999px;
-            font-size: 17px;
+        .calc-btn {
+            background: linear-gradient(90deg, #00d4ff, #00a8cc);
+            color: #0f172a;
             border: none;
+            padding: 18px 48px;
+            font-size: 18px;
+            font-weight: 700;
+            border-radius: 9999px;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 10px 15px -3px rgb(16 185 129);
+            box-shadow: 0 10px 15px -3px rgb(0 212 255);
+            transition: all 0.3s ease;
         }
         
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 20px 25px -5px rgb(16 185 129);
-        }
-        
-        button.secondary {
-            background: transparent;
-            border: 2px solid #10b981;
-            color: #10b981;
+        .calc-btn:hover {
+            transform: scale(1.05);
         }
         
         .results {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
+            display: none;
+            animation: fadeIn 0.4s ease forwards;
         }
         
-        .big-stat {
-            background: #27272a;
-            border-radius: 20px;
+        .xg-card {
+            background: #0f172a;
+            border-radius: 16px;
             padding: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border: 1px solid #334155;
+        }
+        
+        .xg-item {
             text-align: center;
-            border: 1px solid #27272a;
+            flex: 1;
         }
         
-        .big-stat .label {
+        .xg-label {
             font-size: 14px;
-            color: #a3a3a3;
-            margin-bottom: 8px;
+            opacity: 0.7;
+            margin-bottom: 4px;
         }
         
-        .big-stat .value {
+        .xg-value {
             font-size: 42px;
-            font-weight: 600;
+            font-weight: 700;
+            font-family: 'Space Grotesk', sans-serif;
             line-height: 1;
         }
         
-        .prob-bar {
-            height: 12px;
-            background: #27272a;
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-card {
+            background: #0f172a;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid #334155;
+        }
+        
+        .stat-title {
+            font-size: 14px;
+            opacity: 0.7;
+            margin-bottom: 8px;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+        }
+        
+        .home-win { color: #22c55e; }
+        .draw { color: #eab308; }
+        .away-win { color: #ef4444; }
+        
+        .top-scores {
+            margin-bottom: 40px;
+        }
+        
+        .top-scores h3 {
+            margin-bottom: 16px;
+            font-size: 18px;
+        }
+        
+        .score-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .score-item {
+            background: #0f172a;
+            padding: 14px 20px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #334155;
+        }
+        
+        .score {
+            font-family: monospace;
+            font-size: 22px;
+            font-weight: 700;
+        }
+        
+        .prob {
+            background: #1e2937;
+            padding: 4px 14px;
             border-radius: 9999px;
-            overflow: hidden;
-            margin-top: 12px;
+            font-weight: 600;
+            font-size: 15px;
         }
         
-        .prob-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #10b981, #34d399);
-            transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        .matrix-container {
+            margin-top: 30px;
         }
         
-        .heatmap-table {
+        .matrix-container h3 {
+            margin-bottom: 16px;
+            font-size: 18px;
+        }
+        
+        table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 16px;
-            background: #27272a;
+            background: #0f172a;
             border-radius: 16px;
             overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
         }
         
-        .heatmap-table th,
-        .heatmap-table td {
+        th, td {
+            padding: 14px 10px;
             text-align: center;
-            padding: 10px 6px;
-            font-size: 13px;
-            font-family: monospace;
-            border: 1px solid #3f3f46;
-        }
-        
-        .heatmap-table th {
-            background: #18181b;
+            font-size: 15px;
             font-weight: 500;
-            color: #a3a3a3;
-            position: sticky;
-            top: 0;
+            border: 1px solid #334155;
         }
         
-        .heatmap-table td {
-            transition: all 0.2s ease;
+        th {
+            background: #1e2937;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .home-goal {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            background: #1e2937;
             font-weight: 600;
         }
         
-        .saved-list {
-            max-height: 420px;
-            overflow-y: auto;
+        .heatmap-cell {
+            font-weight: 600;
+            transition: all 0.2s ease;
+            position: relative;
         }
         
-        .saved-item {
-            background: #27272a;
-            border-radius: 16px;
-            padding: 14px;
-            margin-bottom: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 1px solid transparent;
-        }
-        
-        .saved-item:hover {
-            border-color: #10b981;
-            transform: translateX(4px);
-        }
-        
-        .modal {
-            animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        
-        @keyframes modalPop {
-            0% { transform: scale(0.95); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
+        .heatmap-cell:hover {
+            transform: scale(1.08);
+            z-index: 10;
         }
         
         .footer {
             text-align: center;
-            margin-top: 40px;
-            color: #64748b;
+            padding: 25px;
             font-size: 13px;
+            opacity: 0.6;
+            border-top: 1px solid #334155;
         }
         
-        @media (max-width: 1024px) {
-            .container {
-                grid-template-columns: 1fr;
-            }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .error {
+            background: #7f1d1d;
+            color: #fecaca;
+            padding: 12px 20px;
+            border-radius: 12px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        
+        .success {
+            background: #14532d;
+            color: #86efac;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="logo">
-            ⚽ Poisson Bivariado
-            <span style="font-size: 18px; background: #10b981; color: #000; padding: 4px 12px; border-radius: 9999px;">PRO</span>
-        </div>
-        <div style="display: flex; gap: 12px; align-items: center;">
-            <div onclick="toggleDarkMode()" style="cursor: pointer; background: #27272a; padding: 8px 16px; border-radius: 9999px; font-size: 14px; display: flex; align-items: center; gap: 6px;">
-                <span id="theme-text">🌙 Modo Oscuro</span>
-            </div>
-            <a href="https://github.com" target="_blank" style="color: #10b981; text-decoration: none; font-weight: 500; display: flex; align-items: center; gap: 6px;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577 0-.285-.01-1.044-.015-2.051-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.652 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222 0 1.604-.015 2.897-.015 3.293 0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                GitHub Pages Ready
-            </a>
-        </div>
-    </div>
-
     <div class="container">
-        <!-- PANEL DE ENTRADA -->
-        <div>
-            <div class="card">
-                <div class="section-title">
-                    <span>📊 Datos de entrada</span>
+        <header>
+            <div class="logo">⚽</div>
+            <div>
+                <h1>Poisson Bivariado</h1>
+                <p class="subtitle">Calculadora profesional de probabilidades de fútbol • HTML + JS puro</p>
+            </div>
+            <div style="margin-left: auto; font-size: 13px; opacity: 0.6; text-align: right;">
+                Modelo estadístico completo<br>
+                Sin frameworks • Listo para GitHub
+            </div>
+        </header>
+
+        <div class="main">
+            <!-- INPUT SECTION -->
+            <div class="input-section">
+                <!-- Home Table -->
+                <div class="textarea-box">
+                    <label>📍 TABLA LOCAL (Home table)</label>
+                    <textarea id="homeTable" placeholder="Pega aquí la tabla de rendimiento LOCAL (copy-paste desde cualquier web)&#10;&#10;Ejemplo:&#10;Equipo | PJ | GF | GC&#10;Barcelona | 15 | 28 | 12&#10;Real Madrid | 15 | 25 | 15"></textarea>
+                    <button onclick="parseTables()" class="parse-btn">📋 Parsear Tabla LOCAL</button>
                 </div>
 
-                <!-- Equipo Local -->
-                <div class="team-header">
-                    🏠 <span id="home-name-display">Equipo Local</span>
-                </div>
-                <div class="input-grid">
-                    <div class="input-group">
-                        <label>Nombre del equipo local</label>
-                        <input type="text" id="home-name" value="Equipo Local" oninput="updateTeamNames()">
-                    </div>
-                    <div class="input-group">
-                        <label>Goles a favor promedio (local)</label>
-                        <input type="number" id="home-gf" value="1.85" step="0.01">
-                    </div>
-                    <div class="input-group">
-                        <label>Goles en contra promedio (local)</label>
-                        <input type="number" id="home-ga" value="1.05" step="0.01">
-                    </div>
-                    <div class="input-group">
-                        <label>xG esperado local (opcional)</label>
-                        <input type="number" id="home-xg" value="2.10" step="0.01">
-                    </div>
-                </div>
-
-                <!-- Equipo Visitante -->
-                <div class="team-header" style="margin-top: 28px;">
-                    ✈️ <span id="away-name-display">Equipo Visitante</span>
-                </div>
-                <div class="input-grid">
-                    <div class="input-group">
-                        <label>Nombre del equipo visitante</label>
-                        <input type="text" id="away-name" value="Equipo Visitante" oninput="updateTeamNames()">
-                    </div>
-                    <div class="input-group">
-                        <label>Goles a favor promedio (visitante)</label>
-                        <input type="number" id="away-gf" value="1.15" step="0.01">
-                    </div>
-                    <div class="input-group">
-                        <label>Goles en contra promedio (visitante)</label>
-                        <input type="number" id="away-ga" value="1.75" step="0.01">
-                    </div>
-                    <div class="input-group">
-                        <label>xG esperado visitante (opcional)</label>
-                        <input type="number" id="away-xg" value="1.05" step="0.01">
-                    </div>
-                </div>
-
-                <!-- Liga -->
-                <div class="section-title" style="margin-top: 28px;">
-                    <span>🏆 Liga</span>
-                </div>
-                <div class="input-grid">
-                    <div class="input-group">
-                        <label>Promedio goles local (liga)</label>
-                        <input type="number" id="league-home-avg" value="1.48" step="0.01">
-                    </div>
-                    <div class="input-group">
-                        <label>Promedio goles visitante (liga)</label>
-                        <input type="number" id="league-away-avg" value="1.22" step="0.01">
-                    </div>
-                </div>
-
-                <!-- Correlación y xG -->
-                <div class="slider-container">
-                    <div class="slider-label">
-                        <span>Correlación ρ (Poisson bivariado)</span>
-                        <span id="rho-value" class="value-badge">0.12</span>
-                    </div>
-                    <input type="range" id="rho" min="0" max="0.35" step="0.01" value="0.12" oninput="document.getElementById('rho-value').textContent = this.value">
-                </div>
-
-                <div style="margin-top: 20px; display: flex; align-items: center; gap: 12px; background: #27272a; padding: 14px; border-radius: 16px;">
-                    <input type="checkbox" id="use-xg" checked style="width: 20px; height: 20px; accent-color: #10b981;">
-                    <label for="use-xg" style="cursor: pointer; font-weight: 500;">Usar xG en lugar de estadísticas históricas para calcular λ</label>
-                </div>
-
-                <div style="margin-top: 28px; display: flex; gap: 12px;">
-                    <button onclick="calculatePrediction()" style="flex: 1;">🚀 CALCULAR PREDICCIÓN</button>
-                    <button onclick="runMonteCarlo()" class="secondary" style="flex: 1;">📈 Simular Monte Carlo (10.000)</button>
+                <!-- Away Table -->
+                <div class="textarea-box">
+                    <label>🚀 TABLA VISITANTE (Away table)</label>
+                    <textarea id="awayTable" placeholder="Pega aquí la tabla de rendimiento VISITANTE (copy-paste desde cualquier web)&#10;&#10;Ejemplo:&#10;Equipo | PJ | GF | GC&#10;Barcelona | 15 | 22 | 18&#10;Real Madrid | 15 | 20 | 19"></textarea>
+                    <button onclick="parseTables()" class="parse-btn">📋 Parsear Tabla VISITANTE</button>
                 </div>
             </div>
 
-            <!-- Partidos guardados -->
-            <div class="card" style="margin-top: 24px;">
-                <div class="section-title" style="margin-bottom: 16px;">
-                    📂 Partidos guardados
-                    <button onclick="exportAll()" style="margin-left: auto; font-size: 13px; padding: 6px 14px; background: transparent; border: 1px solid #10b981; color: #10b981;">Exportar JSON</button>
+            <!-- Parse Status -->
+            <div id="parseStatus" style="margin-bottom: 30px; min-height: 28px;"></div>
+
+            <!-- MATCH CONFIG -->
+            <div class="match-section">
+                <h2 style="margin-bottom: 20px; font-size: 22px;">🔥 Selecciona el partido a analizar</h2>
+                
+                <div class="teams-row">
+                    <!-- Home Team -->
+                    <div class="team-input">
+                        <label>🏠 Equipo LOCAL</label>
+                        <input type="text" id="homeTeam" list="teamsList" placeholder="Selecciona equipo local" style="font-size: 18px;">
+                        <datalist id="teamsList"></datalist>
+                    </div>
+                    
+                    <div class="vs">VS</div>
+                    
+                    <!-- Away Team -->
+                    <div class="team-input">
+                        <label>🏃 Equipo VISITANTE</label>
+                        <input type="text" id="awayTeam" list="teamsList" placeholder="Selecciona equipo visitante" style="font-size: 18px;">
+                    </div>
                 </div>
-                <div id="saved-list" class="saved-list">
-                    <!-- JS populated -->
+
+                <div class="controls">
+                    <!-- Lambda3 -->
+                    <div class="lambda-control">
+                        <label>λ3 Correlación <span style="font-size:12px; opacity:0.6">(0.05–0.20 recomendado)</span></label>
+                        <input type="range" id="lambdaSlider" min="0" max="0.3" step="0.005" value="0.10" style="width: 220px;">
+                        <input type="number" id="lambdaInput" value="0.10" step="0.005" style="width: 80px; background:#1e2937; border:2px solid #334155; color:#e2e8f0; border-radius:8px; padding:8px; text-align:center; font-weight:600;">
+                        <span style="font-size:13px; background:#334155; padding:4px 12px; border-radius:9999px;">Ajustable</span>
+                    </div>
+
+                    <button onclick="calculateMatch()" class="calc-btn">
+                        🚀 CALCULAR PROBABILIDADES
+                    </button>
                 </div>
             </div>
-        </div>
 
-        <!-- RESULTADOS -->
-        <div id="results-panel" style="display: none;">
-            <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <div class="section-title">
-                        <span id="match-title">Equipo Local vs Equipo Visitante</span>
+            <!-- RESULTS -->
+            <div id="results" class="results">
+                <!-- Expected Goals -->
+                <div class="xg-card" id="xgCard">
+                    <div class="xg-item">
+                        <div class="xg-label">⚽ xG LOCAL</div>
+                        <div id="xgHome" class="xg-value">1.45</div>
+                        <div style="margin-top:8px; font-size:13px; opacity:0.6;" id="homeTeamResult"></div>
                     </div>
-                    <button onclick="saveCurrentPrediction()" class="secondary" style="padding: 8px 20px; font-size: 14px;">💾 Guardar</button>
-                </div>
-
-                <!-- 1X2 -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 32px;">
-                    <div class="big-stat" id="home-win-card">
-                        <div class="label">LOCAL GANA</div>
-                        <div class="value" id="p-home">52.4%</div>
-                        <div class="prob-bar"><div class="prob-fill" id="bar-home" style="width: 52.4%"></div></div>
-                        <div style="margin-top: 12px; font-size: 13px;">Cuota implícita: <strong id="odds-home">1.91</strong></div>
-                    </div>
-                    <div class="big-stat" id="draw-card">
-                        <div class="label">EMPATE</div>
-                        <div class="value" id="p-draw">26.1%</div>
-                        <div class="prob-bar"><div class="prob-fill" id="bar-draw" style="width: 26.1%"></div></div>
-                        <div style="margin-top: 12px; font-size: 13px;">Cuota implícita: <strong id="odds-draw">3.83</strong></div>
-                    </div>
-                    <div class="big-stat" id="away-win-card">
-                        <div class="label">VISITANTE GANA</div>
-                        <div class="value" id="p-away">21.5%</div>
-                        <div class="prob-bar"><div class="prob-fill" id="bar-away" style="width: 21.5%"></div></div>
-                        <div style="margin-top: 12px; font-size: 13px;">Cuota implícita: <strong id="odds-away">4.65</strong></div>
+                    <div style="width: 2px; height: 70px; background: linear-gradient(#334155, #334155);"></div>
+                    <div class="xg-item">
+                        <div class="xg-label">⚽ xG VISITANTE</div>
+                        <div id="xgAway" class="xg-value">1.12</div>
+                        <div style="margin-top:8px; font-size:13px; opacity:0.6;" id="awayTeamResult"></div>
                     </div>
                 </div>
 
-                <!-- Over / Under + BTTS -->
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px;">
-                    <div class="big-stat">
-                        <div class="label">OVER 1.5</div>
-                        <div class="value" id="over15">76.8%</div>
+                <!-- Summary probabilities -->
+                <div class="summary-grid">
+                    <div class="stat-card">
+                        <div class="stat-title">🏆 VICTORIA LOCAL</div>
+                        <div id="probHome" class="stat-value home-win">52.4%</div>
                     </div>
-                    <div class="big-stat">
-                        <div class="label">OVER 2.5</div>
-                        <div class="value" id="over25">54.3%</div>
+                    <div class="stat-card">
+                        <div class="stat-title">🤝 EMPATE</div>
+                        <div id="probDraw" class="stat-value draw">26.8%</div>
                     </div>
-                    <div class="big-stat">
-                        <div class="label">OVER 3.5</div>
-                        <div class="value" id="over35">31.9%</div>
+                    <div class="stat-card">
+                        <div class="stat-title">🏆 VICTORIA VISITANTE</div>
+                        <div id="probAway" class="stat-value away-win">20.8%</div>
                     </div>
-                    <div class="big-stat">
-                        <div class="label">BTTS SÍ</div>
-                        <div class="value" id="btts-yes">53.7%</div>
+                    <div class="stat-card">
+                        <div class="stat-title">🔥 BTTS (Ambos anotan)</div>
+                        <div id="bttsYes" class="stat-value" style="color:#a5f3fc;">54.9%</div>
+                        <div id="bttsNo" style="font-size:13px; margin-top:4px; opacity:0.7;">No: 45.1%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">📈 OVER 2.5 GOLES</div>
+                        <div id="over25" class="stat-value" style="color:#c084fc;">49.2%</div>
+                        <div id="under25" style="font-size:13px; margin-top:4px; opacity:0.7;">Under 2.5: 50.8%</div>
                     </div>
                 </div>
 
-                <!-- Heatmap de marcadores -->
-                <div class="section-title">📊 Heatmap de marcadores exactos (0-8 goles)</div>
-                <table id="heatmap" class="heatmap-table"></table>
-                <div style="text-align: center; margin-top: 12px; font-size: 12px; color: #64748b;">
-                    Total probabilidad capturada: <strong id="total-prob">99.87%</strong> • Máximo 8 goles
+                <!-- Top 5 scores -->
+                <div class="top-scores">
+                    <h3>🔥 Top 5 marcadores más probables</h3>
+                    <div id="topScores" class="score-list">
+                        <!-- JS injected -->
+                    </div>
                 </div>
 
-                <!-- Cuotas bookmaker y EV / Kelly -->
-                <div style="margin-top: 40px;">
-                    <div class="section-title">💰 Análisis de valor (EV) y Kelly Criterion</div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px;">
-                        <div class="input-group">
-                            <label>Cuota bookmaker LOCAL</label>
-                            <input type="number" id="bookie-home" value="2.05" step="0.01" oninput="calculateEV()">
-                        </div>
-                        <div class="input-group">
-                            <label>Cuota bookmaker EMPATE</label>
-                            <input type="number" id="bookie-draw" value="3.60" step="0.01" oninput="calculateEV()">
-                        </div>
-                        <div class="input-group">
-                            <label>Cuota bookmaker VISITANTE</label>
-                            <input type="number" id="bookie-away" value="3.80" step="0.01" oninput="calculateEV()">
-                        </div>
-                        <div class="input-group">
-                            <label>Cuota bookmaker BTTS SÍ</label>
-                            <input type="number" id="bookie-btts" value="1.85" step="0.01" oninput="calculateEV()">
-                        </div>
-                    </div>
-
-                    <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
+                <!-- Probability Matrix -->
+                <div class="matrix-container">
+                    <h3>📊 Matriz de probabilidades de marcador (hasta 5-5)</h3>
+                    <p style="font-size:13px; opacity:0.6; margin-bottom:12px;">Heatmap • Cuanto más azul, mayor probabilidad</p>
+                    <table id="probMatrix">
                         <thead>
-                            <tr style="background: #27272a;">
-                                <th style="padding: 12px; text-align: left;">Apuesta</th>
-                                <th style="padding: 12px;">Prob. modelo</th>
-                                <th style="padding: 12px;">Cuota BK</th>
-                                <th style="padding: 12px;">EV (%)</th>
-                                <th style="padding: 12px;">Kelly (% bankroll)</th>
+                            <tr>
+                                <th></th>
+                                <th colspan="6" style="text-align:center; color:#67e8f9;">GOLES VISITANTE</th>
+                            </tr>
+                            <tr id="awayHeader">
+                                <!-- JS injected -->
                             </tr>
                         </thead>
-                        <tbody id="ev-table">
-                            <!-- JS populated -->
+                        <tbody id="matrixBody">
+                            <!-- JS injected -->
                         </tbody>
                     </table>
-                </div>
-            </div>
-
-            <!-- Monte Carlo Results -->
-            <div id="monte-carlo-panel" class="card" style="margin-top: 24px; display: none;">
-                <div class="section-title">📈 Simulación Monte Carlo (10.000 iteraciones)</div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                    <div>
-                        <div style="font-size: 15px; margin-bottom: 12px;">Resultados teóricos vs simulados</div>
-                        <div id="mc-comparison"></div>
-                    </div>
-                    <div>
-                        <div style="font-size: 15px; margin-bottom: 12px;">Top 5 marcadores simulados</div>
-                        <ul id="mc-top-scores" style="list-style: none; display: flex; flex-direction: column; gap: 8px;"></ul>
-                    </div>
+                    <p style="text-align:center; margin-top:12px; font-size:13px; opacity:0.6;">
+                        Probabilidades calculadas con <strong>Modelo Poisson Bivariado</strong> (λ₁ = xG local, λ₂ = xG visitante, λ₃ = correlación)
+                    </p>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="footer">
-        Modelo Poisson Bivariado avanzado • Precisión matemática garantizada • Código 100% puro HTML + CSS + JS • Listo para GitHub Pages
+        <div class="footer">
+            ✅ Código 100% puro (HTML + CSS + JavaScript) • Parser robusto para copy-paste • 
+            Comentarios completos en el código fuente • 
+            <strong>Listo para subir a GitHub</strong> • Desarrollado para ti por un experto en modelos estadísticos de apuestas
+        </div>
     </div>
 
     <script>
-        // ======================== CONFIG ========================
-        const MAX_GOALS = 8;
-        let factorialCache = [];
-        
-        // Pre-calcular factoriales
+        /**
+         * === CALCULADORA DE PROBABILIDADES FÚTBOL - MODELO POISSON BIVARIADO ===
+         * 
+         * Características implementadas:
+         * - Parser robusto de tablas copy-paste (soporta |, tab, espacios, headers en español/inglés)
+         * - Cálculo automático de promedios de liga
+         * - Fuerzas de ataque y defensa según la fórmula exacta solicitada
+         * - xG calculados correctamente
+         * - Poisson Bivariado completo con λ3 ajustable
+         * - Matriz de probabilidades + heatmap
+         * - 1X2, BTTS, Over/Under 2.5
+         * - Top 5 marcadores
+         * - UI profesional y responsive
+         * - Sin frameworks, 100% standalone
+         * 
+         * Autor: Desarrollador experto JS + Modelos Estadísticos para Apuestas
+         * Fecha: Marzo 2026
+         */
+
+        // ====================== VARIABLES GLOBALES ======================
+        let homeStats = {};
+        let awayStats = {};
+        let teamStrengths = {};
+        let allTeams = [];
+        let avgHomeGoals = 0;
+        let avgAwayGoals = 0;
+
+        // ====================== FUNCIONES DE FACTORIAL (precomputadas) ======================
+        let factorialCache = new Array(31).fill(1);
         function precomputeFactorials() {
-            factorialCache = new Array(MAX_GOALS * 2 + 1).fill(1);
-            for (let i = 2; i < factorialCache.length; i++) {
+            for (let i = 2; i < 31; i++) {
                 factorialCache[i] = factorialCache[i - 1] * i;
             }
         }
-        
-        function fact(n) {
-            return n < factorialCache.length ? factorialCache[n] : 1;
+
+        function factorial(n) {
+            if (n < 0) return 0;
+            if (n > 30) return Infinity; // protección
+            return factorialCache[n];
         }
-        
-        // ======================== POISSON BIVARIADO ========================
-        function computeBivariateMatrix(lambdaH, lambdaA, rho) {
-            const lambda3 = Math.min(rho * Math.sqrt(lambdaH * lambdaA), Math.min(lambdaH, lambdaA) * 0.999);
-            const lambda1 = Math.max(0, lambdaH - lambda3);   // parte independiente local
-            const lambda2 = Math.max(0, lambdaA - lambda3);   // parte independiente visitante
-            const lambdaC = lambda3;
+
+        // ====================== PARSER ROBUSTO ======================
+        function parseLeagueTable(text) {
+            const lines = text.trim().split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 3);
+
+            if (lines.length === 0) return {};
+
+            // Buscar posible cabecera
+            let headerIndex = -1;
+            const headerKeywords = ['equipo', 'team', 'pj', 'gp', 'pld', 'gf', 'ga', 'gc', 'f', 'a', 'goles'];
             
-            const totalLambda = lambda1 + lambda2 + lambdaC;
+            for (let i = 0; i < lines.length; i++) {
+                const lower = lines[i].toLowerCase();
+                if (headerKeywords.some(kw => lower.includes(kw))) {
+                    headerIndex = i;
+                    break;
+                }
+            }
+
+            const dataLines = headerIndex >= 0 ? lines.slice(headerIndex + 1) : lines;
             
-            const matrix = Array.from({ length: MAX_GOALS + 1 }, () => Array(MAX_GOALS + 1).fill(0));
-            
-            for (let x = 0; x <= MAX_GOALS; x++) {
-                for (let y = 0; y <= MAX_GOALS; y++) {
-                    let sumTerm = 0;
-                    const maxK = Math.min(x, y);
-                    for (let k = 0; k <= maxK; k++) {
-                        const term1 = Math.pow(lambda1, x - k) / fact(x - k);
-                        const term2 = Math.pow(lambda2, y - k) / fact(y - k);
-                        const term3 = Math.pow(lambdaC, k) / fact(k);
-                        sumTerm += term1 * term2 * term3;
+            const parsed = {};
+            const splitRegex = /\s*\|\s*|\t+|\s{2,}/;
+
+            for (let line of dataLines) {
+                let tokens = line.split(splitRegex).map(t => t.trim()).filter(t => t.length > 0);
+                if (tokens.length < 3) continue;
+
+                // Remover posibles posiciones (1., 2., etc.)
+                if (/^\d+\.?$/.test(tokens[0])) tokens.shift();
+
+                let teamName = null;
+                let gp = null, gf = null, ga = null;
+
+                // Buscar nombre del equipo (primer token con letras)
+                for (let i = 0; i < tokens.length; i++) {
+                    if (/[a-zA-ZáéíóúüÁÉÍÓÚÜ]/.test(tokens[i])) {
+                        teamName = tokens[i];
+                        break;
                     }
-                    matrix[x][y] = Math.exp(-totalLambda) * sumTerm;
+                }
+
+                if (!teamName) continue;
+
+                // Extraer números después del equipo
+                const numbers = [];
+                for (let i = tokens.indexOf(teamName) + 1; i < tokens.length; i++) {
+                    if (/^\d+$/.test(tokens[i])) {
+                        numbers.push(parseInt(tokens[i], 10));
+                    }
+                }
+
+                if (numbers.length >= 3) {
+                    // Heurística según formato común de tablas de fútbol
+                    if (numbers.length === 3) {
+                        // Formato simple: Equipo | GP | GF | GA
+                        gp = numbers[0];
+                        gf = numbers[1];
+                        ga = numbers[2];
+                    } else if (numbers.length >= 5) {
+                        // Formato clásico: Equipo | PJ | PG | PE | PP | GF | GC
+                        gp = numbers[0];
+                        gf = numbers[4];
+                        ga = numbers[5];
+                    } else {
+                        // Fallback seguro
+                        gp = numbers[0];
+                        gf = numbers[numbers.length - 2];
+                        ga = numbers[numbers.length - 1];
+                    }
+
+                    if (gp > 0 && gf >= 0 && ga >= 0) {
+                        parsed[teamName] = { gp, gf, ga };
+                    }
                 }
             }
-            
-            // Calcular probabilidades agregadas
-            let pHome = 0, pDraw = 0, pAway = 0;
-            let pOver15 = 0, pOver25 = 0, pOver35 = 0;
-            let pBTTS = 0;
-            let totalProb = 0;
-            
-            for (let x = 0; x <= MAX_GOALS; x++) {
-                for (let y = 0; y <= MAX_GOALS; y++) {
-                    const prob = matrix[x][y];
-                    totalProb += prob;
-                    
-                    if (x > y) pHome += prob;
-                    else if (x === y) pDraw += prob;
-                    else pAway += prob;
-                    
-                    if (x + y > 1.5) pOver15 += prob;
-                    if (x + y > 2.5) pOver25 += prob;
-                    if (x + y > 3.5) pOver35 += prob;
-                    if (x >= 1 && y >= 1) pBTTS += prob;
-                }
-            }
-            
-            return {
-                matrix: matrix,
-                pHome: pHome,
-                pDraw: pDraw,
-                pAway: pAway,
-                pOver15: pOver15,
-                pOver25: pOver25,
-                pOver35: pOver35,
-                pBTTS: pBTTS,
-                totalProb: totalProb,
-                lambdaH: lambdaH,
-                lambdaA: lambdaA,
-                rho: rho,
-                lambdaC: lambdaC
-            };
+            return parsed;
         }
-        
-        // ======================== SAMPLE POISSON ========================
-        function samplePoisson(lambda) {
-            if (lambda < 0) return 0;
-            let L = Math.exp(-lambda);
-            let p = 1.0;
-            let k = 0;
-            do {
-                k++;
-                p *= Math.random();
-            } while (p > L);
-            return k - 1;
-        }
-        
-        function sampleBivariate(lambdaH, lambdaA, rho) {
-            const lambda3 = Math.min(rho * Math.sqrt(lambdaH * lambdaA), Math.min(lambdaH, lambdaA) * 0.999);
-            const lambda1 = Math.max(0, lambdaH - lambda3);
-            const lambda2 = Math.max(0, lambdaA - lambda3);
-            
-            const K = samplePoisson(lambda3);
-            const Xind = samplePoisson(lambda1);
-            const Yind = samplePoisson(lambda2);
-            
-            return {
-                home: Xind + K,
-                away: Yind + K
-            };
-        }
-        
-        // ======================== CÁLCULO PRINCIPAL ========================
-        let currentResult = null;
-        
-        function calculatePrediction() {
-            // Leer inputs
-            const homeName = document.getElementById('home-name').value || 'Local';
-            const awayName = document.getElementById('away-name').value || 'Visitante';
-            
-            const homeGF = parseFloat(document.getElementById('home-gf').value) || 1.5;
-            const homeGA = parseFloat(document.getElementById('home-ga').value) || 1.2;
-            const awayGF = parseFloat(document.getElementById('away-gf').value) || 1.2;
-            const awayGA = parseFloat(document.getElementById('away-ga').value) || 1.5;
-            
-            const leagueHomeAvg = parseFloat(document.getElementById('league-home-avg').value) || 1.48;
-            const leagueAwayAvg = parseFloat(document.getElementById('league-away-avg').value) || 1.22;
-            
-            const useXG = document.getElementById('use-xg').checked;
-            const homeXG = parseFloat(document.getElementById('home-xg').value) || 0;
-            const awayXG = parseFloat(document.getElementById('away-xg').value) || 0;
-            
-            const rho = parseFloat(document.getElementById('rho').value) || 0;
-            
-            // Calcular λ
-            let lambdaH, lambdaA;
-            
-            if (useXG && homeXG > 0 && awayXG > 0) {
-                lambdaH = homeXG;
-                lambdaA = awayXG;
-            } else {
-                // Fuerzas según especificación exacta del usuario
-                const ataqueLocal = homeGF / leagueHomeAvg;
-                const defensaVisitante = awayGA / leagueHomeAvg;
-                const ataqueVisitante = awayGF / leagueAwayAvg;
-                const defensaLocal = homeGA / leagueAwayAvg;
-                
-                lambdaH = ataqueLocal * defensaVisitante * leagueHomeAvg;
-                lambdaA = ataqueVisitante * defensaLocal * leagueAwayAvg;
-            }
-            
-            // Evitar valores negativos o cero
-            lambdaH = Math.max(0.3, lambdaH);
-            lambdaA = Math.max(0.3, lambdaA);
-            
-            // Calcular matriz bivariada
-            currentResult = computeBivariateMatrix(lambdaH, lambdaA, rho);
-            currentResult.homeName = homeName;
-            currentResult.awayName = awayName;
-            
-            // Renderizar resultados
-            renderResults();
-            document.getElementById('results-panel').style.display = 'block';
-            
-            // Calcular EV/Kelly inicial
-            calculateEV();
-        }
-        
-        function renderResults() {
-            if (!currentResult) return;
-            
-            const r = currentResult;
-            
-            // Título del partido
-            document.getElementById('match-title').innerHTML = 
-                `<strong>${r.homeName}</strong> <span style="color:#64748b">vs</span> <strong>${r.awayName}</strong>`;
-            
-            // 1X2
-            document.getElementById('p-home').textContent = (r.pHome * 100).toFixed(1) + '%';
-            document.getElementById('bar-home').style.width = (r.pHome * 100) + '%';
-            document.getElementById('odds-home').textContent = (1 / r.pHome).toFixed(2);
-            
-            document.getElementById('p-draw').textContent = (r.pDraw * 100).toFixed(1) + '%';
-            document.getElementById('bar-draw').style.width = (r.pDraw * 100) + '%';
-            document.getElementById('odds-draw').textContent = (1 / r.pDraw).toFixed(2);
-            
-            document.getElementById('p-away').textContent = (r.pAway * 100).toFixed(1) + '%';
-            document.getElementById('bar-away').style.width = (r.pAway * 100) + '%';
-            document.getElementById('odds-away').textContent = (1 / r.pAway).toFixed(2);
-            
-            // Over / Under + BTTS
-            document.getElementById('over15').textContent = (r.pOver15 * 100).toFixed(1) + '%';
-            document.getElementById('over25').textContent = (r.pOver25 * 100).toFixed(1) + '%';
-            document.getElementById('over35').textContent = (r.pOver35 * 100).toFixed(1) + '%';
-            document.getElementById('btts-yes').textContent = (r.pBTTS * 100).toFixed(1) + '%';
-            
-            // Heatmap
-            const table = document.getElementById('heatmap');
-            table.innerHTML = `
-                <tr>
-                    <th style="width:40px"></th>
-                    ${Array.from({length: MAX_GOALS+1}, (_, i) => `<th>${i}</th>`).join('')}
-                    <th style="font-size:11px; color:#64748b">Away →</th>
-                </tr>`;
-            
-            for (let x = 0; x <= MAX_GOALS; x++) {
-                let row = `<tr><th style="text-align:right; background:#18181b">${x}</th>`;
-                for (let y = 0; y <= MAX_GOALS; y++) {
-                    const p = r.matrix[x][y];
-                    const intensity = Math.min(95, Math.max(15, p * 650)); // escala visual optimizada
-                    const color = `hsl(142, 82%, ${intensity}%)`;
-                    const textColor = p > 0.08 ? '#000' : '#f1f5f9';
-                    row += `<td style="background:${color}; color:${textColor}">${(p * 100).toFixed(1)}</td>`;
-                }
-                row += `<td style="background:#18181b; font-weight:600; color:#10b981">${(r.matrix[x].reduce((a,b)=>a+b,0)*100).toFixed(1)}%</td></tr>`;
-                table.innerHTML += row;
-            }
-            
-            document.getElementById('total-prob').textContent = (r.totalProb * 100).toFixed(2) + '%';
-            
-            // Guardar para uso posterior
-            currentResult.displayed = true;
-        }
-        
-        // ======================== EV + KELLY ========================
-        function calculateEV() {
-            if (!currentResult) return;
-            
-            const r = currentResult;
-            
-            const bookieHome = parseFloat(document.getElementById('bookie-home').value) || 0;
-            const bookieDraw = parseFloat(document.getElementById('bookie-draw').value) || 0;
-            const bookieAway = parseFloat(document.getElementById('bookie-away').value) || 0;
-            const bookieBTTS = parseFloat(document.getElementById('bookie-btts').value) || 0;
-            
-            const tableHTML = `
-                <tr>
-                    <td style="padding:14px 12px; font-weight:500">Local gana</td>
-                    <td style="padding:14px 12px; text-align:center">${(r.pHome*100).toFixed(1)}%</td>
-                    <td style="padding:14px 12px; text-align:center">${bookieHome || '-'}</td>
-                    <td style="padding:14px 12px; text-align:center; color:${(r.pHome * bookieHome - 1) > 0 ? '#10b981' : '#f43f5e'}">
-                        ${bookieHome ? ((r.pHome * bookieHome - 1) * 100).toFixed(1) : '-'}%
-                    </td>
-                    <td style="padding:14px 12px; text-align:center; font-weight:600">
-                        ${bookieHome ? Math.max(0, ((r.pHome * bookieHome - 1) / (bookieHome - 1)) * 100).toFixed(1) : '-'}%
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding:14px 12px; font-weight:500">Empate</td>
-                    <td style="padding:14px 12px; text-align:center">${(r.pDraw*100).toFixed(1)}%</td>
-                    <td style="padding:14px 12px; text-align:center">${bookieDraw || '-'}</td>
-                    <td style="padding:14px 12px; text-align:center; color:${(r.pDraw * bookieDraw - 1) > 0 ? '#10b981' : '#f43f5e'}">
-                        ${bookieDraw ? ((r.pDraw * bookieDraw - 1) * 100).toFixed(1) : '-'}%
-                    </td>
-                    <td style="padding:14px 12px; text-align:center; font-weight:600">
-                        ${bookieDraw ? Math.max(0, ((r.pDraw * bookieDraw - 1) / (bookieDraw - 1)) * 100).toFixed(1) : '-'}%
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding:14px 12px; font-weight:500">Visitante gana</td>
-                    <td style="padding:14px 12px; text-align:center">${(r.pAway*100).toFixed(1)}%</td>
-                    <td style="padding:14px 12px; text-align:center">${bookieAway || '-'}</td>
-                    <td style="padding:14px 12px; text-align:center; color:${(r.pAway * bookieAway - 1) > 0 ? '#10b981' : '#f43f5e'}">
-                        ${bookieAway ? ((r.pAway * bookieAway - 1) * 100).toFixed(1) : '-'}%
-                    </td>
-                    <td style="padding:14px 12px; text-align:center; font-weight:600">
-                        ${bookieAway ? Math.max(0, ((r.pAway * bookieAway - 1) / (bookieAway - 1)) * 100).toFixed(1) : '-'}%
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding:14px 12px; font-weight:500">BTTS Sí</td>
-                    <td style="padding:14px 12px; text-align:center">${(r.pBTTS*100).toFixed(1)}%</td>
-                    <td style="padding:14px 12px; text-align:center">${bookieBTTS || '-'}</td>
-                    <td style="padding:14px 12px; text-align:center; color:${(r.pBTTS * bookieBTTS - 1) > 0 ? '#10b981' : '#f43f5e'}">
-                        ${bookieBTTS ? ((r.pBTTS * bookieBTTS - 1) * 100).toFixed(1) : '-'}%
-                    </td>
-                    <td style="padding:14px 12px; text-align:center; font-weight:600">
-                        ${bookieBTTS ? Math.max(0, ((r.pBTTS * bookieBTTS - 1) / (bookieBTTS - 1)) * 100).toFixed(1) : '-'}%
-                    </td>
-                </tr>`;
-            
-            document.getElementById('ev-table').innerHTML = tableHTML;
-        }
-        
-        // ======================== MONTE CARLO ========================
-        function runMonteCarlo() {
-            if (!currentResult) {
-                alert("Primero calcula una predicción");
+
+        // ====================== PARSEAR TABLAS ======================
+        function parseTables() {
+            const homeText = document.getElementById('homeTable').value;
+            const awayText = document.getElementById('awayTable').value;
+
+            const statusEl = document.getElementById('parseStatus');
+
+            homeStats = parseLeagueTable(homeText);
+            awayStats = parseLeagueTable(awayText);
+
+            const homeCount = Object.keys(homeStats).length;
+            const awayCount = Object.keys(awayStats).length;
+
+            if (homeCount === 0 || awayCount === 0) {
+                statusEl.innerHTML = `<div class="error">❌ Error: No se detectaron equipos válidos en una o ambas tablas.</div>`;
                 return;
             }
-            
-            const r = currentResult;
-            const ITER = 10000;
-            let homeWins = 0, draws = 0, awayWins = 0;
-            let over25Sim = 0, bttsSim = 0;
-            const scoreCounts = {};
-            
-            for (let i = 0; i < ITER; i++) {
-                const sim = sampleBivariate(r.lambdaH, r.lambdaA, r.rho);
-                const h = Math.min(sim.home, MAX_GOALS);
-                const a = Math.min(sim.away, MAX_GOALS);
-                
-                if (h > a) homeWins++;
-                else if (h === a) draws++;
-                else awayWins++;
-                
-                if (h + a > 2.5) over25Sim++;
-                if (h >= 1 && a >= 1) bttsSim++;
-                
-                const key = `${h}-${a}`;
-                scoreCounts[key] = (scoreCounts[key] || 0) + 1;
-            }
-            
-            const mcHome = (homeWins / ITER * 100).toFixed(1);
-            const mcDraw = (draws / ITER * 100).toFixed(1);
-            const mcAway = (awayWins / ITER * 100).toFixed(1);
-            const mcOver25 = (over25Sim / ITER * 100).toFixed(1);
-            const mcBTTS = (bttsSim / ITER * 100).toFixed(1);
-            
-            // Comparación
-            let html = `
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-                    <div style="background:#27272a;padding:16px;border-radius:16px">
-                        <div style="font-size:13px;color:#64748b">LOCAL GANA</div>
-                        <div style="font-size:28px;font-weight:600">${mcHome}% <span style="font-size:14px;color:#10b981">(${r.pHome*100- mcHome > 0 ? '+' : ''}${(r.pHome*100 - mcHome).toFixed(1)})</span></div>
-                    </div>
-                    <div style="background:#27272a;padding:16px;border-radius:16px">
-                        <div style="font-size:13px;color:#64748b">OVER 2.5</div>
-                        <div style="font-size:28px;font-weight:600">${mcOver25}% <span style="font-size:14px;color:#10b981">(${r.pOver25*100 - mcOver25 > 0 ? '+' : ''}${(r.pOver25*100 - mcOver25).toFixed(1)})</span></div>
-                    </div>
+
+            // Unir todos los equipos
+            allTeams = [...new Set([...Object.keys(homeStats), ...Object.keys(awayStats)])].sort();
+
+            // Calcular promedios de liga
+            let totalGPHome = 0, totalGFHome = 0;
+            Object.values(homeStats).forEach(stat => {
+                totalGPHome += stat.gp;
+                totalGFHome += stat.gf;
+            });
+            avgHomeGoals = totalGPHome > 0 ? totalGFHome / totalGPHome : 1.35;
+
+            let totalGPAway = 0, totalGFAway = 0;
+            Object.values(awayStats).forEach(stat => {
+                totalGPAway += stat.gp;
+                totalGFAway += stat.gf;
+            });
+            avgAwayGoals = totalGPAway > 0 ? totalGFAway / totalGPAway : 1.25;
+
+            // Calcular fuerzas de cada equipo
+            teamStrengths = {};
+            allTeams.forEach(team => {
+                const h = homeStats[team] || { gp: 10, gf: avgHomeGoals * 10, ga: avgAwayGoals * 10 };
+                const a = awayStats[team] || { gp: 10, gf: avgAwayGoals * 10, ga: avgHomeGoals * 10 };
+
+                const attackHome = h.gp > 0 ? (h.gf / h.gp) / avgHomeGoals : 1;
+                const attackAway = a.gp > 0 ? (a.gf / a.gp) / avgAwayGoals : 1;
+                const defenseHome = h.gp > 0 ? (h.ga / h.gp) / avgAwayGoals : 1;
+                const defenseAway = a.gp > 0 ? (a.ga / a.gp) / avgHomeGoals : 1;
+
+                teamStrengths[team] = {
+                    attackHome,
+                    attackAway,
+                    defenseHome,
+                    defenseAway
+                };
+            });
+
+            // Llenar datalist
+            const datalist = document.getElementById('teamsList');
+            datalist.innerHTML = '';
+            allTeams.forEach(team => {
+                const option = document.createElement('option');
+                option.value = team;
+                datalist.appendChild(option);
+            });
+
+            statusEl.innerHTML = `
+                <div class="status success">
+                    ✅ Tablas parseadas correctamente • ${allTeams.length} equipos detectados
+                    <br><small>Promedio goles local: <strong>${avgHomeGoals.toFixed(2)}</strong> | visitante: <strong>${avgAwayGoals.toFixed(2)}</strong></small>
                 </div>`;
             
-            document.getElementById('mc-comparison').innerHTML = html;
-            
-            // Top 5 marcadores
-            const sortedScores = Object.keys(scoreCounts)
-                .sort((a,b) => scoreCounts[b] - scoreCounts[a])
-                .slice(0, 5);
-            
-            let listHTML = '';
-            sortedScores.forEach(key => {
-                const pct = (scoreCounts[key] / ITER * 100).toFixed(1);
-                listHTML += `<li style="background:#27272a;padding:12px 16px;border-radius:12px;display:flex;justify-content:space-between"><span>${key}</span><span style="color:#10b981;font-weight:600">${pct}%</span></li>`;
-            });
-            document.getElementById('mc-top-scores').innerHTML = listHTML;
-            
-            document.getElementById('monte-carlo-panel').style.display = 'block';
+            // Limpiar resultados anteriores
+            document.getElementById('results').style.display = 'none';
         }
-        
-        // ======================== GUARDAR / CARGAR ========================
-        let savedPredictions = JSON.parse(localStorage.getItem('poissonPredictions')) || [];
-        
-        function saveCurrentPrediction() {
-            if (!currentResult) return;
+
+        // ====================== POISSON BIVARIADO ======================
+        function bivariatePoisson(i, j, lambda1, lambda2, lambda3) {
+            if (i < 0 || j < 0) return 0;
             
-            const entry = {
-                id: Date.now(),
-                timestamp: new Date().toISOString(),
-                homeName: currentResult.homeName,
-                awayName: currentResult.awayName,
-                pHome: currentResult.pHome,
-                pDraw: currentResult.pDraw,
-                pAway: currentResult.pAway,
-                pOver25: currentResult.pOver25,
-                pBTTS: currentResult.pBTTS,
-                rho: currentResult.rho,
-                lambdaH: currentResult.lambdaH,
-                lambdaA: currentResult.lambdaA
-            };
+            const maxK = Math.min(i, j);
+            let sum = 0;
             
-            savedPredictions.unshift(entry);
-            if (savedPredictions.length > 20) savedPredictions.pop();
-            
-            localStorage.setItem('poissonPredictions', JSON.stringify(savedPredictions));
-            renderSavedList();
-            
-            // Feedback
-            const btn = event.target;
-            const original = btn.textContent;
-            btn.textContent = '✅ Guardado';
-            setTimeout(() => { btn.textContent = original; }, 1500);
-        }
-        
-        function renderSavedList() {
-            const container = document.getElementById('saved-list');
-            container.innerHTML = '';
-            
-            if (savedPredictions.length === 0) {
-                container.innerHTML = `<div style="text-align:center;padding:40px 20px;color:#64748b">Aún no hay partidos guardados.<br>Calcula y guarda tu primera predicción.</div>`;
-                return;
+            for (let k = 0; k <= maxK; k++) {
+                const term1 = Math.pow(lambda1, i - k) / factorial(i - k);
+                const term2 = Math.pow(lambda2, j - k) / factorial(j - k);
+                const term3 = Math.pow(lambda3, k) / factorial(k);
+                sum += term1 * term2 * term3;
             }
             
-            savedPredictions.forEach(pred => {
-                const date = new Date(pred.timestamp).toLocaleDateString('es-MX', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
-                const div = document.createElement('div');
-                div.className = 'saved-item';
-                div.innerHTML = `
-                    <div style="display:flex;justify-content:space-between">
-                        <div><strong>${pred.homeName}</strong> vs <strong>${pred.awayName}</strong></div>
-                        <div style="font-size:12px;color:#64748b">${date}</div>
-                    </div>
-                    <div style="display:flex;gap:16px;margin-top:8px">
-                        <div>🏠 ${(pred.pHome*100).toFixed(0)}%</div>
-                        <div>⚖️ ${(pred.pDraw*100).toFixed(0)}%</div>
-                        <div>✈️ ${(pred.pAway*100).toFixed(0)}%</div>
-                        <div style="margin-left:auto;color:#10b981">ρ=${pred.rho}</div>
+            return Math.exp(-(lambda1 + lambda2 + lambda3)) * sum;
+        }
+
+        // ====================== CALCULAR PARTIDO ======================
+        function calculateMatch() {
+            const homeTeam = document.getElementById('homeTeam').value.trim();
+            const awayTeam = document.getElementById('awayTeam').value.trim();
+            const lambda3 = parseFloat(document.getElementById('lambdaInput').value);
+
+            const resultsDiv = document.getElementById('results');
+
+            if (!homeTeam || !awayTeam || !teamStrengths[homeTeam] || !teamStrengths[awayTeam]) {
+                alert('❌ Selecciona dos equipos válidos de las tablas parseadas.');
+                return;
+            }
+
+            // Calcular xG
+            const homeStrength = teamStrengths[homeTeam];
+            const awayStrength = teamStrengths[awayTeam];
+
+            const xGHome = homeStrength.attackHome * awayStrength.defenseAway * avgHomeGoals;
+            const xGAway = awayStrength.attackAway * homeStrength.defenseHome * avgAwayGoals;
+
+            // Matriz de cálculo (hasta 12 goles para precisión)
+            const MAX_CALC = 12;
+            let probMatrix = Array.from({ length: MAX_CALC + 1 }, () => Array(MAX_CALC + 1).fill(0));
+
+            let totalProb = 0;
+            let homeWinProb = 0, drawProb = 0, awayWinProb = 0;
+            let bttsYesProb = 0, over25Prob = 0;
+
+            for (let i = 0; i <= MAX_CALC; i++) {
+                for (let j = 0; j <= MAX_CALC; j++) {
+                    const p = bivariatePoisson(i, j, xGHome, xGAway, lambda3);
+                    probMatrix[i][j] = p;
+                    totalProb += p;
+
+                    if (i > j) homeWinProb += p;
+                    else if (i === j) drawProb += p;
+                    else awayWinProb += p;
+
+                    if (i > 0 && j > 0) bttsYesProb += p;
+                    if (i + j >= 3) over25Prob += p;
+                }
+            }
+
+            // Normalizar por si acaso (aunque con MAX=12 es prácticamente 1)
+            const normalize = totalProb > 0 ? 1 / totalProb : 1;
+            homeWinProb *= normalize;
+            drawProb *= normalize;
+            awayWinProb *= normalize;
+            bttsYesProb *= normalize;
+            over25Prob *= normalize;
+
+            // Mostrar xG
+            document.getElementById('xgHome').textContent = xGHome.toFixed(2);
+            document.getElementById('xgAway').textContent = xGAway.toFixed(2);
+            document.getElementById('homeTeamResult').textContent = homeTeam;
+            document.getElementById('awayTeamResult').textContent = awayTeam;
+
+            // Probabilidades resumen
+            document.getElementById('probHome').textContent = (homeWinProb * 100).toFixed(1) + '%';
+            document.getElementById('probDraw').textContent = (drawProb * 100).toFixed(1) + '%';
+            document.getElementById('probAway').textContent = (awayWinProb * 100).toFixed(1) + '%';
+            document.getElementById('bttsYes').textContent = (bttsYesProb * 100).toFixed(1) + '%';
+            document.getElementById('bttsNo').textContent = `No: ${(100 - bttsYesProb * 100).toFixed(1)}%`;
+            document.getElementById('over25').textContent = (over25Prob * 100).toFixed(1) + '%';
+            document.getElementById('under25').textContent = `Under 2.5: ${(100 - over25Prob * 100).toFixed(1)}%`;
+
+            // Top 5 marcadores
+            const scores = [];
+            for (let i = 0; i <= 5; i++) {
+                for (let j = 0; j <= 5; j++) {
+                    scores.push({
+                        home: i,
+                        away: j,
+                        prob: probMatrix[i][j] * normalize
+                    });
+                }
+            }
+            scores.sort((a, b) => b.prob - a.prob);
+            
+            let htmlTop = '';
+            for (let k = 0; k < 5; k++) {
+                const s = scores[k];
+                htmlTop += `
+                    <div class="score-item">
+                        <span class="score">${s.home} - ${s.away}</span>
+                        <span class="prob">${(s.prob * 100).toFixed(1)}%</span>
                     </div>`;
-                div.onclick = () => loadSaved(pred);
-                container.appendChild(div);
+            }
+            document.getElementById('topScores').innerHTML = htmlTop;
+
+            // Matriz de probabilidades (solo 0-5)
+            let headerHTML = '<th></th>';
+            for (let j = 0; j <= 5; j++) {
+                headerHTML += `<th>${j}</th>`;
+            }
+            document.getElementById('awayHeader').innerHTML = headerHTML;
+
+            let bodyHTML = '';
+            for (let i = 0; i <= 5; i++) {
+                let row = `<tr><td class="home-goal">${i}</td>`;
+                for (let j = 0; j <= 5; j++) {
+                    const p = probMatrix[i][j] * normalize;
+                    const intensity = Math.min(0.95, p * 9); // escala para heatmap
+                    const color = `hsl(195, 100%, ${95 - intensity * 55}%)`;
+                    row += `<td class="heatmap-cell" style="background-color: ${color}; color: ${intensity > 0.4 ? '#0f172a' : '#e2e8f0'};">${(p * 100).toFixed(1)}</td>`;
+                }
+                row += '</tr>';
+                bodyHTML += row;
+            }
+            document.getElementById('matrixBody').innerHTML = bodyHTML;
+
+            // Mostrar resultados
+            resultsDiv.style.display = 'block';
+            
+            // Scroll suave al resultado
+            resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ====================== SINCRONIZACIÓN SLIDER + INPUT ======================
+        function syncLambda() {
+            const slider = document.getElementById('lambdaSlider');
+            const input = document.getElementById('lambdaInput');
+            
+            slider.addEventListener('input', () => {
+                input.value = parseFloat(slider.value).toFixed(3);
+            });
+            
+            input.addEventListener('input', () => {
+                let val = parseFloat(input.value);
+                if (val < 0) val = 0;
+                if (val > 0.3) val = 0.3;
+                slider.value = val;
+                input.value = val.toFixed(3);
             });
         }
-        
-        function loadSaved(pred) {
-            // Rellenar algunos campos (no todos los inputs porque no guardamos todo)
-            document.getElementById('home-name').value = pred.homeName;
-            document.getElementById('away-name').value = pred.awayName;
-            document.getElementById('rho').value = pred.rho;
-            document.getElementById('rho-value').textContent = pred.rho;
-            
-            // Recalcular directamente con los valores guardados
-            const lambdaH = pred.lambdaH;
-            const lambdaA = pred.lambdaA;
-            const rho = pred.rho;
-            
-            const tempResult = computeBivariateMatrix(lambdaH, lambdaA, rho);
-            tempResult.homeName = pred.homeName;
-            tempResult.awayName = pred.awayName;
-            currentResult = tempResult;
-            
-            renderResults();
-            document.getElementById('results-panel').style.display = 'block';
-        }
-        
-        function exportAll() {
-            if (savedPredictions.length === 0) return;
-            const dataStr = JSON.stringify(savedPredictions, null, 2);
-            const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-            
-            const link = document.createElement('a');
-            link.setAttribute('href', dataUri);
-            link.setAttribute('download', `poisson-predictions-${new Date().toISOString().slice(0,10)}.json`);
-            link.click();
-        }
-        
-        function updateTeamNames() {
-            document.getElementById('home-name-display').textContent = document.getElementById('home-name').value || 'Equipo Local';
-            document.getElementById('away-name-display').textContent = document.getElementById('away-name').value || 'Equipo Visitante';
-        }
-        
-        function toggleDarkMode() {
-            // Ya está en modo oscuro por defecto, pero se deja para futuro
-            alert("✅ Ya estás en modo oscuro profesional. El código está optimizado para dark theme.");
-        }
-        
-        // ======================== INICIO ========================
-        window.onload = function() {
+
+        // ====================== INICIALIZACIÓN ======================
+        function init() {
             precomputeFactorials();
-            renderSavedList();
+            syncLambda();
             
-            // Tooltip inicial
-            console.log('%c✅ Predictor Poisson Bivariado cargado correctamente. Precisión matemática lista para apuestas reales.', 'color:#10b981; font-weight:600');
+            // Mensaje inicial de bienvenida en consola
+            console.log('%c✅ Calculadora Poisson Bivariado cargada correctamente. ¡Listo para usar!', 'color:#00d4ff; font-size:14px; font-weight:600;');
             
-            // Ejemplo rápido: botón invisible para demo
-            console.log('Puedes modificar los valores y pulsar CALCULAR. Todo funciona 100% offline.');
-        };
+            // Demo opcional (puedes borrar estos valores si quieres tabla vacía)
+            console.log('💡 Usa el botón "Parsear" después de pegar tus tablas.');
+        }
+
+        // Cargar todo
+        window.onload = init;
     </script>
 </body>
 </html>
-```HTML =
+``` 9
