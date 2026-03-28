@@ -44,20 +44,36 @@
             </nav>
         </header>
 
-        <div class="glass-card p-4 rounded-xl mb-6 grid grid-cols-1 md:grid-cols-3 gap-4 border-b-2 border-cyan-500">
-            <div>
-                <label class="text-[9px] text-cyan-500 font-bold uppercase block mb-1">Seleccionar Liga</label>
-                <select id="selectLeague" class="input-field" onchange="loadTeams()">
-                    <option value="">-- Elige una liga --</option>
-                </select>
+        <div class="glass-card p-4 rounded-xl mb-6 grid grid-cols-1 md:grid-cols-2 gap-6 border-b-2 border-cyan-500">
+            <div class="space-y-3">
+                <p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest border-b border-blue-900/50 pb-1">Configuración Local</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[8px] text-slate-500 font-bold uppercase block mb-1">Liga Local</label>
+                        <select id="selectLeagueHome" class="input-field" onchange="loadTeamsBySide('Home')">
+                            <option value="">-- Liga --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[8px] text-slate-500 font-bold uppercase block mb-1">Equipo Local</label>
+                        <select id="selectHome" class="input-field" onchange="autoFillData()"></select>
+                    </div>
+                </div>
             </div>
-            <div>
-                <label class="text-[9px] text-blue-400 font-bold uppercase block mb-1">Equipo Local</label>
-                <select id="selectHome" class="input-field" onchange="autoFillData()"></select>
-            </div>
-            <div>
-                <label class="text-[9px] text-green-400 font-bold uppercase block mb-1">Equipo Visitante</label>
-                <select id="selectAway" class="input-field" onchange="autoFillData()"></select>
+            <div class="space-y-3">
+                <p class="text-[10px] font-bold text-green-400 uppercase tracking-widest border-b border-green-900/50 pb-1">Configuración Visitante</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[8px] text-slate-500 font-bold uppercase block mb-1">Liga Visita</label>
+                        <select id="selectLeagueAway" class="input-field" onchange="loadTeamsBySide('Away')">
+                            <option value="">-- Liga --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[8px] text-slate-500 font-bold uppercase block mb-1">Equipo Visita</label>
+                        <select id="selectAway" class="input-field" onchange="autoFillData()"></select>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -270,38 +286,49 @@
 
         function initLeagueSelector() {
             const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
-            const select = document.getElementById('selectLeague');
+            const selectH = document.getElementById('selectLeagueHome');
+            const selectA = document.getElementById('selectLeagueAway');
+            
             Object.keys(db).sort().forEach(league => {
-                let opt = document.createElement('option');
-                opt.value = league; opt.innerText = league;
-                select.appendChild(opt);
+                let optH = document.createElement('option');
+                optH.value = league; optH.innerText = league;
+                selectH.appendChild(optH);
+                
+                let optA = document.createElement('option');
+                optA.value = league; optA.innerText = league;
+                selectA.appendChild(optA);
             });
         }
 
-        function loadTeams() {
-            const league = document.getElementById('selectLeague').value;
+        function loadTeamsBySide(side) {
+            const league = document.getElementById(`selectLeague${side}`).value;
             const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
-            const homeSelect = document.getElementById('selectHome');
-            const awaySelect = document.getElementById('selectAway');
-            homeSelect.innerHTML = '<option value="">-- Local --</option>';
-            awaySelect.innerHTML = '<option value="">-- Visitante --</option>';
+            const teamSelect = document.getElementById(`select${side}`);
+            
+            teamSelect.innerHTML = `<option value="">-- ${side === 'Home' ? 'Local' : 'Visitante'} --</option>`;
+            
             if (!league || !db[league]) return;
-            const localData = parseStandingsTable(db[league].local);
-            Object.keys(localData.teams).sort().forEach(t => {
-                homeSelect.innerHTML += `<option value="${t}">${t}</option>`;
-                awaySelect.innerHTML += `<option value="${t}">${t}</option>`;
+            
+            // Si es local usamos la tabla local, si es visitante la tabla visitante
+            const tableKey = side === 'Home' ? 'local' : 'away';
+            const tableData = parseStandingsTable(db[league][tableKey]);
+            
+            Object.keys(tableData.teams).sort().forEach(t => {
+                teamSelect.innerHTML += `<option value="${t}">${t}</option>`;
             });
         }
 
         function autoFillData() {
-            const league = document.getElementById('selectLeague').value;
+            const leagueH = document.getElementById('selectLeagueHome').value;
+            const leagueA = document.getElementById('selectLeagueAway').value;
             const homeName = document.getElementById('selectHome').value;
             const awayName = document.getElementById('selectAway').value;
             const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
-            if (!league || !homeName || !awayName || !db[league]) return;
 
-            const homeTableData = parseStandingsTable(db[league].local);
-            const awayTableData = parseStandingsTable(db[league].away);
+            if (!leagueH || !leagueA || !homeName || !awayName) return;
+
+            const homeTableData = parseStandingsTable(db[leagueH].local);
+            const awayTableData = parseStandingsTable(db[leagueA].away);
             
             document.getElementById('avgLeagueHome').value = homeTableData.leagueAvg.toFixed(2);
             document.getElementById('avgLeagueAway').value = awayTableData.leagueAvg.toFixed(2);
@@ -315,8 +342,8 @@
                 document.getElementById('gaAway').value = awayTableData.teams[awayName].avgGa.toFixed(2);
             }
             
-            document.getElementById('percHTHome').value = getHTPercentageFromSegments(db[league].timesLocal, homeName).toFixed(0);
-            document.getElementById('percHTAway').value = getHTPercentageFromSegments(db[league].timesAway, awayName).toFixed(0);
+            document.getElementById('percHTHome').value = getHTPercentageFromSegments(db[leagueH].timesLocal, homeName).toFixed(0);
+            document.getElementById('percHTAway').value = getHTPercentageFromSegments(db[leagueA].timesAway, awayName).toFixed(0);
             document.getElementById('eventName').value = `${homeName} vs ${awayName}`;
         }
 
@@ -470,8 +497,6 @@
             body.innerHTML = '';
             picks.slice().reverse().forEach(p => {
                 const row = document.createElement('tr');
-                
-                // MEJORA: Lógica de colores por estado de fila
                 let rowBgClass = "hover:bg-slate-800/30";
                 let textClass = "text-white";
                 
@@ -487,7 +512,6 @@
                 }
 
                 row.className = `${rowBgClass} border-b border-slate-800 transition-colors duration-200`;
-                
                 row.innerHTML = `
                     <td class="p-4 ${textClass}">
                         <span class="editable-cell" contenteditable="true" onblur="editPick(${p.id}, 'event', this.innerText)">${p.event}</span>
