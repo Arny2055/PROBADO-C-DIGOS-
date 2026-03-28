@@ -213,65 +213,50 @@
         let picks = JSON.parse(localStorage.getItem('ht_engine_v4_picks')) || [];
         let chart;
 
-        // --- LÓGICA DE INTEGRACIÓN DE DATOS ---
-        
-        // Obtener equipos de la tabla de Goles por Tiempo (Columna 1)
-        function getTeamsFromTimes(text) {
+        // --- LÓGICA DE INTEGRACIÓN DE DATOS (MEJORADA) ---
+
+        // Función para extraer estadísticas de la tabla Home o Away
+        function parseStandingsTable(text) {
             const lines = text.split('\n');
-            const teams = [];
+            const data = {};
+            let totalGf = 0;
+            let totalGp = 0;
+
             lines.forEach(line => {
                 const parts = line.split('\t').filter(p => p.trim() !== "");
-                // La primera parte suele ser el rank, la segunda el nombre del equipo
-                if (parts.length >= 3) {
-                    teams.push(parts[1].trim());
+                // Formato esperado: Rank | Equipo | GP | W | D | L | GF | GA ...
+                if (parts.length >= 7) {
+                    const name = parts[1].trim();
+                    const gp = parseFloat(parts[2]);
+                    const gf = parseFloat(parts[6]);
+                    const ga = parseFloat(parts[7]);
+
+                    if (!isNaN(gp) && gp > 0) {
+                        data[name] = {
+                            avgGf: gf / gp,
+                            avgGa: ga / gp
+                        };
+                        totalGf += gf;
+                        totalGp += gp;
+                    }
                 }
             });
-            return [...new Set(teams)].sort();
+
+            const leagueAvg = totalGp > 0 ? totalGf / totalGp : 1.5;
+            return { teams: data, leagueAvg: leagueAvg };
         }
 
-        // Buscar V: Obtener % 1st Half de la tabla Goles por Tiempo (Columna 3)
+        // Obtener % de la 1ra mitad de la tabla de tiempos
         function getHTPercentage(text, teamName) {
             const lines = text.split('\n');
             for (let line of lines) {
                 const parts = line.split('\t').filter(p => p.trim() !== "");
-                if (parts.length >= 3 && parts[1].trim() === teamName) {
+                // Columna 1: Equipo, Columna 3: Dato 1st Half
+                if (parts.length >= 3 && parts[0].trim() === teamName) {
                     return parseFloat(parts[2]) || 45;
                 }
             }
             return 45;
-        }
-
-        // Buscar V: Obtener Score y Concede de las tablas local/visitante
-        function getScoreConcede(text, teamName, isHome) {
-            const lines = text.split('\n');
-            const colName = isHome ? "Home" : "Away";
-            
-            for (let line of lines) {
-                const parts = line.split('\t').filter(p => p.trim() !== "");
-                // Buscamos el nombre del equipo en la columna central
-                // Estructura: [Score] [Home/Away] [Concede] ...
-                if (parts.length >= 3) {
-                    const nameIndex = parts.findIndex(p => p.trim() === teamName);
-                    if (nameIndex !== -1) {
-                        return {
-                            score: parseFloat(parts[nameIndex - 1]),
-                            concede: parseFloat(parts[nameIndex + 1])
-                        };
-                    }
-                }
-            }
-            return { score: 0, concede: 0 };
-        }
-
-        // Obtener promedio de liga (Valor izquierdo de league average)
-        function getLeagueAvg(text) {
-            const lines = text.split('\n');
-            const lastLine = lines.find(l => l.toLowerCase().includes("league average"));
-            if (lastLine) {
-                const parts = lastLine.split('\t').filter(p => p.trim() !== "");
-                return parseFloat(parts[0]) || 1.5;
-            }
-            return 1.5;
         }
 
         function initLeagueSelector() {
@@ -296,8 +281,9 @@
 
             if (!league || !db[league]) return;
 
-            const teams = getTeamsFromTimes(db[league].times);
-            teams.forEach(t => {
+            // Extraemos los nombres de los equipos de la tabla local
+            const localData = parseStandingsTable(db[league].local);
+            Object.keys(localData.teams).sort().forEach(t => {
                 homeSelect.innerHTML += `<option value="${t}">${t}</option>`;
                 awaySelect.innerHTML += `<option value="${t}">${t}</option>`;
             });
@@ -311,24 +297,28 @@
 
             if (!league || !homeName || !awayName || !db[league]) return;
 
-            // 1. Promedios de Liga (Desde tabla Home)
-            const avgLeague = getLeagueAvg(db[league].local);
-            document.getElementById('avgLeagueHome').value = avgLeague.toFixed(2);
-            document.getElementById('avgLeagueAway').value = avgLeague.toFixed(2);
+            const homeTableData = parseStandingsTable(db[league].local);
+            const awayTableData = parseStandingsTable(db[league].away);
 
-            // 2. Datos Local (Score/Concede de tabla Local + % de tabla Times)
-            const hStats = getScoreConcede(db[league].local, homeName, true);
-            const hPerc = getHTPercentage(db[league].times, homeName);
-            document.getElementById('gfHome').value = hStats.score.toFixed(2);
-            document.getElementById('gaHome').value = hStats.concede.toFixed(2);
-            document.getElementById('percHTHome').value = hPerc.toFixed(0);
+            // Promedios de Liga
+            document.getElementById('avgLeagueHome').value = homeTableData.leagueAvg.toFixed(2);
+            document.getElementById('avgLeagueAway').value = awayTableData.leagueAvg.toFixed(2);
 
-            // 3. Datos Visitante (Score/Concede de tabla Away + % de tabla Times)
-            const vStats = getScoreConcede(db[league].away, awayName, false);
-            const vPerc = getHTPercentage(db[league].times, awayName);
-            document.getElementById('gfAway').value = vStats.score.toFixed(2);
-            document.getElementById('gaAway').value = vStats.concede.toFixed(2);
-            document.getElementById('percHTAway').value = vPerc.toFixed(0);
+            // Estadísticas Local
+            if (homeTableData.teams[homeName]) {
+                document.getElementById('gfHome').value = homeTableData.teams[homeName].avgGf.toFixed(2);
+                document.getElementById('gaHome').value = homeTableData.teams[homeName].avgGa.toFixed(2);
+            }
+
+            // Estadísticas Visitante
+            if (awayTableData.teams[awayName]) {
+                document.getElementById('gfAway').value = awayTableData.teams[awayName].avgGf.toFixed(2);
+                document.getElementById('gaAway').value = awayTableData.teams[awayName].avgGa.toFixed(2);
+            }
+
+            // Porcentajes 1er Tiempo
+            document.getElementById('percHTHome').value = getHTPercentage(db[league].times, homeName).toFixed(0);
+            document.getElementById('percHTAway').value = getHTPercentage(db[league].times, awayName).toFixed(0);
 
             document.getElementById('eventName').value = `${homeName} vs ${awayName}`;
         }
