@@ -16,16 +16,31 @@
         .badge-live { background: #ef4444; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         .status-btn { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-bold; cursor: pointer; transition: 0.2s; }
+        
+        /* Mejora para el botón de navegación */
+        .nav-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s ease; }
+        .nav-btn:hover { background: rgba(34, 211, 238, 0.1); border-color: #22d3ee; color: #22d3ee; }
     </style>
 </head>
 <body class="p-4 md:p-8 text-xs">
 
     <div class="max-w-7xl mx-auto">
-        <header class="mb-8 text-center">
-            <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400 inline-block">
-                Quantum HT Engine <span class="text-sm font-light text-slate-500">v4 Analytics</span>
-            </h1>
-            <p class="text-slate-400 mt-2 text-[10px] uppercase tracking-widest">Especialista en Goles 1° Tiempo</p>
+        <header class="mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="text-left">
+                <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400 inline-block">
+                    Quantum HT Engine <span class="text-sm font-light text-slate-500">v4 Analytics</span>
+                </h1>
+                <p class="text-slate-400 text-[10px] uppercase tracking-widest">Especialista en Goles 1° Tiempo</p>
+            </div>
+            
+            <nav class="flex gap-2">
+                <a href="datos.html" class="nav-btn px-4 py-2 rounded-lg flex items-center gap-2 font-semibold text-[10px] uppercase tracking-wider">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                    </svg>
+                    Base de Datos
+                </a>
+            </nav>
         </header>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
@@ -201,7 +216,6 @@
             const xGV = (gfV / avgLV) * (gaH / avgLV) * avgLV;
             lambdaHTBase = (xGH * perH) + (xGV * perV);
 
-            // Probabilidades Pre-match
             const p0 = poisson(0, lambdaHTBase);
             const p1 = poisson(1, lambdaHTBase);
             currentProbs.pre = { O05HT: 1 - p0, O15HT: 1 - (p0 + p1) };
@@ -209,15 +223,11 @@
             document.getElementById('probO05HT').innerText = (currentProbs.pre.O05HT * 100).toFixed(1) + "%";
             document.getElementById('probO15HT_Pre').innerText = (currentProbs.pre.O15HT * 100).toFixed(1) + "%";
 
-            // Minuto Entrada Estimado @1.70
-            const reqProb = 1 / 1.7; // 58.8% aprox
-            
-            // O05HT Entrada (1 - e^-L = 0.588)
+            const reqProb = 1 / 1.7;
             const reqL05 = -Math.log(1 - reqProb);
             let min05 = Math.round(45 - (reqL05 * 45 / lambdaHTBase));
             document.getElementById('targetMinute05').innerText = min05 > 0 ? min05 + "'" : "N/A";
 
-            // O15HT Entrada (1 - e^-L * (1 + L) = 0.588) -> Buscado por iteración simple
             let min15 = "N/A";
             for(let m = 0; m < 45; m++) {
                 let l = lambdaHTBase * ((45-m)/45);
@@ -227,7 +237,6 @@
                 }
             }
             document.getElementById('targetMinute15').innerText = min15;
-            
             calculateLiveValue();
         }
 
@@ -236,14 +245,11 @@
             const min = parseFloat(document.getElementById('liveMin').value) || 0;
             const odd = parseFloat(document.getElementById('liveOdd').value) || 0;
             const liveLambda = lambdaHTBase * (Math.max(0, 45 - min) / 45);
-
             currentProbs.live = { 
                 O05HT: 1 - poisson(0, liveLambda), 
                 O15HT: 1 - (poisson(0, liveLambda) + poisson(1, liveLambda)) 
             };
-
             const prob = currentProbs.live[document.getElementById('marketSelect').value];
-            
             if (odd > 1) {
                 const ev = (prob * odd) - 1;
                 document.getElementById('resLiveValue').innerText = (ev * 100).toFixed(1) + "%";
@@ -258,15 +264,13 @@
             const odd = parseFloat(document.getElementById('liveOdd').value);
             const prob = currentProbs.live[market];
             const ev = (prob * odd) - 1;
-            
             picks.push({
                 id: Date.now(),
                 event: document.getElementById('eventName').value || 'Live HT',
                 market: market, odd: odd, min: document.getElementById('liveMin').value || 0,
                 prob: (prob * 100).toFixed(1),
                 stake: (ev / (odd - 1) * 0.25 * 100).toFixed(2),
-                status: 'pendiendo',
-                profit: 0
+                status: 'pendiendo', profit: 0
             });
             updateStorage();
         }
@@ -291,7 +295,6 @@
             const settled = picks.filter(p => p.status !== 'pendiendo');
             let totalProfit = 0, totalStake = 0, wins = 0, maxProfit = 0, drawdown = 0;
             let profitHistory = [0];
-
             settled.forEach(p => {
                 totalProfit += p.profit;
                 totalStake += parseFloat(p.stake);
@@ -301,16 +304,13 @@
                 let currentDD = maxProfit - totalProfit;
                 if(currentDD > drawdown) drawdown = currentDD;
             });
-
             const yieldVal = totalStake > 0 ? (totalProfit / totalStake) * 100 : 0;
             const winRate = settled.length > 0 ? (wins / settled.filter(p => p.status !== 'void').length) * 100 : 0;
-            
             document.getElementById('statProfit').innerText = totalProfit.toFixed(2) + " u";
             document.getElementById('statYield').innerText = yieldVal.toFixed(1);
             document.getElementById('statWinRate').innerText = winRate.toFixed(0);
             document.getElementById('statDrawdown').innerText = drawdown.toFixed(2) + " u";
             document.getElementById('statPValue').innerText = settled.length > 5 ? (wins/settled.length > 0.5 ? "Skill" : "Variance") : "-";
-
             updateChart(profitHistory);
         }
 
@@ -322,21 +322,11 @@
                 data: {
                     labels: data.map((_, i) => i),
                     datasets: [{
-                        label: 'Profit',
-                        data: data,
-                        borderColor: '#22d3ee',
-                        backgroundColor: 'rgba(34, 211, 238, 0.1)',
-                        fill: true,
-                        tension: 0.4,
-                        borderWidth: 2,
-                        pointRadius: 0
+                        label: 'Profit', data: data, borderColor: '#22d3ee', backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                        fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0
                     }]
                 },
-                options: { 
-                    responsive: true, 
-                    plugins: { legend: { display: false } },
-                    scales: { x: { display: false }, y: { grid: { color: '#1e293b' } } }
-                }
+                options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { grid: { color: '#1e293b' } } } }
             });
         }
 
@@ -370,7 +360,6 @@
         }
 
         function resetStats() { if(confirm('¿Borrar historial?')) { picks = []; updateStorage(); } }
-
         window.onload = () => { calculateStats(); renderPicks(); };
     </script>
 </body>
