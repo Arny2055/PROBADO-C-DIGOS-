@@ -19,8 +19,9 @@
         .nav-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s ease; }
         .nav-btn:hover { background: rgba(34, 211, 238, 0.1); border-color: #22d3ee; color: #22d3ee; }
         select option { background-color: #0f172a; color: #f8fafc; }
-        .editable-cell { cursor: pointer; border-bottom: 1px dashed #334155; }
-        .editable-cell:hover { border-color: #22d3ee; background: rgba(34, 211, 238, 0.05); }
+        .editable-cell { cursor: pointer; border-bottom: 1px dashed #334155; transition: background 0.2s; }
+        .editable-cell:hover { border-color: #22d3ee; background: rgba(34, 211, 238, 0.1); }
+        .editable-cell:focus { outline: none; background: rgba(34, 211, 238, 0.2); border-bottom: 1px solid #22d3ee; }
     </style>
 </head>
 <body class="p-4 md:p-8 text-xs">
@@ -92,7 +93,7 @@
                         <input id="eventName" type="text" placeholder="Evento" class="input-field">
                         
                         <div class="p-3 bg-slate-800/40 rounded-xl border border-slate-700/50">
-                            <p class="text-[9px] font-bold text-yellow-500 mb-2 uppercase">Liga FT</p>
+                            <p class="text-[9px] font-bold text-yellow-500 mb-2 uppercase">Liga FT (Promedios)</p>
                             <div class="grid grid-cols-2 gap-2">
                                 <input id="avgLeagueHome" type="number" step="0.01" placeholder="Avg L" class="input-field">
                                 <input id="avgLeagueAway" type="number" step="0.01" placeholder="Avg V" class="input-field">
@@ -153,7 +154,7 @@
                 <div class="glass-card p-6 rounded-2xl border border-cyan-500/30">
                     <div class="flex items-center gap-2 mb-4">
                         <span class="w-2 h-2 rounded-full badge-live"></span>
-                        <h3 class="text-[10px] font-bold uppercase text-cyan-400">Calculadora Live (Fuerzas en tiempo real)</h3>
+                        <h3 class="text-[10px] font-bold uppercase text-cyan-400">Calculadora Live</h3>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                         <div>
@@ -215,6 +216,7 @@
         let picks = JSON.parse(localStorage.getItem('ht_engine_v4_picks')) || [];
         let chart;
 
+        // --- LÓGICA DE PARSEO Y DATOS ---
         function parseStandingsTable(text) {
             if (!text) return { teams: {}, leagueAvg: 1.5 };
             const lines = text.split('\n');
@@ -306,6 +308,7 @@
             document.getElementById('eventName').value = `${homeName} vs ${awayName}`;
         }
 
+        // --- CÁLCULOS MATEMÁTICOS ---
         function factorial(n) { return (n === 0 || n === 1) ? 1 : n * factorial(n - 1); }
         function poisson(k, lambda) { return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial(k); }
 
@@ -319,18 +322,23 @@
             const gaV = parseFloat(document.getElementById('gaAway').value);
             const perV = parseFloat(document.getElementById('percHTAway').value) / 100;
             if ([avgLH, avgLV, gfH, gaH, gfV, gaV].some(isNaN)) return;
+            
             const xGH = (gfH / avgLH) * (gaV / avgLH) * avgLH;
             const xGV = (gfV / avgLV) * (gaH / avgLV) * avgLV;
             lambdaHTBase = (xGH * perH) + (xGV * perV);
+            
             const p0 = poisson(0, lambdaHTBase);
             const p1 = poisson(1, lambdaHTBase);
             currentProbs.pre = { O05HT: 1 - p0, O15HT: 1 - (p0 + p1) };
+            
             document.getElementById('probO05HT').innerText = (currentProbs.pre.O05HT * 100).toFixed(1) + "%";
             document.getElementById('probO15HT_Pre').innerText = (currentProbs.pre.O15HT * 100).toFixed(1) + "%";
+            
             const reqProb = 1 / 1.7;
             const reqL05 = -Math.log(1 - reqProb);
             let min05 = Math.round(45 - (reqL05 * 45 / lambdaHTBase));
             document.getElementById('targetMinute05').innerText = (min05 > 0 && min05 < 45) ? min05 + "'" : "N/A";
+            
             let min15 = "N/A";
             for(let m = 0; m < 45; m++) {
                 let l = lambdaHTBase * ((45-m)/45);
@@ -345,10 +353,12 @@
             const min = parseFloat(document.getElementById('liveMin').value) || 0;
             const odd = parseFloat(document.getElementById('liveOdd').value) || 0;
             const liveLambda = lambdaHTBase * (Math.max(0, 45 - min) / 45);
+            
             currentProbs.live = { 
                 O05HT: 1 - poisson(0, liveLambda), 
                 O15HT: 1 - (poisson(0, liveLambda) + poisson(1, liveLambda)) 
             };
+            
             const prob = currentProbs.live[document.getElementById('marketSelect').value];
             if (odd > 1) {
                 const ev = (prob * odd) - 1;
@@ -359,27 +369,37 @@
             }
         }
 
+        // --- GESTIÓN DE OPERACIONES (PICKS) ---
         function savePick() {
             const market = document.getElementById('marketSelect').value;
             const odd = parseFloat(document.getElementById('liveOdd').value);
             const prob = currentProbs.live[market];
             const ev = (prob * odd) - 1;
             picks.push({
-                id: Date.now(), event: document.getElementById('eventName').value || 'Live HT',
-                market: market, odd: odd, min: document.getElementById('liveMin').value || 0,
-                prob: (prob * 100).toFixed(1), stake: parseFloat((ev / (odd - 1) * 0.25 * 100).toFixed(2)),
-                status: 'pendiendo', profit: 0
+                id: Date.now(), 
+                event: document.getElementById('eventName').value || 'Live HT',
+                market: market, 
+                odd: odd, 
+                min: document.getElementById('liveMin').value || 0,
+                prob: (prob * 100).toFixed(1), 
+                stake: parseFloat((ev / (odd - 1) * 0.25 * 100).toFixed(2)),
+                status: 'pendiendo', 
+                profit: 0
             });
             updateStorage();
         }
 
-        // --- MEJORA: FUNCIÓN PARA EDITAR DATOS ---
+        // --- MEJORA: FUNCIÓN PARA EDITAR CUALQUIER CAMPO ---
         function editPick(id, field, newValue) {
             const pick = picks.find(p => p.id === id);
             if (!pick) return;
             
-            const val = parseFloat(newValue);
-            if (isNaN(val)) { renderPicks(); return; }
+            let val = newValue.trim();
+            // Si el campo es numérico, lo convertimos
+            if (field === 'odd' || field === 'stake' || field === 'min') {
+                val = parseFloat(val);
+                if (isNaN(val)) { renderPicks(); return; }
+            }
 
             pick[field] = val;
             
@@ -412,6 +432,7 @@
             const settled = picks.filter(p => p.status !== 'pendiendo');
             let totalProfit = 0, totalStake = 0, wins = 0, maxProfit = 0, drawdown = 0;
             let profitHistory = [0];
+            
             settled.forEach(p => {
                 totalProfit += p.profit; totalStake += parseFloat(p.stake);
                 if(p.status === 'win') wins++;
@@ -420,8 +441,10 @@
                 let currentDD = maxProfit - totalProfit;
                 if(currentDD > drawdown) drawdown = currentDD;
             });
+            
             const yieldVal = totalStake > 0 ? (totalProfit / totalStake) * 100 : 0;
             const winRate = settled.length > 0 ? (wins / settled.filter(p => p.status !== 'void').length) * 100 : 0;
+            
             document.getElementById('statProfit').innerText = totalProfit.toFixed(2) + " u";
             document.getElementById('statYield').innerText = yieldVal.toFixed(1);
             document.getElementById('statWinRate').innerText = winRate.toFixed(0);
@@ -453,7 +476,10 @@
                 const row = document.createElement('tr');
                 row.className = "hover:bg-slate-800/30 border-b border-slate-800";
                 row.innerHTML = `
-                    <td class="p-4">${p.event} <span class="text-slate-500">(${p.min}')</span></td>
+                    <td class="p-4">
+                        <span class="editable-cell" contenteditable="true" onblur="editPick(${p.id}, 'event', this.innerText)">${p.event}</span> 
+                        <span class="text-slate-500">(<span class="editable-cell" contenteditable="true" onblur="editPick(${p.id}, 'min', this.innerText)">${p.min}</span>')</span>
+                    </td>
                     <td class="p-4 text-cyan-400 font-bold">
                         ${p.market} @<span class="editable-cell" contenteditable="true" onblur="editPick(${p.id}, 'odd', this.innerText)">${p.odd}</span>
                     </td>
@@ -468,17 +494,21 @@
                             <button onclick="setStatus(${p.id}, 'void')" class="status-btn bg-slate-700 text-slate-300 ${p.status==='void'?'ring-1 ring-white':''}">V</button>
                         </div>
                     </td>
-                    <td class="p-4 text-center"><button onclick="deletePick(${p.id})" class="text-red-900">✖</button></td>
+                    <td class="p-4 text-center">
+                        <button onclick="deletePick(${p.id})" class="text-red-900 hover:text-red-500 transition-colors">✖</button>
+                    </td>
                 `;
                 body.appendChild(row);
             });
         }
 
-        function deletePick(id) { picks = picks.filter(p => p.id !== id); updateStorage(); }
-        function resetStats() { if(confirm('¿Borrar historial?')) { picks = []; updateStorage(); } }
+        function deletePick(id) { if(confirm('¿Eliminar esta operación?')) { picks = picks.filter(p => p.id !== id); updateStorage(); } }
+        function resetStats() { if(confirm('¿Borrar TODO el historial?')) { picks = []; updateStorage(); } }
         
         window.onload = () => { 
-            initLeagueSelector(); calculateStats(); renderPicks(); 
+            initLeagueSelector(); 
+            calculateStats(); 
+            renderPicks(); 
         };
     </script>
 </body>
