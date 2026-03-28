@@ -11,15 +11,14 @@
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
         .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        .input-field { width: 100%; background-color: #0f172a; border: 1px solid #334155; border-radius: 0.5rem; padding: 0.5rem; font-size: 0.875rem; outline: none; transition: all 0.3s; }
+        .input-field { width: 100%; background-color: #0f172a; border: 1px solid #334155; border-radius: 0.5rem; padding: 0.5rem; font-size: 0.875rem; outline: none; transition: all 0.3s; color: #22d3ee; }
         .input-field:focus { border-color: #22d3ee; ring: 2px ring-cyan-500; }
         .badge-live { background: #ef4444; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         .status-btn { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-bold; cursor: pointer; transition: 0.2s; }
-        
-        /* Mejora para el botón de navegación */
         .nav-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s ease; }
         .nav-btn:hover { background: rgba(34, 211, 238, 0.1); border-color: #22d3ee; color: #22d3ee; }
+        select option { background-color: #0f172a; color: #f8fafc; }
     </style>
 </head>
 <body class="p-4 md:p-8 text-xs">
@@ -42,6 +41,23 @@
                 </a>
             </nav>
         </header>
+
+        <div class="glass-card p-4 rounded-xl mb-6 grid grid-cols-1 md:grid-cols-3 gap-4 border-b-2 border-cyan-500">
+            <div>
+                <label class="text-[9px] text-cyan-500 font-bold uppercase block mb-1">Seleccionar Liga</label>
+                <select id="selectLeague" class="input-field" onchange="loadTeams()">
+                    <option value="">-- Elige una liga --</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-[9px] text-blue-400 font-bold uppercase block mb-1">Equipo Local</label>
+                <select id="selectHome" class="input-field" onchange="autoFillData()"></select>
+            </div>
+            <div>
+                <label class="text-[9px] text-green-400 font-bold uppercase block mb-1">Equipo Visitante</label>
+                <select id="selectAway" class="input-field" onchange="autoFillData()"></select>
+            </div>
+        </div>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <div class="glass-card p-4 rounded-xl text-center">
@@ -197,6 +213,104 @@
         let picks = JSON.parse(localStorage.getItem('ht_engine_v4_picks')) || [];
         let chart;
 
+        // --- LÓGICA DE INTEGRACIÓN DE DATOS ---
+        function initLeagueSelector() {
+            const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
+            const select = document.getElementById('selectLeague');
+            Object.keys(db).sort().forEach(league => {
+                let opt = document.createElement('option');
+                opt.value = league;
+                opt.innerText = league;
+                select.appendChild(opt);
+            });
+        }
+
+        function parseTable(text) {
+            const lines = text.split('\n');
+            const data = [];
+            lines.forEach(line => {
+                const parts = line.split('\t').filter(p => p.trim() !== "");
+                if (parts.length >= 5) {
+                    data.push({
+                        name: parts[1].trim(),
+                        pj: parseFloat(parts[2]),
+                        gf: parseFloat(parts[parts.length - 2]), // Penúltimo suele ser GF
+                        ga: parseFloat(parts[parts.length - 1])  // Último suele ser GC
+                    });
+                }
+            });
+            return data;
+        }
+
+        function parseTimes(text) {
+            const lines = text.split('\n');
+            const data = {};
+            lines.forEach(line => {
+                const parts = line.split('\t').filter(p => p.trim() !== "");
+                if (parts.length >= 3) {
+                    const name = parts[1].trim();
+                    const htGoals = parts[2].split(':').map(Number).reduce((a,b) => a+b, 0);
+                    const ftGoals = parts[parts.length-1].split(':').map(Number).reduce((a,b) => a+b, 0);
+                    data[name] = (ftGoals > 0) ? (htGoals / ftGoals) * 100 : 50;
+                }
+            });
+            return data;
+        }
+
+        function loadTeams() {
+            const league = document.getElementById('selectLeague').value;
+            const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
+            const homeSelect = document.getElementById('selectHome');
+            const awaySelect = document.getElementById('selectAway');
+            
+            homeSelect.innerHTML = '<option value="">-- Local --</option>';
+            awaySelect.innerHTML = '<option value="">-- Visitante --</option>';
+
+            if (!league) return;
+
+            const teamsLocal = parseTable(db[league].local);
+            teamsLocal.forEach(t => {
+                homeSelect.innerHTML += `<option value="${t.name}">${t.name}</option>`;
+                awaySelect.innerHTML += `<option value="${t.name}">${t.name}</option>`;
+            });
+        }
+
+        function autoFillData() {
+            const league = document.getElementById('selectLeague').value;
+            const homeName = document.getElementById('selectHome').value;
+            const awayName = document.getElementById('selectAway').value;
+            const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
+
+            if (!league || !homeName || !awayName) return;
+
+            const localData = parseTable(db[league].local);
+            const visitData = parseTable(db[league].away);
+            const timesData = parseTimes(db[league].times);
+
+            const hTeam = localData.find(t => t.name === homeName);
+            const vTeam = visitData.find(t => t.name === awayName);
+
+            // Promedios Liga
+            const avgL = localData.reduce((acc, t) => acc + (t.gf/t.pj), 0) / localData.length;
+            document.getElementById('avgLeagueHome').value = avgL.toFixed(2);
+            document.getElementById('avgLeagueAway').value = avgL.toFixed(2);
+
+            if (hTeam) {
+                document.getElementById('gfHome').value = (hTeam.gf / hTeam.pj).toFixed(2);
+                document.getElementById('gaHome').value = (hTeam.ga / hTeam.pj).toFixed(2);
+                document.getElementById('percHTHome').value = (timesData[homeName] || 45).toFixed(0);
+            }
+
+            if (vTeam) {
+                document.getElementById('gfAway').value = (vTeam.gf / vTeam.pj).toFixed(2);
+                document.getElementById('gaAway').value = (vTeam.ga / vTeam.pj).toFixed(2);
+                document.getElementById('percHTAway').value = (timesData[awayName] || 45).toFixed(0);
+            }
+
+            document.getElementById('eventName').value = `${homeName} vs ${awayName}`;
+        }
+
+        // --- FUNCIONES MATEMÁTICAS ---
         function factorial(n) { return (n === 0 || n === 1) ? 1 : n * factorial(n - 1); }
         function poisson(k, lambda) { return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial(k); }
 
@@ -360,7 +474,12 @@
         }
 
         function resetStats() { if(confirm('¿Borrar historial?')) { picks = []; updateStorage(); } }
-        window.onload = () => { calculateStats(); renderPicks(); };
+        
+        window.onload = () => { 
+            initLeagueSelector();
+            calculateStats(); 
+            renderPicks(); 
+        };
     </script>
 </body>
 </html>
