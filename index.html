@@ -336,7 +336,6 @@
 
             if ([avgLH, avgLV, gfH, gaH, gfV, gaV].some(isNaN)) return;
 
-            // CÁLCULO DE xG (Goles Esperados)
             const xGH = (gfH / avgLH) * (gaV / avgLV) * avgLH;
             const xGV = (gfV / avgLV) * (gaH / avgLH) * avgLV;
             
@@ -344,7 +343,6 @@
             document.getElementById('resXgv').innerText = xGV.toFixed(2);
             document.getElementById('xgProjectionBox').style.opacity = "1";
 
-            // Lambda HT = (xGH * %HT_Local) + (xGV * %HT_Visita)
             lambdaHTBase = (xGH * perH) + (xGV * perV);
             
             const p0 = poisson(0, lambdaHTBase);
@@ -354,7 +352,6 @@
             document.getElementById('probO05HT').innerText = (currentProbs.pre.O05HT * 100).toFixed(1) + "%";
             document.getElementById('probO15HT_Pre').innerText = (currentProbs.pre.O15HT * 100).toFixed(1) + "%";
             
-            // Minutos objetivo para cuota 1.70
             const targetProb = 1 / 1.70;
             const reqL05 = -Math.log(1 - targetProb);
             let min05 = Math.round(45 - (reqL05 * 45 / lambdaHTBase));
@@ -414,7 +411,6 @@
             const pick = picks.find(p => p.id === id);
             if (pick) {
                 pick[field] = (field === 'event') ? value : parseFloat(value);
-                // Forzar recalculado de profit si ya terminó
                 if (pick.status !== 'pendiendo') setStatus(id, pick.status);
                 else updateStorage();
             }
@@ -474,26 +470,43 @@
             body.innerHTML = '';
             picks.slice().reverse().forEach(p => {
                 const row = document.createElement('tr');
-                row.className = "hover:bg-slate-800/30 border-b border-slate-800";
+                
+                // MEJORA: Lógica de colores por estado de fila
+                let rowBgClass = "hover:bg-slate-800/30";
+                let textClass = "text-white";
+                
+                if (p.status === 'win') {
+                    rowBgClass = "bg-green-900/20 hover:bg-green-900/30";
+                    textClass = "text-green-400";
+                } else if (p.status === 'loss') {
+                    rowBgClass = "bg-red-900/20 hover:bg-red-900/30";
+                    textClass = "text-red-400";
+                } else if (p.status === 'void') {
+                    rowBgClass = "bg-blue-900/20 hover:bg-blue-900/30";
+                    textClass = "text-blue-400";
+                }
+
+                row.className = `${rowBgClass} border-b border-slate-800 transition-colors duration-200`;
+                
                 row.innerHTML = `
-                    <td class="p-4">
+                    <td class="p-4 ${textClass}">
                         <span class="editable-cell" contenteditable="true" onblur="editPick(${p.id}, 'event', this.innerText)">${p.event}</span>
                         <span class="text-slate-500">(<span class="editable-cell" contenteditable="true" onblur="editPick(${p.id}, 'min', this.innerText)">${p.min}</span>')</span>
                     </td>
-                    <td class="p-4 text-cyan-400 font-bold">
+                    <td class="p-4 font-bold ${p.status === 'pendiendo' ? 'text-cyan-400' : textClass}">
                         ${p.market} @<span class="editable-cell" contenteditable="true" onblur="editPick(${p.id}, 'odd', this.innerText)">${p.odd}</span>
                     </td>
                     <td class="p-4 text-slate-400">${p.prob}%</td>
-                    <td class="p-4 font-mono"><span class="editable-cell" contenteditable="true" onblur="editPick(${p.id}, 'stake', this.innerText)">${p.stake}</span>%</td>
+                    <td class="p-4 font-mono ${textClass}"><span class="editable-cell" contenteditable="true" onblur="editPick(${p.id}, 'stake', this.innerText)">${p.stake}</span>%</td>
                     <td class="p-4">
                         <div class="flex gap-1">
-                            <button onclick="setStatus(${p.id}, 'win')" class="status-btn bg-green-900/40 text-green-500 ${p.status==='win'?'ring-1 ring-green-500':''}">W</button>
-                            <button onclick="setStatus(${p.id}, 'loss')" class="status-btn bg-red-900/40 text-red-500 ${p.status==='loss'?'ring-1 ring-red-500':''}">L</button>
-                            <button onclick="setStatus(${p.id}, 'void')" class="status-btn bg-slate-700 text-slate-300 ${p.status==='void'?'ring-1 ring-white':''}">V</button>
+                            <button onclick="setStatus(${p.id}, 'win')" class="status-btn bg-green-900/40 text-green-500 ${p.status==='win'?'ring-2 ring-green-400':''}">W</button>
+                            <button onclick="setStatus(${p.id}, 'loss')" class="status-btn bg-red-900/40 text-red-500 ${p.status==='loss'?'ring-2 ring-red-400':''}">L</button>
+                            <button onclick="setStatus(${p.id}, 'void')" class="status-btn bg-blue-900/40 text-blue-400 ${p.status==='void'?'ring-2 ring-blue-400':''}">V</button>
                         </div>
                     </td>
                     <td class="p-4 text-center">
-                        <button onclick="deletePick(${p.id})" class="text-red-900 hover:text-red-500">✖</button>
+                        <button onclick="deletePick(${p.id})" class="text-slate-600 hover:text-red-500 transition-colors">✖</button>
                     </td>
                 `;
                 body.appendChild(row);
