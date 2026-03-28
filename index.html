@@ -92,7 +92,7 @@
             </div>
 
             <div class="lg:col-span-9 space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="glass-card p-6 rounded-2xl flex flex-col justify-center">
                         <div class="flex justify-between items-center mb-4">
                             <p class="text-[10px] uppercase text-slate-400">Rendimiento Histórico</p>
@@ -101,30 +101,39 @@
                         <canvas id="profitChart" height="150"></canvas>
                     </div>
 
-                    <div class="space-y-4">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="glass-card p-4 rounded-xl border-l-4 border-cyan-500">
-                                <p class="text-[9px] text-slate-400 uppercase">Prob. 0.5 HT</p>
-                                <p id="probO05HT" class="text-3xl font-black">-</p>
-                            </div>
-                            <div class="glass-card p-4 rounded-xl border-l-4 border-yellow-500">
-                                <p class="text-[9px] text-slate-400 uppercase">Minuto Cuota 1.7</p>
-                                <p id="targetMinute" class="text-3xl font-black text-yellow-500">--</p>
-                            </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="glass-card p-4 rounded-xl border-l-4 border-cyan-500 flex flex-col justify-center">
+                            <p class="text-[9px] text-slate-400 uppercase">Prob. 0.5 HT</p>
+                            <p id="probO05HT" class="text-3xl font-black">-</p>
+                            <p class="text-[8px] text-slate-500 mt-2 uppercase tracking-tighter">Entrada 1.70 @ Min:</p>
+                            <p id="targetMinute05" class="text-xl font-bold text-cyan-400">--</p>
                         </div>
+                        <div class="glass-card p-4 rounded-xl border-l-4 border-blue-500 flex flex-col justify-center">
+                            <p class="text-[9px] text-slate-400 uppercase">Prob. 1.5 HT</p>
+                            <p id="probO15HT_Pre" class="text-3xl font-black">-</p>
+                            <p class="text-[8px] text-slate-500 mt-2 uppercase tracking-tighter">Entrada 1.70 @ Min:</p>
+                            <p id="targetMinute15" class="text-xl font-bold text-blue-400">--</p>
+                        </div>
+                    </div>
+                </div>
 
-                        <div class="glass-card p-6 rounded-2xl border border-cyan-500/30">
-                            <div class="flex items-center gap-2 mb-4">
-                                <span class="w-2 h-2 rounded-full badge-live"></span>
-                                <h3 class="text-[10px] font-bold uppercase text-cyan-400">Live Engine</h3>
-                            </div>
-                            <div class="grid grid-cols-3 gap-4 items-end">
-                                <input id="liveMin" type="number" placeholder="Min" class="input-field" oninput="calculateLiveValue()">
-                                <input id="liveOdd" type="number" step="0.01" placeholder="Cuota" class="input-field" oninput="calculateLiveValue()">
-                                <div id="liveValueBox" class="p-2 rounded bg-slate-800 text-center border border-slate-700">
-                                    <p id="resLiveValue" class="text-sm font-bold">-</p>
-                                </div>
-                            </div>
+                <div class="glass-card p-6 rounded-2xl border border-cyan-500/30">
+                    <div class="flex items-center gap-2 mb-4">
+                        <span class="w-2 h-2 rounded-full badge-live"></span>
+                        <h3 class="text-[10px] font-bold uppercase text-cyan-400">Calculadora Live (Fuerzas en tiempo real)</h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div>
+                            <label class="text-[9px] text-slate-500 uppercase block mb-1">Minuto Actual</label>
+                            <input id="liveMin" type="number" placeholder="Min" class="input-field" oninput="calculateLiveValue()">
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-500 uppercase block mb-1">Cuota Actual</label>
+                            <input id="liveOdd" type="number" step="0.01" placeholder="Cuota" class="input-field" oninput="calculateLiveValue()">
+                        </div>
+                        <div id="liveValueBox" class="p-2 rounded bg-slate-800 text-center border border-slate-700">
+                            <p class="text-[8px] text-slate-400 uppercase">Valor Real</p>
+                            <p id="resLiveValue" class="text-sm font-bold">-</p>
                         </div>
                     </div>
                 </div>
@@ -133,13 +142,13 @@
                     <div class="flex gap-4 items-end">
                         <div>
                             <label class="text-[9px] text-slate-500 uppercase block">Mercado</label>
-                            <select id="marketSelect" class="input-field mt-1 w-32">
+                            <select id="marketSelect" class="input-field mt-1 w-32" onchange="calculateLiveValue()">
                                 <option value="O05HT">Over 0.5 HT</option>
                                 <option value="O15HT">Over 1.5 HT</option>
                             </select>
                         </div>
                         <div>
-                            <label class="text-[9px] text-slate-500 uppercase block">Stake %</label>
+                            <label class="text-[9px] text-slate-500 uppercase block">Stake Sugerido</label>
                             <p id="resKelly" class="input-field mt-1 text-cyan-400 font-bold">0.00%</p>
                         </div>
                     </div>
@@ -192,13 +201,32 @@
             const xGV = (gfV / avgLV) * (gaH / avgLV) * avgLV;
             lambdaHTBase = (xGH * perH) + (xGV * perV);
 
+            // Probabilidades Pre-match
             const p0 = poisson(0, lambdaHTBase);
-            currentProbs.pre = { O05HT: 1 - p0, O15HT: 1 - (p0 + poisson(1, lambdaHTBase)) };
+            const p1 = poisson(1, lambdaHTBase);
+            currentProbs.pre = { O05HT: 1 - p0, O15HT: 1 - (p0 + p1) };
+            
             document.getElementById('probO05HT').innerText = (currentProbs.pre.O05HT * 100).toFixed(1) + "%";
+            document.getElementById('probO15HT_Pre').innerText = (currentProbs.pre.O15HT * 100).toFixed(1) + "%";
 
-            const reqL = -Math.log(1 - (1/1.7));
-            let targetMin = Math.round(45 - (reqL * 45 / lambdaHTBase));
-            document.getElementById('targetMinute').innerText = targetMin > 0 ? targetMin + "'" : "N/A";
+            // Minuto Entrada Estimado @1.70
+            const reqProb = 1 / 1.7; // 58.8% aprox
+            
+            // O05HT Entrada (1 - e^-L = 0.588)
+            const reqL05 = -Math.log(1 - reqProb);
+            let min05 = Math.round(45 - (reqL05 * 45 / lambdaHTBase));
+            document.getElementById('targetMinute05').innerText = min05 > 0 ? min05 + "'" : "N/A";
+
+            // O15HT Entrada (1 - e^-L * (1 + L) = 0.588) -> Buscado por iteración simple
+            let min15 = "N/A";
+            for(let m = 0; m < 45; m++) {
+                let l = lambdaHTBase * ((45-m)/45);
+                if(1 - (poisson(0, l) + poisson(1, l)) <= reqProb) {
+                    min15 = m + "'";
+                    break;
+                }
+            }
+            document.getElementById('targetMinute15').innerText = min15;
             
             calculateLiveValue();
         }
@@ -209,7 +237,11 @@
             const odd = parseFloat(document.getElementById('liveOdd').value) || 0;
             const liveLambda = lambdaHTBase * (Math.max(0, 45 - min) / 45);
 
-            currentProbs.live = { O05HT: 1 - poisson(0, liveLambda), O15HT: 1 - (poisson(0, liveLambda) + poisson(1, liveLambda)) };
+            currentProbs.live = { 
+                O05HT: 1 - poisson(0, liveLambda), 
+                O15HT: 1 - (poisson(0, liveLambda) + poisson(1, liveLambda)) 
+            };
+
             const prob = currentProbs.live[document.getElementById('marketSelect').value];
             
             if (odd > 1) {
@@ -273,14 +305,11 @@
             const yieldVal = totalStake > 0 ? (totalProfit / totalStake) * 100 : 0;
             const winRate = settled.length > 0 ? (wins / settled.filter(p => p.status !== 'void').length) * 100 : 0;
             
-            // P-Value simplificado (Z-Score)
-            const pValue = settled.length > 5 ? (1 - (wins/settled.length)) : 1;
-
             document.getElementById('statProfit').innerText = totalProfit.toFixed(2) + " u";
             document.getElementById('statYield').innerText = yieldVal.toFixed(1);
             document.getElementById('statWinRate').innerText = winRate.toFixed(0);
             document.getElementById('statDrawdown').innerText = drawdown.toFixed(2) + " u";
-            document.getElementById('statPValue').innerText = settled.length > 5 ? (pValue > 0.05 ? "Suerte" : "Skill") : "-";
+            document.getElementById('statPValue').innerText = settled.length > 5 ? (wins/settled.length > 0.5 ? "Skill" : "Variance") : "-";
 
             updateChart(profitHistory);
         }
@@ -293,7 +322,7 @@
                 data: {
                     labels: data.map((_, i) => i),
                     datasets: [{
-                        label: 'Profit Acumulado',
+                        label: 'Profit',
                         data: data,
                         borderColor: '#22d3ee',
                         backgroundColor: 'rgba(34, 211, 238, 0.1)',
@@ -340,9 +369,8 @@
             updateStorage();
         }
 
-        function resetStats() { if(confirm('¿Borrar todo el historial?')) { picks = []; updateStorage(); } }
+        function resetStats() { if(confirm('¿Borrar historial?')) { picks = []; updateStorage(); } }
 
-        document.getElementById('marketSelect').addEventListener('change', calculateLiveValue);
         window.onload = () => { calculateStats(); renderPicks(); };
     </script>
 </body>
