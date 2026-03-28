@@ -14,10 +14,10 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .tab-btn.active { border-bottom: 2px solid #22d3ee; color: #22d3ee; }
-        
-        /* Estilo para la lista de ligas */
         .league-item { transition: all 0.2s; border-left: 0px solid #22d3ee; }
         .league-item:hover { background: rgba(34, 211, 238, 0.1); border-left: 4px solid #22d3ee; padding-left: 12px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
 <body class="p-4 md:p-8 text-xs">
@@ -54,16 +54,16 @@
                         Ligas Guardadas
                         <span id="leagueCount" class="text-cyan-500">0</span>
                     </h3>
-                    <div id="leagueList" class="space-y-1 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                        </div>
+                    <div id="leagueList" class="space-y-1 max-h-64 overflow-y-auto pr-2 custom-scrollbar"></div>
                 </div>
 
                 <div class="glass-card p-6 rounded-2xl">
                     <h3 class="text-[10px] font-bold text-slate-400 uppercase mb-4">Instrucciones</h3>
                     <ul class="space-y-2 text-slate-500 leading-relaxed">
-                        <li>• Pega las tablas directamente.</li>
-                        <li>• Al guardar, los cuadros se limpian automáticamente.</li>
-                        <li>• Haz clic en una liga de la lista para editarla.</li>
+                        <li>• Pega las tablas directamente de MisMarcadores.</li>
+                        <li>• Tab 1: Tabla de Local (Score/Concede).</li>
+                        <li>• Tab 2: Tabla de Visitante (Score/Concede).</li>
+                        <li>• Tab 3: Tabla de Goles por Tiempos.</li>
                     </ul>
                 </div>
             </div>
@@ -101,20 +101,15 @@
         function openTab(tabName) {
             const contents = document.getElementsByClassName('tab-content');
             const buttons = document.getElementsByClassName('tab-btn');
-            
             for (let content of contents) content.classList.remove('active');
             for (let btn of buttons) btn.classList.remove('active');
-            
             document.getElementById(tabName).classList.add('active');
             event.currentTarget.classList.add('active');
         }
 
         function saveAllData() {
             const league = document.getElementById('leagueName').value.trim();
-            if (!league) {
-                alert("Por favor ingresa un nombre de liga");
-                return;
-            }
+            if (!league) { alert("Ingresa un nombre de liga"); return; }
 
             const leagueData = {
                 local: document.getElementById('dataLocal').value,
@@ -125,16 +120,10 @@
 
             let allLeagues = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
             allLeagues[league] = leagueData;
-            
             localStorage.setItem('betags_leagues_db', JSON.stringify(allLeagues));
             
-            // Limpiar campos
             clearFields();
-            
-            // Actualizar lista visual
             renderLeagueList();
-
-            // Feedback visual
             const status = document.getElementById('saveStatus');
             status.classList.remove('hidden');
             setTimeout(() => status.classList.add('hidden'), 3000);
@@ -151,7 +140,6 @@
             const listElement = document.getElementById('leagueList');
             const countElement = document.getElementById('leagueCount');
             const allLeagues = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
-            
             const sortedLeagues = Object.keys(allLeagues).sort((a, b) => a.localeCompare(b));
             
             listElement.innerHTML = '';
@@ -175,8 +163,6 @@
                 document.getElementById('dataLocal').value = allLeagues[name].local;
                 document.getElementById('dataAway').value = allLeagues[name].away;
                 document.getElementById('dataTimes').value = allLeagues[name].times;
-                
-                // Hacer scroll suave hacia arriba para que el usuario vea que se cargó
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
@@ -191,9 +177,7 @@
             }
         }
 
-        window.onload = () => {
-            renderLeagueList();
-        };
+        window.onload = () => renderLeagueList();
     </script>
 </body>
 </html>
