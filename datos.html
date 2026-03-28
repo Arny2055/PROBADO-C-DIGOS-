@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BetAGS - Base de Datos Cuántica</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); }
+        .input-field { width: 100%; background-color: #0f172a; border: 1px solid #334155; border-radius: 0.5rem; padding: 0.75rem; font-size: 0.875rem; outline: none; transition: all 0.3s; color: #22d3ee; }
+        .input-field:focus { border-color: #22d3ee; ring: 2px ring-cyan-500; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-btn.active { border-bottom: 2px solid #22d3ee; color: #22d3ee; }
+    </style>
+</head>
+<body class="p-4 md:p-8 text-xs">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-8 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400 inline-block">
+                    Centro de Datos <span class="text-sm font-light text-slate-500">v4</span>
+                </h1>
+                <p class="text-slate-400 text-[10px] uppercase tracking-widest">Gestión de Parámetros Estadísticos</p>
+            </div>
+            <a href="index.html" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg flex items-center gap-2 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Volver al Engine
+            </a>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div class="lg:col-span-1 space-y-4">
+                <div class="glass-card p-6 rounded-2xl">
+                    <label class="text-[9px] font-bold text-cyan-400 uppercase mb-2 block">Liga Activa</label>
+                    <input id="leagueName" type="text" placeholder="Ej: Brasilerao Femenino" class="input-field mb-4">
+                    <button onclick="saveAllData()" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-xl transition-all uppercase tracking-widest">
+                        Guardar Todo
+                    </button>
+                    <p id="saveStatus" class="text-center mt-4 text-green-400 font-bold hidden">¡Datos Guardados!</p>
+                </div>
+
+                <div class="glass-card p-6 rounded-2xl">
+                    <h3 class="text-[10px] font-bold text-slate-400 uppercase mb-4">Instrucciones</h3>
+                    <ul class="space-y-2 text-slate-500 leading-relaxed">
+                        <li>• Pega las tablas directamente desde tu fuente de datos.</li>
+                        <li>• Asegúrate de incluir el nombre de la liga.</li>
+                        <li>• Estos datos se usarán para alimentar el Quantum Engine.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="lg:col-span-3">
+                <div class="glass-card rounded-2xl overflow-hidden">
+                    <div class="flex border-b border-slate-700">
+                        <button onclick="openTab('local')" class="tab-btn active px-6 py-4 font-bold uppercase tracking-wider">Score/Concede Local</button>
+                        <button onclick="openTab('visitante')" class="tab-btn px-6 py-4 font-bold uppercase tracking-wider">Score/Concede Visitante</button>
+                        <button onclick="openTab('tiempos')" class="tab-btn px-6 py-4 font-bold uppercase tracking-wider">Goles por Tiempos</button>
+                    </div>
+
+                    <div class="p-6">
+                        <div id="local" class="tab-content active space-y-4">
+                            <label class="text-[10px] text-slate-400 uppercase">Datos Score/Concede Local</label>
+                            <textarea id="dataLocal" class="input-field h-64 font-mono text-[10px]" placeholder="Pega aquí la tabla de local..."></textarea>
+                        </div>
+
+                        <div id="visitante" class="tab-content space-y-4">
+                            <label class="text-[10px] text-slate-400 uppercase">Datos Score/Concede Visitante</label>
+                            <textarea id="dataAway" class="input-field h-64 font-mono text-[10px]" placeholder="Pega aquí la tabla de visitante..."></textarea>
+                        </div>
+
+                        <div id="tiempos" class="tab-content space-y-4">
+                            <label class="text-[10px] text-slate-400 uppercase">Datos Goles por Tiempo (HT/SH)</label>
+                            <textarea id="dataTimes" class="input-field h-64 font-mono text-[10px]" placeholder="Pega aquí la tabla de tiempos..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openTab(tabName) {
+            const contents = document.getElementsByClassName('tab-content');
+            const buttons = document.getElementsByClassName('tab-btn');
+            
+            for (let content of contents) content.classList.remove('active');
+            for (let btn of buttons) btn.classList.remove('active');
+            
+            document.getElementById(tabName).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        function saveAllData() {
+            const league = document.getElementById('leagueName').value.trim();
+            if (!league) {
+                alert("Por favor ingresa un nombre de liga");
+                return;
+            }
+
+            const leagueData = {
+                local: document.getElementById('dataLocal').value,
+                away: document.getElementById('dataAway').value,
+                times: document.getElementById('dataTimes').value,
+                lastUpdated: new Date().toLocaleString()
+            };
+
+            // Guardar en un objeto maestro de ligas
+            let allLeagues = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
+            allLeagues[league] = leagueData;
+            
+            localStorage.setItem('betags_leagues_db', JSON.stringify(allLeagues));
+            localStorage.setItem('last_active_league', league);
+
+            // Feedback visual
+            const status = document.getElementById('saveStatus');
+            status.classList.remove('hidden');
+            setTimeout(() => status.classList.add('hidden'), 3000);
+        }
+
+        // Cargar datos si ya existen para la liga activa
+        window.onload = () => {
+            const lastLeague = localStorage.getItem('last_active_league');
+            if (lastLeague) {
+                const allLeagues = JSON.parse(localStorage.getItem('betags_leagues_db'));
+                if (allLeagues && allLeagues[lastLeague]) {
+                    document.getElementById('leagueName').value = lastLeague;
+                    document.getElementById('dataLocal').value = allLeagues[lastLeague].local;
+                    document.getElementById('dataAway').value = allLeagues[lastLeague].away;
+                    document.getElementById('dataTimes').value = allLeagues[lastLeague].times;
+                }
+            }
+        };
+    </script>
+</body>
+</html>
