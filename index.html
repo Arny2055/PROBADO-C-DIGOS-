@@ -213,47 +213,49 @@
         let picks = JSON.parse(localStorage.getItem('ht_engine_v4_picks')) || [];
         let chart;
 
-        // --- LÓGICA DE INTEGRACIÓN DE DATOS (MEJORADA) ---
+        // --- LÓGICA DE INTEGRACIÓN DE DATOS ---
 
-        // Función para extraer estadísticas de la tabla Home o Away
         function parseStandingsTable(text) {
+            if (!text) return { teams: {}, leagueAvg: 1.5 };
             const lines = text.split('\n');
             const data = {};
-            let totalGf = 0;
-            let totalGp = 0;
+            let totalGf = 0, totalGp = 0;
 
             lines.forEach(line => {
                 const parts = line.split('\t').filter(p => p.trim() !== "");
-                // Formato esperado: Rank | Equipo | GP | W | D | L | GF | GA ...
                 if (parts.length >= 7) {
                     const name = parts[1].trim();
                     const gp = parseFloat(parts[2]);
                     const gf = parseFloat(parts[6]);
                     const ga = parseFloat(parts[7]);
-
                     if (!isNaN(gp) && gp > 0) {
-                        data[name] = {
-                            avgGf: gf / gp,
-                            avgGa: ga / gp
-                        };
-                        totalGf += gf;
-                        totalGp += gp;
+                        data[name] = { avgGf: gf / gp, avgGa: ga / gp };
+                        totalGf += gf; totalGp += gp;
                     }
                 }
             });
-
-            const leagueAvg = totalGp > 0 ? totalGf / totalGp : 1.5;
-            return { teams: data, leagueAvg: leagueAvg };
+            return { teams: data, leagueAvg: totalGp > 0 ? totalGf / totalGp : 1.5 };
         }
 
-        // Obtener % de la 1ra mitad de la tabla de tiempos
-        function getHTPercentage(text, teamName) {
+        // NUEVA FUNCIÓN: Extrae y calcula el % del 1er tiempo basado en segmentos de 15 min
+        function getHTPercentageFromSegments(text, teamName) {
+            if (!text) return 45;
             const lines = text.split('\n');
             for (let line of lines) {
                 const parts = line.split('\t').filter(p => p.trim() !== "");
-                // Columna 1: Equipo, Columna 3: Dato 1st Half
-                if (parts.length >= 3 && parts[0].trim() === teamName) {
-                    return parseFloat(parts[2]) || 45;
+                // Formato: Team | 0-15 | 16-30 | 31-45 | 46-60 | 61-75 | 76-90
+                if (parts.length >= 7 && parts[0].trim() === teamName) {
+                    const g1 = parseInt(parts[1].split('-')[0]) || 0;
+                    const g2 = parseInt(parts[2].split('-')[0]) || 0;
+                    const g3 = parseInt(parts[3].split('-')[0]) || 0;
+                    const g4 = parseInt(parts[4].split('-')[0]) || 0;
+                    const g5 = parseInt(parts[5].split('-')[0]) || 0;
+                    const g6 = parseInt(parts[6].split('-')[0]) || 0;
+                    
+                    const firstHalf = g1 + g2 + g3;
+                    const total = firstHalf + g4 + g5 + g6;
+                    
+                    return total > 0 ? (firstHalf / total * 100) : 45;
                 }
             }
             return 45;
@@ -264,8 +266,7 @@
             const select = document.getElementById('selectLeague');
             Object.keys(db).sort().forEach(league => {
                 let opt = document.createElement('option');
-                opt.value = league;
-                opt.innerText = league;
+                opt.value = league; opt.innerText = league;
                 select.appendChild(opt);
             });
         }
@@ -275,13 +276,9 @@
             const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
             const homeSelect = document.getElementById('selectHome');
             const awaySelect = document.getElementById('selectAway');
-            
             homeSelect.innerHTML = '<option value="">-- Local --</option>';
             awaySelect.innerHTML = '<option value="">-- Visitante --</option>';
-
             if (!league || !db[league]) return;
-
-            // Extraemos los nombres de los equipos de la tabla local
             const localData = parseStandingsTable(db[league].local);
             Object.keys(localData.teams).sort().forEach(t => {
                 homeSelect.innerHTML += `<option value="${t}">${t}</option>`;
@@ -300,26 +297,24 @@
             const homeTableData = parseStandingsTable(db[league].local);
             const awayTableData = parseStandingsTable(db[league].away);
 
-            // Promedios de Liga
             document.getElementById('avgLeagueHome').value = homeTableData.leagueAvg.toFixed(2);
             document.getElementById('avgLeagueAway').value = awayTableData.leagueAvg.toFixed(2);
 
-            // Estadísticas Local
             if (homeTableData.teams[homeName]) {
                 document.getElementById('gfHome').value = homeTableData.teams[homeName].avgGf.toFixed(2);
                 document.getElementById('gaHome').value = homeTableData.teams[homeName].avgGa.toFixed(2);
             }
-
-            // Estadísticas Visitante
             if (awayTableData.teams[awayName]) {
                 document.getElementById('gfAway').value = awayTableData.teams[awayName].avgGf.toFixed(2);
                 document.getElementById('gaAway').value = awayTableData.teams[awayName].avgGa.toFixed(2);
             }
 
-            // Porcentajes 1er Tiempo
-            document.getElementById('percHTHome').value = getHTPercentage(db[league].times, homeName).toFixed(0);
-            document.getElementById('percHTAway').value = getHTPercentage(db[league].times, awayName).toFixed(0);
+            // MEJORA: Cálculo automático de % usando las nuevas tablas separadas
+            const perHTHome = getHTPercentageFromSegments(db[league].timesLocal, homeName);
+            const perHTAway = getHTPercentageFromSegments(db[league].timesAway, awayName);
 
+            document.getElementById('percHTHome').value = perHTHome.toFixed(0);
+            document.getElementById('percHTAway').value = perHTAway.toFixed(0);
             document.getElementById('eventName').value = `${homeName} vs ${awayName}`;
         }
 
@@ -358,10 +353,7 @@
             let min15 = "N/A";
             for(let m = 0; m < 45; m++) {
                 let l = lambdaHTBase * ((45-m)/45);
-                if(1 - (poisson(0, l) + poisson(1, l)) <= reqProb) {
-                    min15 = m + "'";
-                    break;
-                }
+                if(1 - (poisson(0, l) + poisson(1, l)) <= reqProb) { min15 = m + "'"; break; }
             }
             document.getElementById('targetMinute15').innerText = min15;
             calculateLiveValue();
@@ -392,11 +384,9 @@
             const prob = currentProbs.live[market];
             const ev = (prob * odd) - 1;
             picks.push({
-                id: Date.now(),
-                event: document.getElementById('eventName').value || 'Live HT',
+                id: Date.now(), event: document.getElementById('eventName').value || 'Live HT',
                 market: market, odd: odd, min: document.getElementById('liveMin').value || 0,
-                prob: (prob * 100).toFixed(1),
-                stake: (ev / (odd - 1) * 0.25 * 100).toFixed(2),
+                prob: (prob * 100).toFixed(1), stake: (ev / (odd - 1) * 0.25 * 100).toFixed(2),
                 status: 'pendiendo', profit: 0
             });
             updateStorage();
@@ -414,8 +404,7 @@
 
         function updateStorage() {
             localStorage.setItem('ht_engine_v4_picks', JSON.stringify(picks));
-            renderPicks();
-            calculateStats();
+            renderPicks(); calculateStats();
         }
 
         function calculateStats() {
@@ -423,8 +412,7 @@
             let totalProfit = 0, totalStake = 0, wins = 0, maxProfit = 0, drawdown = 0;
             let profitHistory = [0];
             settled.forEach(p => {
-                totalProfit += p.profit;
-                totalStake += parseFloat(p.stake);
+                totalProfit += p.profit; totalStake += parseFloat(p.stake);
                 if(p.status === 'win') wins++;
                 profitHistory.push(totalProfit);
                 if(totalProfit > maxProfit) maxProfit = totalProfit;
@@ -481,17 +469,11 @@
             });
         }
 
-        function deletePick(id) {
-            picks = picks.filter(p => p.id !== id);
-            updateStorage();
-        }
-
+        function deletePick(id) { picks = picks.filter(p => p.id !== id); updateStorage(); }
         function resetStats() { if(confirm('¿Borrar historial?')) { picks = []; updateStorage(); } }
         
         window.onload = () => { 
-            initLeagueSelector();
-            calculateStats(); 
-            renderPicks(); 
+            initLeagueSelector(); calculateStats(); renderPicks(); 
         };
     </script>
 </body>
