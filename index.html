@@ -214,6 +214,66 @@
         let chart;
 
         // --- LÓGICA DE INTEGRACIÓN DE DATOS ---
+        
+        // Obtener equipos de la tabla de Goles por Tiempo (Columna 1)
+        function getTeamsFromTimes(text) {
+            const lines = text.split('\n');
+            const teams = [];
+            lines.forEach(line => {
+                const parts = line.split('\t').filter(p => p.trim() !== "");
+                // La primera parte suele ser el rank, la segunda el nombre del equipo
+                if (parts.length >= 3) {
+                    teams.push(parts[1].trim());
+                }
+            });
+            return [...new Set(teams)].sort();
+        }
+
+        // Buscar V: Obtener % 1st Half de la tabla Goles por Tiempo (Columna 3)
+        function getHTPercentage(text, teamName) {
+            const lines = text.split('\n');
+            for (let line of lines) {
+                const parts = line.split('\t').filter(p => p.trim() !== "");
+                if (parts.length >= 3 && parts[1].trim() === teamName) {
+                    return parseFloat(parts[2]) || 45;
+                }
+            }
+            return 45;
+        }
+
+        // Buscar V: Obtener Score y Concede de las tablas local/visitante
+        function getScoreConcede(text, teamName, isHome) {
+            const lines = text.split('\n');
+            const colName = isHome ? "Home" : "Away";
+            
+            for (let line of lines) {
+                const parts = line.split('\t').filter(p => p.trim() !== "");
+                // Buscamos el nombre del equipo en la columna central
+                // Estructura: [Score] [Home/Away] [Concede] ...
+                if (parts.length >= 3) {
+                    const nameIndex = parts.findIndex(p => p.trim() === teamName);
+                    if (nameIndex !== -1) {
+                        return {
+                            score: parseFloat(parts[nameIndex - 1]),
+                            concede: parseFloat(parts[nameIndex + 1])
+                        };
+                    }
+                }
+            }
+            return { score: 0, concede: 0 };
+        }
+
+        // Obtener promedio de liga (Valor izquierdo de league average)
+        function getLeagueAvg(text) {
+            const lines = text.split('\n');
+            const lastLine = lines.find(l => l.toLowerCase().includes("league average"));
+            if (lastLine) {
+                const parts = lastLine.split('\t').filter(p => p.trim() !== "");
+                return parseFloat(parts[0]) || 1.5;
+            }
+            return 1.5;
+        }
+
         function initLeagueSelector() {
             const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
             const select = document.getElementById('selectLeague');
@@ -225,38 +285,6 @@
             });
         }
 
-        function parseTable(text) {
-            const lines = text.split('\n');
-            const data = [];
-            lines.forEach(line => {
-                const parts = line.split('\t').filter(p => p.trim() !== "");
-                if (parts.length >= 5) {
-                    data.push({
-                        name: parts[1].trim(),
-                        pj: parseFloat(parts[2]),
-                        gf: parseFloat(parts[parts.length - 2]), // Penúltimo suele ser GF
-                        ga: parseFloat(parts[parts.length - 1])  // Último suele ser GC
-                    });
-                }
-            });
-            return data;
-        }
-
-        function parseTimes(text) {
-            const lines = text.split('\n');
-            const data = {};
-            lines.forEach(line => {
-                const parts = line.split('\t').filter(p => p.trim() !== "");
-                if (parts.length >= 3) {
-                    const name = parts[1].trim();
-                    const htGoals = parts[2].split(':').map(Number).reduce((a,b) => a+b, 0);
-                    const ftGoals = parts[parts.length-1].split(':').map(Number).reduce((a,b) => a+b, 0);
-                    data[name] = (ftGoals > 0) ? (htGoals / ftGoals) * 100 : 50;
-                }
-            });
-            return data;
-        }
-
         function loadTeams() {
             const league = document.getElementById('selectLeague').value;
             const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
@@ -266,12 +294,12 @@
             homeSelect.innerHTML = '<option value="">-- Local --</option>';
             awaySelect.innerHTML = '<option value="">-- Visitante --</option>';
 
-            if (!league) return;
+            if (!league || !db[league]) return;
 
-            const teamsLocal = parseTable(db[league].local);
-            teamsLocal.forEach(t => {
-                homeSelect.innerHTML += `<option value="${t.name}">${t.name}</option>`;
-                awaySelect.innerHTML += `<option value="${t.name}">${t.name}</option>`;
+            const teams = getTeamsFromTimes(db[league].times);
+            teams.forEach(t => {
+                homeSelect.innerHTML += `<option value="${t}">${t}</option>`;
+                awaySelect.innerHTML += `<option value="${t}">${t}</option>`;
             });
         }
 
@@ -281,31 +309,26 @@
             const awayName = document.getElementById('selectAway').value;
             const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
 
-            if (!league || !homeName || !awayName) return;
+            if (!league || !homeName || !awayName || !db[league]) return;
 
-            const localData = parseTable(db[league].local);
-            const visitData = parseTable(db[league].away);
-            const timesData = parseTimes(db[league].times);
+            // 1. Promedios de Liga (Desde tabla Home)
+            const avgLeague = getLeagueAvg(db[league].local);
+            document.getElementById('avgLeagueHome').value = avgLeague.toFixed(2);
+            document.getElementById('avgLeagueAway').value = avgLeague.toFixed(2);
 
-            const hTeam = localData.find(t => t.name === homeName);
-            const vTeam = visitData.find(t => t.name === awayName);
+            // 2. Datos Local (Score/Concede de tabla Local + % de tabla Times)
+            const hStats = getScoreConcede(db[league].local, homeName, true);
+            const hPerc = getHTPercentage(db[league].times, homeName);
+            document.getElementById('gfHome').value = hStats.score.toFixed(2);
+            document.getElementById('gaHome').value = hStats.concede.toFixed(2);
+            document.getElementById('percHTHome').value = hPerc.toFixed(0);
 
-            // Promedios Liga
-            const avgL = localData.reduce((acc, t) => acc + (t.gf/t.pj), 0) / localData.length;
-            document.getElementById('avgLeagueHome').value = avgL.toFixed(2);
-            document.getElementById('avgLeagueAway').value = avgL.toFixed(2);
-
-            if (hTeam) {
-                document.getElementById('gfHome').value = (hTeam.gf / hTeam.pj).toFixed(2);
-                document.getElementById('gaHome').value = (hTeam.ga / hTeam.pj).toFixed(2);
-                document.getElementById('percHTHome').value = (timesData[homeName] || 45).toFixed(0);
-            }
-
-            if (vTeam) {
-                document.getElementById('gfAway').value = (vTeam.gf / vTeam.pj).toFixed(2);
-                document.getElementById('gaAway').value = (vTeam.ga / vTeam.pj).toFixed(2);
-                document.getElementById('percHTAway').value = (timesData[awayName] || 45).toFixed(0);
-            }
+            // 3. Datos Visitante (Score/Concede de tabla Away + % de tabla Times)
+            const vStats = getScoreConcede(db[league].away, awayName, false);
+            const vPerc = getHTPercentage(db[league].times, awayName);
+            document.getElementById('gfAway').value = vStats.score.toFixed(2);
+            document.getElementById('gaAway').value = vStats.concede.toFixed(2);
+            document.getElementById('percHTAway').value = vPerc.toFixed(0);
 
             document.getElementById('eventName').value = `${homeName} vs ${awayName}`;
         }
@@ -340,7 +363,7 @@
             const reqProb = 1 / 1.7;
             const reqL05 = -Math.log(1 - reqProb);
             let min05 = Math.round(45 - (reqL05 * 45 / lambdaHTBase));
-            document.getElementById('targetMinute05').innerText = min05 > 0 ? min05 + "'" : "N/A";
+            document.getElementById('targetMinute05').innerText = (min05 > 0 && min05 < 45) ? min05 + "'" : "N/A";
 
             let min15 = "N/A";
             for(let m = 0; m < 45; m++) {
