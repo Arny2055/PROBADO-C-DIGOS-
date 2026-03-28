@@ -3,24 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BetAGS - Quantum HT Engine</title>
+    <title>BetAGS - Quantum HT Engine v2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
-        }
-        .glass-card {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        .transition-all { transition: all 0.3s ease; }
+        .input-field { width: 100%; background-color: #0f172a; border: 1px solid #334155; border-radius: 0.5rem; padding: 0.5rem; font-size: 0.875rem; outline: none; transition: all 0.3s; }
+        .input-field:focus { border-color: #22d3ee; ring: 2px ring-cyan-500; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -30,7 +21,7 @@
             <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400 inline-block">
                 Quantum HT Engine
             </h1>
-            <p class="text-slate-400 mt-2 text-sm uppercase tracking-widest">Especialista en Goles 1° Tiempo</p>
+            <p class="text-slate-400 mt-2 text-sm uppercase tracking-widest">Análisis de Fuerzas & Distribución HT</p>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -38,41 +29,53 @@
             <div class="lg:col-span-1 space-y-6">
                 <div class="glass-card p-6 rounded-2xl">
                     <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <span class="w-2 h-6 bg-cyan-500 rounded-full"></span> Configuración HT
+                        <span class="w-2 h-6 bg-cyan-500 rounded-full"></span> Configuración de Datos
                     </h2>
                     
                     <div class="space-y-4">
                         <div>
-                            <label class="text-xs text-slate-400 uppercase">Evento</label>
-                            <input id="eventName" type="text" placeholder="Ej: Real Madrid vs Barca" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 mt-1 focus:ring-2 focus:ring-cyan-500 outline-none">
+                            <label class="text-[10px] text-slate-400 uppercase">Nombre del Evento</label>
+                            <input id="eventName" type="text" placeholder="Ej: Real Madrid vs Barca" class="input-field">
+                        </div>
+
+                        <div class="p-3 bg-slate-800/40 rounded-xl border border-slate-700/50">
+                            <p class="text-[10px] font-bold text-yellow-500 mb-2 uppercase tracking-tighter">Promedios de la Liga</p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[9px] text-slate-500 block">AVG GOL LOCAL</label>
+                                    <input id="avgLeagueHome" type="number" step="0.01" placeholder="1.53" class="input-field">
+                                </div>
+                                <div>
+                                    <label class="text-[9px] text-slate-500 block">AVG GOL VISITA</label>
+                                    <input id="avgLeagueAway" type="number" step="0.01" placeholder="1.21" class="input-field">
+                                </div>
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-1 gap-4">
-                            <div class="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
-                                <p class="text-xs font-bold text-blue-400 mb-3 uppercase">Equipo Local</p>
-                                <div class="space-y-3">
-                                    <label class="text-[10px] text-slate-500 block">PROMEDIO GOLES TOTALES (GF + GC)</label>
-                                    <input id="avgTotalHome" type="number" step="0.01" placeholder="Ej: 2.80" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm outline-none">
-                                    
-                                    <label class="text-[10px] text-slate-500 block">% GOLES EN 1° TIEMPO</label>
-                                    <input id="percHTHome" type="number" step="1" placeholder="Ej: 45" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm outline-none">
+                            <div class="p-3 bg-blue-900/20 rounded-xl border border-blue-800/30">
+                                <p class="text-xs font-bold text-blue-400 mb-2 uppercase">Local</p>
+                                <div class="grid grid-cols-2 gap-2 mb-2">
+                                    <input id="gfHome" type="number" step="0.01" placeholder="GF Local" class="input-field" title="Goles a favor local">
+                                    <input id="gaHome" type="number" step="0.01" placeholder="GC Local" class="input-field" title="Goles en contra local">
                                 </div>
+                                <label class="text-[9px] text-slate-500 block">% GOLES EN 1°T</label>
+                                <input id="percHTHome" type="number" placeholder="Ej: 42" class="input-field">
                             </div>
 
-                            <div class="p-4 bg-slate-900/50 rounded-xl border border-slate-800">
-                                <p class="text-xs font-bold text-green-400 mb-3 uppercase">Equipo Visitante</p>
-                                <div class="space-y-3">
-                                    <label class="text-[10px] text-slate-500 block">PROMEDIO GOLES TOTALES (GF + GC)</label>
-                                    <input id="avgTotalAway" type="number" step="0.01" placeholder="Ej: 2.50" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm outline-none">
-                                    
-                                    <label class="text-[10px] text-slate-500 block">% GOLES EN 1° TIEMPO</label>
-                                    <input id="percHTAway" type="number" step="1" placeholder="Ej: 38" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm outline-none">
+                            <div class="p-3 bg-green-900/20 rounded-xl border border-green-800/30">
+                                <p class="text-xs font-bold text-green-400 mb-2 uppercase">Visitante</p>
+                                <div class="grid grid-cols-2 gap-2 mb-2">
+                                    <input id="gfAway" type="number" step="0.01" placeholder="GF Visita" class="input-field" title="Goles a favor visita">
+                                    <input id="gaAway" type="number" step="0.01" placeholder="GC Visita" class="input-field" title="Goles en contra visita">
                                 </div>
+                                <label class="text-[9px] text-slate-500 block">% GOLES EN 1°T</label>
+                                <input id="percHTAway" type="number" placeholder="Ej: 35" class="input-field">
                             </div>
                         </div>
 
                         <button onclick="calculateHTPoisson()" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg uppercase text-xs tracking-widest">
-                            Analizar Medio Tiempo
+                            Calcular Probabilidades HT
                         </button>
                     </div>
                 </div>
@@ -80,138 +83,144 @@
 
             <div class="lg:col-span-2 space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="glass-card p-6 rounded-2xl flex justify-around items-center">
-                        <div class="text-center">
-                            <p class="text-xs text-slate-400 uppercase">λ HT Local</p>
-                            <p id="resLambdaHTHome" class="text-3xl font-bold text-blue-400">0.00</p>
-                        </div>
-                        <div class="text-xl font-light text-slate-600">+</div>
-                        <div class="text-center">
-                            <p class="text-xs text-slate-400 uppercase">λ HT Visita</p>
-                            <p id="resLambdaHTAway" class="text-3xl font-bold text-green-400">0.00</p>
+                    <div class="glass-card p-5 rounded-2xl">
+                        <p class="text-[10px] text-slate-400 uppercase mb-3">Análisis de Fuerzas</p>
+                        <div class="grid grid-cols-2 gap-4 text-center">
+                            <div>
+                                <p class="text-[9px] text-blue-400 uppercase">Ataque Local</p>
+                                <p id="fAtqL" class="text-xl font-bold">0.00</p>
+                            </div>
+                            <div>
+                                <p class="text-[9px] text-green-400 uppercase">Ataque Visita</p>
+                                <p id="fAtqV" class="text-xl font-bold">0.00</p>
+                            </div>
                         </div>
                     </div>
-
-                    <div class="glass-card p-6 rounded-2xl flex flex-col justify-center">
-                        <p class="text-xs text-slate-400 uppercase mb-2">λ HT Conjunta (Partido)</p>
-                        <p id="resLambdaTotal" class="text-4xl font-bold text-cyan-400 text-center">0.00</p>
+                    <div class="glass-card p-5 rounded-2xl flex justify-around items-center">
+                        <div class="text-center">
+                            <p class="text-[10px] text-slate-400 uppercase">λ HT Local</p>
+                            <p id="resLambdaHTHome" class="text-2xl font-bold text-blue-400">0.00</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-[10px] text-slate-400 uppercase">λ HT Visita</p>
+                            <p id="resLambdaHTAway" class="text-2xl font-bold text-green-400">0.00</p>
+                        </div>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="glass-card p-6 rounded-xl border-l-4 border-cyan-500">
-                        <p class="text-sm font-semibold text-slate-300 mb-1">PROBABILIDAD OVER 0.5 HT</p>
+                    <div class="glass-card p-6 rounded-xl border-t-4 border-cyan-500">
+                        <p class="text-xs font-semibold text-slate-400 mb-1 uppercase">Over 0.5 Goles HT</p>
                         <p id="probO05HT" class="text-5xl font-black text-white">- %</p>
                     </div>
-
-                    <div class="glass-card p-6 rounded-xl border-l-4 border-blue-500">
-                        <p class="text-sm font-semibold text-slate-300 mb-1">PROBABILIDAD OVER 1.5 HT</p>
+                    <div class="glass-card p-6 rounded-xl border-t-4 border-blue-500">
+                        <p class="text-xs font-semibold text-slate-400 mb-1 uppercase">Over 1.5 Goles HT</p>
                         <p id="probO15HT" class="text-5xl font-black text-white">- %</p>
                     </div>
                 </div>
 
                 <div class="glass-card p-6 rounded-xl">
-                    <p class="text-xs text-slate-400 mb-4 uppercase">Calculadora de Valor & Stake</p>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 items-end">
                         <div>
-                            <label class="text-[10px] text-slate-500 block">MERCADO</label>
-                            <select id="marketSelect" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm outline-none">
+                            <label class="text-[10px] text-slate-500 block uppercase">Mercado</label>
+                            <select id="marketSelect" class="input-field mt-1">
                                 <option value="O05HT">Over 0.5 HT</option>
                                 <option value="O15HT">Over 1.5 HT</option>
                             </select>
                         </div>
                         <div>
-                            <label class="text-[10px] text-slate-500 block">CUOTA</label>
-                            <input id="marketOdd" type="number" step="0.01" placeholder="1.50" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm outline-none">
+                            <label class="text-[10px] text-slate-500 block uppercase">Cuota</label>
+                            <input id="marketOdd" type="number" step="0.01" placeholder="1.85" class="input-field mt-1">
                         </div>
                         <div id="valueBox" class="p-2 rounded bg-slate-800 text-center">
-                            <p class="text-[10px] text-slate-400">VALOR (EV)</p>
+                            <p class="text-[10px] text-slate-400 uppercase">Valor</p>
                             <p id="resValue" class="text-sm font-bold">-</p>
                         </div>
-                        <button id="btnSavePick" onclick="savePick()" class="h-10 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-xs font-bold disabled:opacity-50">
-                            GUARDAR PICK
+                        <button id="btnSavePick" onclick="savePick()" class="h-10 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-xs font-bold disabled:opacity-50 uppercase">
+                            Guardar
                         </button>
                     </div>
-                    <p id="resKelly" class="mt-4 text-center text-xs font-semibold text-cyan-400 tracking-wider"></p>
+                    <p id="resKelly" class="mt-4 text-center text-[10px] font-bold text-cyan-400 tracking-widest uppercase"></p>
                 </div>
             </div>
         </div>
 
         <div class="mt-8 glass-card rounded-2xl overflow-hidden">
-            <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/30">
-                <h3 class="font-semibold text-sm">Registro de Operaciones HT</h3>
-                <span id="statPicks" class="bg-cyan-900 text-cyan-200 text-[10px] px-2 py-1 rounded-full uppercase">0 Picks</span>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-slate-900/50 text-slate-400 text-xs uppercase">
-                        <tr>
-                            <th class="p-4">Evento</th>
-                            <th class="p-4">Mercado</th>
-                            <th class="p-4">Cuota</th>
-                            <th class="p-4">Prob %</th>
-                            <th class="p-4">Stake %</th>
-                            <th class="p-4">Status</th>
-                            <th class="p-4">Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody id="picksBody" class="divide-y divide-slate-800"></tbody>
-                </table>
-            </div>
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-900/80 text-slate-400 text-[10px] uppercase">
+                    <tr>
+                        <th class="p-4">Evento</th>
+                        <th class="p-4">Mercado</th>
+                        <th class="p-4">Cuota</th>
+                        <th class="p-4">Prob %</th>
+                        <th class="p-4">Stake %</th>
+                        <th class="p-4">Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="picksBody" class="divide-y divide-slate-800"></tbody>
+            </table>
         </div>
     </div>
 
     <script>
         let currentProbs = {};
-        let picks = JSON.parse(localStorage.getItem('ht_engine_picks')) || [];
+        let picks = JSON.parse(localStorage.getItem('ht_engine_v2_picks')) || [];
 
-        function factorial(n) {
-            if (n === 0 || n === 1) return 1;
-            let res = 1;
-            for (let i = 2; i <= n; i++) res *= i;
-            return res;
-        }
-
-        function poisson(k, lambda) {
-            return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial(k);
-        }
+        function factorial(n) { return (n === 0 || n === 1) ? 1 : n * factorial(n - 1); }
+        function poisson(k, lambda) { return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial(k); }
 
         function calculateHTPoisson() {
-            const avgH = parseFloat(document.getElementById('avgTotalHome').value);
-            const perH = parseFloat(document.getElementById('percHTHome').value) / 100;
-            const avgA = parseFloat(document.getElementById('avgTotalAway').value);
-            const perA = parseFloat(document.getElementById('percHTAway').value) / 100;
+            // Liga Stats
+            const avgLH = parseFloat(document.getElementById('avgLeagueHome').value);
+            const avgLV = parseFloat(document.getElementById('avgLeagueAway').value);
 
-            if ([avgH, perH, avgA, perA].some(isNaN)) {
-                alert("Completa los promedios y porcentajes.");
+            // Local Stats
+            const gfH = parseFloat(document.getElementById('gfHome').value);
+            const gaH = parseFloat(document.getElementById('gaHome').value);
+            const perH = parseFloat(document.getElementById('percHTHome').value) / 100;
+
+            // Visita Stats
+            const gfV = parseFloat(document.getElementById('gfAway').value);
+            const gaV = parseFloat(document.getElementById('gaAway').value);
+            const perV = parseFloat(document.getElementById('percHTAway').value) / 100;
+
+            if ([avgLH, avgLV, gfH, gaH, gfV, gaV].some(isNaN)) {
+                alert("Por favor rellena todos los datos de promedios.");
                 return;
             }
 
-            // Cálculo de Lambdas específicas para el HT
-            const lambdaHTH = avgH * perH;
-            const lambdaHTA = avgA * perA;
-            const lambdaTotalHT = lambdaHTH + lambdaHTA;
+            // 1. Cálculo de Fuerzas
+            const forceAtqL = gfH / avgLH;
+            const forceDefL = gaH / avgLV;
+            const forceAtqV = gfV / avgLV;
+            const forceDefV = gaV / avgLH;
+
+            document.getElementById('fAtqL').innerText = forceAtqL.toFixed(2);
+            document.getElementById('fAtqV').innerText = forceAtqV.toFixed(2);
+
+            // 2. xG Total del Partido (Lambda)
+            const xGHomeTotal = forceAtqL * forceDefV * avgLH;
+            const xGAwayTotal = forceAtqV * forceDefL * avgLV;
+
+            // 3. Distribución HT (Dato de la imagen)
+            const lambdaHTH = xGHomeTotal * perH;
+            const lambdaHTV = xGAwayTotal * perV;
+            const lambdaTotalHT = lambdaHTH + lambdaHTV;
 
             document.getElementById('resLambdaHTHome').innerText = lambdaHTH.toFixed(2);
-            document.getElementById('resLambdaHTAway').innerText = lambdaHTA.toFixed(2);
-            document.getElementById('resLambdaTotal').innerText = lambdaTotalHT.toFixed(2);
+            document.getElementById('resLambdaHTAway').innerText = lambdaHTV.toFixed(2);
 
-            // Probabilidades de Poisson para el total de goles en HT (conjunto)
-            // P(0 goles)
-            const prob0Goles = poisson(0, lambdaTotalHT);
-            // P(1 gol)
-            const prob1Gol = poisson(1, lambdaTotalHT);
+            // 4. Probabilidades
+            const p0 = poisson(0, lambdaTotalHT);
+            const p1 = poisson(1, lambdaTotalHT);
 
-            const probO05HT = 1 - prob0Goles;
-            const probO15HT = 1 - (prob0Goles + prob1Gol);
+            const probO05 = 1 - p0;
+            const probO15 = 1 - (p0 + p1);
 
-            currentProbs = {
-                O05HT: probO05HT,
-                O15HT: probO15HT
-            };
+            currentProbs = { O05HT: probO05, O15HT: probO15 };
 
-            document.getElementById('probO05HT').innerText = (probO05HT * 100).toFixed(1) + "%";
-            document.getElementById('probO15HT').innerText = (probO15HT * 100).toFixed(1) + "%";
+            document.getElementById('probO05HT').innerText = (probO05 * 100).toFixed(1) + "%";
+            document.getElementById('probO15HT').innerText = (probO15 * 100).toFixed(1) + "%";
             
             calculateValue();
         }
@@ -234,11 +243,11 @@
                 valBox.className = 'p-2 rounded bg-green-900/50 text-green-400 text-center';
                 btnSave.disabled = false;
                 const kelly = (value / (odd - 1)) * 0.25;
-                document.getElementById('resKelly').innerText = `STAKE RECOMENDADO: ${(kelly * 100).toFixed(2)}% (KELLY 25%)`;
+                document.getElementById('resKelly').innerText = `STAKE SUGERIDO: ${(kelly * 100).toFixed(2)}% DEL BANKROLL`;
             } else {
                 valBox.className = 'p-2 rounded bg-red-900/20 text-red-400 text-center';
                 btnSave.disabled = true;
-                document.getElementById('resKelly').innerText = "EV NEGATIVO - NO APOSTAR";
+                document.getElementById('resKelly').innerText = "SIN VALOR MATEMÁTICO";
             }
         }
 
@@ -255,12 +264,11 @@
                 market: market,
                 odd: odd,
                 prob: (prob * 100).toFixed(1),
-                stake: (kelly * 100).toFixed(2),
-                status: 'pendiente'
+                stake: (kelly * 100).toFixed(2)
             };
 
             picks.push(newPick);
-            localStorage.setItem('ht_engine_picks', JSON.stringify(picks));
+            localStorage.setItem('ht_engine_v2_picks', JSON.stringify(picks));
             renderPicks();
         }
 
@@ -271,32 +279,25 @@
                 const row = document.createElement('tr');
                 row.className = "hover:bg-slate-800/30 transition-colors border-b border-slate-800";
                 row.innerHTML = `
-                    <td class="p-4 font-medium">${pick.event}</td>
-                    <td class="p-4 text-cyan-400">${pick.market}</td>
-                    <td class="p-4 font-mono">${pick.odd.toFixed(2)}</td>
-                    <td class="p-4">${pick.prob}%</td>
-                    <td class="p-4 font-bold text-blue-400">${pick.stake}%</td>
-                    <td class="p-4">
-                        <span class="px-2 py-1 rounded-full text-[10px] bg-slate-800 text-slate-400 uppercase">${pick.status}</span>
-                    </td>
-                    <td class="p-4">
-                        <button onclick="deletePick(${pick.id})" class="text-red-500 opacity-50 hover:opacity-100">✖</button>
-                    </td>
+                    <td class="p-4 font-medium text-xs">${pick.event}</td>
+                    <td class="p-4 text-cyan-400 text-xs">${pick.market}</td>
+                    <td class="p-4 font-mono text-xs">${pick.odd.toFixed(2)}</td>
+                    <td class="p-4 text-xs">${pick.prob}%</td>
+                    <td class="p-4 font-bold text-blue-400 text-xs">${pick.stake}%</td>
+                    <td class="p-4"><button onclick="deletePick(${pick.id})" class="text-red-500 opacity-50 hover:opacity-100">✖</button></td>
                 `;
                 body.appendChild(row);
             });
-            document.getElementById('statPicks').innerText = `${picks.length} Picks`;
         }
 
         function deletePick(id) {
             picks = picks.filter(p => p.id !== id);
-            localStorage.setItem('ht_engine_picks', JSON.stringify(picks));
+            localStorage.setItem('ht_engine_v2_picks', JSON.stringify(picks));
             renderPicks();
         }
 
         document.getElementById('marketOdd').addEventListener('input', calculateValue);
         document.getElementById('marketSelect').addEventListener('change', calculateValue);
-
         window.onload = renderPicks;
     </script>
 </body>
