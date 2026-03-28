@@ -21,6 +21,14 @@
         .editable-cell { cursor: pointer; border-bottom: 1px dashed #334155; transition: background 0.2s; padding: 0 2px; }
         .editable-cell:hover { border-color: #22d3ee; background: rgba(34, 211, 238, 0.1); }
         .editable-cell:focus { outline: none; background: rgba(34, 211, 238, 0.2); border-bottom: 1px solid #22d3ee; }
+        
+        /* Toggle Switch Style */
+        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .4s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #22d3ee; }
+        input:checked + .slider:before { transform: translateX(20px); }
     </style>
 </head>
 <body class="p-4 md:p-8 text-xs">
@@ -34,7 +42,14 @@
                 <p class="text-slate-400 text-[10px] uppercase tracking-widest">Especialista en Goles 1° Tiempo</p>
             </div>
             
-            <nav class="flex gap-2">
+            <nav class="flex gap-2 items-center">
+                <div class="flex items-center gap-2 mr-4 bg-slate-800/50 p-2 rounded-lg border border-slate-700">
+                    <span class="text-[9px] font-bold uppercase text-slate-400">Modo Híbrido</span>
+                    <label class="switch">
+                        <input type="checkbox" id="hybridMode" onchange="toggleHybridMode()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
                 <a href="datos.html" class="nav-btn px-4 py-2 rounded-lg flex items-center gap-2 font-semibold text-[10px] uppercase tracking-wider">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
@@ -44,36 +59,26 @@
             </nav>
         </header>
 
-        <div class="glass-card p-4 rounded-xl mb-6 grid grid-cols-1 md:grid-cols-2 gap-6 border-b-2 border-cyan-500">
-            <div class="space-y-3">
-                <p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest border-b border-blue-900/50 pb-1">Configuración Local</p>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="text-[8px] text-slate-500 font-bold uppercase block mb-1">Liga Local</label>
-                        <select id="selectLeagueHome" class="input-field" onchange="loadTeamsBySide('Home')">
-                            <option value="">-- Liga --</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-[8px] text-slate-500 font-bold uppercase block mb-1">Equipo Local</label>
-                        <select id="selectHome" class="input-field" onchange="autoFillData()"></select>
-                    </div>
-                </div>
+        <div class="glass-card p-4 rounded-xl mb-6 grid grid-cols-1 md:grid-cols-4 gap-4 border-b-2 border-cyan-500">
+            <div id="leagueHomeContainer">
+                <label class="text-[9px] text-cyan-500 font-bold uppercase block mb-1">Liga (Local)</label>
+                <select id="selectLeague" class="input-field" onchange="loadTeams('home')">
+                    <option value="">-- Elige una liga --</option>
+                </select>
             </div>
-            <div class="space-y-3">
-                <p class="text-[10px] font-bold text-green-400 uppercase tracking-widest border-b border-green-900/50 pb-1">Configuración Visitante</p>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="text-[8px] text-slate-500 font-bold uppercase block mb-1">Liga Visita</label>
-                        <select id="selectLeagueAway" class="input-field" onchange="loadTeamsBySide('Away')">
-                            <option value="">-- Liga --</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-[8px] text-slate-500 font-bold uppercase block mb-1">Equipo Visita</label>
-                        <select id="selectAway" class="input-field" onchange="autoFillData()"></select>
-                    </div>
-                </div>
+            <div id="leagueAwayContainer" class="hidden">
+                <label class="text-[9px] text-green-400 font-bold uppercase block mb-1">Liga (Visitante)</label>
+                <select id="selectLeagueAway" class="input-field" onchange="loadTeams('away')">
+                    <option value="">-- Elige liga visitante --</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-[9px] text-blue-400 font-bold uppercase block mb-1">Equipo Local</label>
+                <select id="selectHome" class="input-field" onchange="autoFillData()"></select>
+            </div>
+            <div>
+                <label class="text-[9px] text-green-400 font-bold uppercase block mb-1">Equipo Visitante</label>
+                <select id="selectAway" class="input-field" onchange="autoFillData()"></select>
             </div>
         </div>
 
@@ -242,6 +247,24 @@
         let picks = JSON.parse(localStorage.getItem('ht_engine_v4_picks')) || [];
         let chart;
 
+        // --- GESTIÓN MODO HÍBRIDO ---
+        function toggleHybridMode() {
+            const isHybrid = document.getElementById('hybridMode').checked;
+            const containerAway = document.getElementById('leagueAwayContainer');
+            const labelHome = document.querySelector('#leagueHomeContainer label');
+
+            if(isHybrid) {
+                containerAway.classList.remove('hidden');
+                labelHome.innerText = 'Liga (Local)';
+                initLeagueSelector('selectLeagueAway');
+            } else {
+                containerAway.classList.add('hidden');
+                labelHome.innerText = 'Seleccionar Liga';
+            }
+            loadTeams('home');
+            loadTeams('away');
+        }
+
         // --- PARSEO DE DATOS ---
         function parseStandingsTable(text) {
             if (!text) return { teams: {}, leagueAvg: 1.5 };
@@ -284,51 +307,65 @@
             return 45;
         }
 
-        function initLeagueSelector() {
+        function initLeagueSelector(targetId = 'selectLeague') {
             const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
-            const selectH = document.getElementById('selectLeagueHome');
-            const selectA = document.getElementById('selectLeagueAway');
+            const select = document.getElementById(targetId);
+            
+            // Guardar valor actual si existe
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">-- Elige una liga --</option>';
             
             Object.keys(db).sort().forEach(league => {
-                let optH = document.createElement('option');
-                optH.value = league; optH.innerText = league;
-                selectH.appendChild(optH);
-                
-                let optA = document.createElement('option');
-                optA.value = league; optA.innerText = league;
-                selectA.appendChild(optA);
+                let opt = document.createElement('option');
+                opt.value = league; opt.innerText = league;
+                select.appendChild(opt);
             });
+            select.value = currentVal;
         }
 
-        function loadTeamsBySide(side) {
-            const league = document.getElementById(`selectLeague${side}`).value;
+        function loadTeams(side = 'home') {
+            const isHybrid = document.getElementById('hybridMode').checked;
+            const leagueHome = document.getElementById('selectLeague').value;
+            const leagueAway = isHybrid ? document.getElementById('selectLeagueAway').value : leagueHome;
+            
             const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
-            const teamSelect = document.getElementById(`select${side}`);
-            
-            teamSelect.innerHTML = `<option value="">-- ${side === 'Home' ? 'Local' : 'Visitante'} --</option>`;
-            
-            if (!league || !db[league]) return;
-            
-            // Si es local usamos la tabla local, si es visitante la tabla visitante
-            const tableKey = side === 'Home' ? 'local' : 'away';
-            const tableData = parseStandingsTable(db[league][tableKey]);
-            
-            Object.keys(tableData.teams).sort().forEach(t => {
-                teamSelect.innerHTML += `<option value="${t}">${t}</option>`;
-            });
+            const homeSelect = document.getElementById('selectHome');
+            const awaySelect = document.getElementById('selectAway');
+
+            if (side === 'home') {
+                homeSelect.innerHTML = '<option value="">-- Local --</option>';
+                if (leagueHome && db[leagueHome]) {
+                    const data = parseStandingsTable(db[leagueHome].local);
+                    Object.keys(data.teams).sort().forEach(t => {
+                        homeSelect.innerHTML += `<option value="${t}">${t}</option>`;
+                    });
+                }
+            }
+
+            if (side === 'away') {
+                awaySelect.innerHTML = '<option value="">-- Visitante --</option>';
+                if (leagueAway && db[leagueAway]) {
+                    const data = parseStandingsTable(db[leagueAway].away);
+                    Object.keys(data.teams).sort().forEach(t => {
+                        awaySelect.innerHTML += `<option value="${t}">${t}</option>`;
+                    });
+                }
+            }
         }
 
         function autoFillData() {
-            const leagueH = document.getElementById('selectLeagueHome').value;
-            const leagueA = document.getElementById('selectLeagueAway').value;
+            const isHybrid = document.getElementById('hybridMode').checked;
+            const leagueHome = document.getElementById('selectLeague').value;
+            const leagueAway = isHybrid ? document.getElementById('selectLeagueAway').value : leagueHome;
+            
             const homeName = document.getElementById('selectHome').value;
             const awayName = document.getElementById('selectAway').value;
             const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
 
-            if (!leagueH || !leagueA || !homeName || !awayName) return;
+            if (!leagueHome || !homeName || !awayName || !db[leagueHome] || !db[leagueAway]) return;
 
-            const homeTableData = parseStandingsTable(db[leagueH].local);
-            const awayTableData = parseStandingsTable(db[leagueA].away);
+            const homeTableData = parseStandingsTable(db[leagueHome].local);
+            const awayTableData = parseStandingsTable(db[leagueAway].away);
             
             document.getElementById('avgLeagueHome').value = homeTableData.leagueAvg.toFixed(2);
             document.getElementById('avgLeagueAway').value = awayTableData.leagueAvg.toFixed(2);
@@ -342,8 +379,8 @@
                 document.getElementById('gaAway').value = awayTableData.teams[awayName].avgGa.toFixed(2);
             }
             
-            document.getElementById('percHTHome').value = getHTPercentageFromSegments(db[leagueH].timesLocal, homeName).toFixed(0);
-            document.getElementById('percHTAway').value = getHTPercentageFromSegments(db[leagueA].timesAway, awayName).toFixed(0);
+            document.getElementById('percHTHome').value = getHTPercentageFromSegments(db[leagueHome].timesLocal, homeName).toFixed(0);
+            document.getElementById('percHTAway').value = getHTPercentageFromSegments(db[leagueAway].timesAway, awayName).toFixed(0);
             document.getElementById('eventName').value = `${homeName} vs ${awayName}`;
         }
 
@@ -499,18 +536,9 @@
                 const row = document.createElement('tr');
                 let rowBgClass = "hover:bg-slate-800/30";
                 let textClass = "text-white";
-                
-                if (p.status === 'win') {
-                    rowBgClass = "bg-green-900/20 hover:bg-green-900/30";
-                    textClass = "text-green-400";
-                } else if (p.status === 'loss') {
-                    rowBgClass = "bg-red-900/20 hover:bg-red-900/30";
-                    textClass = "text-red-400";
-                } else if (p.status === 'void') {
-                    rowBgClass = "bg-blue-900/20 hover:bg-blue-900/30";
-                    textClass = "text-blue-400";
-                }
-
+                if (p.status === 'win') { rowBgClass = "bg-green-900/20 hover:bg-green-900/30"; textClass = "text-green-400"; }
+                else if (p.status === 'loss') { rowBgClass = "bg-red-900/20 hover:bg-red-900/30"; textClass = "text-red-400"; }
+                else if (p.status === 'void') { rowBgClass = "bg-blue-900/20 hover:bg-blue-900/30"; textClass = "text-blue-400"; }
                 row.className = `${rowBgClass} border-b border-slate-800 transition-colors duration-200`;
                 row.innerHTML = `
                     <td class="p-4 ${textClass}">
