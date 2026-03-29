@@ -16,6 +16,14 @@
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         .nav-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s ease; }
         .nav-btn:hover { background: rgba(34, 211, 238, 0.1); border-color: #22d3ee; color: #22d3ee; }
+        
+        /* Toggle Switch Style */
+        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .4s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #22d3ee; }
+        input:checked + .slider:before { transform: translateX(20px); }
     </style>
 </head>
 <body class="p-4 md:p-8 text-xs">
@@ -30,6 +38,13 @@
             </div>
             
             <nav class="flex gap-2">
+                <div class="flex items-center gap-3 mr-4 bg-slate-800/50 px-4 py-2 rounded-lg border border-slate-700">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-300">Modo Híbrido</span>
+                    <label class="switch">
+                        <input type="checkbox" id="hybridToggle" onchange="toggleHybridMode()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
                 <a href="datos.html" class="nav-btn px-4 py-2 rounded-lg flex items-center gap-2 font-semibold text-[10px] uppercase tracking-wider">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
@@ -39,11 +54,17 @@
             </nav>
         </header>
 
-        <div class="glass-card p-4 rounded-xl mb-6 grid grid-cols-1 md:grid-cols-3 gap-4 border-b-2 border-cyan-500">
+        <div class="glass-card p-4 rounded-xl mb-6 grid grid-cols-1 md:grid-cols-4 gap-4 border-b-2 border-cyan-500">
             <div>
-                <label class="text-[9px] text-cyan-500 font-bold uppercase block mb-1">Seleccionar Liga</label>
+                <label id="labelLeagueHome" class="text-[9px] text-cyan-500 font-bold uppercase block mb-1">Liga (Local)</label>
                 <select id="selectLeague" class="input-field" onchange="loadTeams()">
                     <option value="">-- Elige una liga --</option>
+                </select>
+            </div>
+            <div id="containerLeagueAway" class="hidden">
+                <label class="text-[9px] text-green-500 font-bold uppercase block mb-1">Liga (Visitante)</label>
+                <select id="selectLeagueAway" class="input-field" onchange="loadTeamsAway()">
+                    <option value="">-- Elige liga visita --</option>
                 </select>
             </div>
             <div>
@@ -179,37 +200,88 @@
         function initLeagueSelector() {
             const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
             const select = document.getElementById('selectLeague');
+            const selectAway = document.getElementById('selectLeagueAway');
+            
+            // Limpiar
+            select.innerHTML = '<option value="">-- Elige una liga --</option>';
+            selectAway.innerHTML = '<option value="">-- Elige liga visita --</option>';
+            
             Object.keys(db).sort().forEach(league => {
                 let opt = document.createElement('option');
                 opt.value = league; opt.innerText = league;
                 select.appendChild(opt);
+                
+                let opt2 = document.createElement('option');
+                opt2.value = league; opt2.innerText = league;
+                selectAway.appendChild(opt2.cloneNode(true));
             });
+        }
+
+        function toggleHybridMode() {
+            const isHybrid = document.getElementById('hybridToggle').checked;
+            const containerAway = document.getElementById('containerLeagueAway');
+            const labelHome = document.getElementById('labelLeagueHome');
+            
+            if (isHybrid) {
+                containerAway.classList.remove('hidden');
+                labelHome.innerText = "Liga (Local)";
+            } else {
+                containerAway.classList.add('hidden');
+                labelHome.innerText = "Seleccionar Liga";
+                // Resetear liga visitante a la misma que local por consistencia
+                document.getElementById('selectLeagueAway').value = document.getElementById('selectLeague').value;
+                loadTeams(); 
+            }
         }
 
         function loadTeams() {
             const league = document.getElementById('selectLeague').value;
+            const isHybrid = document.getElementById('hybridToggle').checked;
             const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
             const homeSelect = document.getElementById('selectHome');
             const awaySelect = document.getElementById('selectAway');
+            
             homeSelect.innerHTML = '<option value="">-- Local --</option>';
-            awaySelect.innerHTML = '<option value="">-- Visitante --</option>';
+            if (!isHybrid) awaySelect.innerHTML = '<option value="">-- Visitante --</option>';
+            
             if (!league || !db[league]) return;
+            
             const localData = parseStandingsTable(db[league].local);
             Object.keys(localData.teams).sort().forEach(t => {
                 homeSelect.innerHTML += `<option value="${t}">${t}</option>`;
+                if (!isHybrid) awaySelect.innerHTML += `<option value="${t}">${t}</option>`;
+            });
+
+            if(!isHybrid) autoFillData();
+        }
+
+        function loadTeamsAway() {
+            const leagueAway = document.getElementById('selectLeagueAway').value;
+            const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
+            const awaySelect = document.getElementById('selectAway');
+            
+            awaySelect.innerHTML = '<option value="">-- Visitante --</option>';
+            if (!leagueAway || !db[leagueAway]) return;
+            
+            const awayData = parseStandingsTable(db[leagueAway].away);
+            Object.keys(awayData.teams).sort().forEach(t => {
                 awaySelect.innerHTML += `<option value="${t}">${t}</option>`;
             });
         }
 
         function autoFillData() {
-            const league = document.getElementById('selectLeague').value;
+            const leagueHome = document.getElementById('selectLeague').value;
+            const isHybrid = document.getElementById('hybridToggle').checked;
+            const leagueAway = isHybrid ? document.getElementById('selectLeagueAway').value : leagueHome;
+            
             const homeName = document.getElementById('selectHome').value;
             const awayName = document.getElementById('selectAway').value;
             const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
-            if (!league || !homeName || !awayName || !db[league]) return;
 
-            const homeTableData = parseStandingsTable(db[league].local);
-            const awayTableData = parseStandingsTable(db[league].away);
+            if (!leagueHome || !homeName || !awayName || !db[leagueHome] || !db[leagueAway]) return;
+
+            const homeTableData = parseStandingsTable(db[leagueHome].local);
+            const awayTableData = parseStandingsTable(db[leagueAway].away);
             
             document.getElementById('avgLeagueHome').value = homeTableData.leagueAvg.toFixed(2);
             document.getElementById('avgLeagueAway').value = awayTableData.leagueAvg.toFixed(2);
@@ -223,8 +295,8 @@
                 document.getElementById('gaAway').value = awayTableData.teams[awayName].avgGa.toFixed(2);
             }
             
-            document.getElementById('percHTHome').value = getHTPercentageFromSegments(db[league].timesLocal, homeName).toFixed(0);
-            document.getElementById('percHTAway').value = getHTPercentageFromSegments(db[league].timesAway, awayName).toFixed(0);
+            document.getElementById('percHTHome').value = getHTPercentageFromSegments(db[leagueHome].timesLocal, homeName).toFixed(0);
+            document.getElementById('percHTAway').value = getHTPercentageFromSegments(db[leagueAway].timesAway, awayName).toFixed(0);
         }
 
         function factorial(n) { return (n <= 1) ? 1 : n * factorial(n - 1); }
