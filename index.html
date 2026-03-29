@@ -121,7 +121,6 @@
                             CALCULAR PROBABILIDADES
                         </button>
 
-                        <!-- Nuevo panel de métricas -->
                         <div id="metricsPanel" class="mt-4 p-4 bg-slate-900/70 rounded-2xl hidden">
                             <div class="grid grid-cols-2 gap-4 text-xs">
                                 <div>
@@ -150,7 +149,6 @@
             </div>
 
             <div class="lg:col-span-9 space-y-6">
-                <!-- Rendimiento y probabilidades pre-match -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="glass-card p-6 rounded-2xl lg:col-span-2">
                         <div class="flex justify-between items-center mb-4">
@@ -176,7 +174,6 @@
                     </div>
                 </div>
 
-                <!-- Calculadora Live -->
                 <div class="glass-card p-6 rounded-2xl border border-cyan-500/30">
                     <div class="flex items-center gap-2 mb-4">
                         <span class="w-2 h-2 rounded-full badge-live"></span>
@@ -198,7 +195,6 @@
                     </div>
                 </div>
 
-                <!-- Guardar operación -->
                 <div class="glass-card p-6 rounded-2xl flex flex-wrap gap-6 items-end justify-between">
                     <div class="flex gap-6">
                         <div>
@@ -218,7 +214,6 @@
                     </button>
                 </div>
 
-                <!-- Tabla de picks -->
                 <div class="glass-card rounded-3xl overflow-hidden">
                     <table class="w-full text-left">
                         <thead class="bg-slate-900/90 text-slate-400 text-[9px] uppercase tracking-wider">
@@ -254,7 +249,6 @@
             return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial(k);
         }
 
-        // Funciones de parseo (sin cambios)
         function parseStandingsTable(text) {
             if (!text) return { teams: {}, leagueAvg: 1.4 };
             const lines = text.split('\n');
@@ -325,13 +319,10 @@
             const awayName = document.getElementById('selectAway').value;
             const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
             if (!league || !homeName || !awayName || !db[league]) return;
-
             const homeData = parseStandingsTable(db[league].local);
             const awayData = parseStandingsTable(db[league].away);
-
             document.getElementById('avgLeagueHome').value = homeData.leagueAvg.toFixed(2);
             document.getElementById('avgLeagueAway').value = awayData.leagueAvg.toFixed(2);
-
             if (homeData.teams[homeName]) {
                 document.getElementById('gfHome').value = homeData.teams[homeName].avgGf.toFixed(2);
                 document.getElementById('gaHome').value = homeData.teams[homeName].avgGa.toFixed(2);
@@ -340,7 +331,6 @@
                 document.getElementById('gfAway').value = awayData.teams[awayName].avgGf.toFixed(2);
                 document.getElementById('gaAway').value = awayData.teams[awayName].avgGa.toFixed(2);
             }
-
             document.getElementById('percHTHome').value = getHTPercentageFromSegments(db[league].timesLocal, homeName);
             document.getElementById('percHTAway').value = getHTPercentageFromSegments(db[league].timesAway, awayName);
             document.getElementById('eventName').value = `${homeName} vs ${awayName}`;
@@ -355,60 +345,41 @@
             const gaV = parseFloat(document.getElementById('gaAway').value) || 0;
             let perH = parseFloat(document.getElementById('percHTHome').value) / 100 || 0.45;
             let perV = parseFloat(document.getElementById('percHTAway').value) / 100 || 0.45;
-
-            if (avgLH === 0 || avgLV === 0) return alert("Ingresa promedios de liga válidos");
-
+            if (avgLH === 0 || avgLV === 0) return;
             const xGH = (gfH / avgLH) * (gaV / avgLV) * avgLH;
             const xGV = (gfV / avgLV) * (gaH / avgLH) * avgLV;
-
             document.getElementById('resXgh').innerText = xGH.toFixed(2);
             document.getElementById('resXgv').innerText = xGV.toFixed(2);
             document.getElementById('xgProjectionBox').style.opacity = "1";
-
             lambdaHTBase = (xGH * perH) + (xGV * perV);
 
-            // Probabilidades correctas
+            // CORRECCIÓN MATEMÁTICA
             const p0 = poisson(0, lambdaHTBase);
             const p1 = poisson(1, lambdaHTBase);
 
             currentProbs.pre = {
-                O05HT: 1 - p0,
-                O10HT: 1 - p0 - p1
+                O05HT: 1 - p0,           // Al menos 1 gol
+                O10HT: 1 - (p0 + p1)    // Al menos 2 goles para ganar (1 es nula)
             };
 
             document.getElementById('probO05HT').innerText = (currentProbs.pre.O05HT * 100).toFixed(1) + "%";
             document.getElementById('probO15HT_Pre').innerText = (currentProbs.pre.O10HT * 100).toFixed(1) + "%";
-
             document.getElementById('metricsPanel').classList.remove('hidden');
             document.getElementById('lambdaDisplay').innerText = lambdaHTBase.toFixed(3);
             document.getElementById('expGoalsHT').innerText = lambdaHTBase.toFixed(2);
 
-            // Cálculo preciso de minutos objetivo (iterativo)
             const targetProb = 1 / 1.70;
-
-            // Over 0.5
             let min05 = 45;
             for (let m = 1; m <= 45; m++) {
-                const remLambda = lambdaHTBase * (45 - m) / 45;
-                if (1 - poisson(0, remLambda) >= targetProb) {
-                    min05 = m;
-                    break;
-                }
+                if (1 - poisson(0, lambdaHTBase * (45 - m) / 45) >= targetProb) { min05 = m; break; }
             }
-
-            // Over 1.0 (un poco más conservador)
             let min10 = 45;
             for (let m = 1; m <= 45; m++) {
-                const remLambda = lambdaHTBase * 1.08 * (45 - m) / 45; // ligero ajuste
-                if (1 - poisson(0, remLambda) - poisson(1, remLambda) >= targetProb) {
-                    min10 = m;
-                    break;
-                }
+                const remL = lambdaHTBase * (45 - m) / 45;
+                if (1 - (poisson(0, remL) + poisson(1, remL)) >= targetProb) { min10 = m; break; }
             }
-
             document.getElementById('targetMinute05').innerText = min05 + "'";
             document.getElementById('targetMinute15').innerText = min10 + "'";
-
             calculateLiveValue();
         }
 
@@ -416,33 +387,15 @@
             if (!lambdaHTBase) return;
             const min = parseFloat(document.getElementById('liveMin').value) || 0;
             const odd = parseFloat(document.getElementById('liveOdd').value) || 0;
-            if (min < 0 || min > 45) return;
-
-            const remainingTimeFactor = Math.max(0, 45 - min) / 45;
-            const liveLambda = lambdaHTBase * remainingTimeFactor;
-
-            const p0 = poisson(0, liveLambda);
-            const p1 = poisson(1, liveLambda);
-
+            const remL = lambdaHTBase * (Math.max(0, 45 - min) / 45);
             const market = document.getElementById('marketSelect').value;
-            let prob = (market === "O05HT") ? (1 - p0) : (1 - p0 - p1);
-
-            currentProbs.live = { O05HT: prob, O10HT: prob };
-
+            let prob = (market === "O05HT") ? (1 - poisson(0, remL)) : (1 - (poisson(0, remL) + poisson(1, remL)));
+            currentProbs.live = { [market]: prob };
             if (odd > 1) {
                 const ev = (prob * odd) - 1;
-                const evEl = document.getElementById('resLiveValue');
-                evEl.innerText = (ev * 100).toFixed(1) + "%";
-
+                document.getElementById('resLiveValue').innerText = (ev * 100).toFixed(1) + "%";
                 const box = document.getElementById('liveValueBox');
-                if (ev > 0.05) {
-                    box.className = "p-4 rounded-2xl bg-green-900/40 text-green-400 border border-green-500";
-                } else if (ev > 0) {
-                    box.className = "p-4 rounded-2xl bg-emerald-900/30 text-emerald-400 border border-emerald-600";
-                } else {
-                    box.className = "p-4 rounded-2xl bg-red-900/30 text-red-400 border border-red-800";
-                }
-
+                box.className = ev > 0 ? "p-4 rounded-2xl bg-green-900/40 text-green-400 border border-green-500 flex flex-col justify-center" : "p-4 rounded-2xl bg-red-900/30 text-red-400 border border-red-800 flex flex-col justify-center";
                 document.getElementById('btnSavePick').disabled = ev <= 0;
             }
         }
@@ -450,10 +403,7 @@
         function savePick() {
             const market = document.getElementById('marketSelect').value;
             const odd = parseFloat(document.getElementById('liveOdd').value);
-            if (!odd || odd <= 1) return;
-
             const prob = currentProbs.live[market] || 0;
-
             picks.push({
                 id: Date.now(),
                 event: document.getElementById('eventName').value || 'Partido HT',
@@ -465,34 +415,24 @@
                 status: 'pendiendo',
                 profit: 0
             });
-
             updateStorage();
         }
 
         function editPick(id, field, value) {
             const pick = picks.find(p => p.id === id);
-            if (!pick) return;
-            if (field === 'event') pick[field] = value;
-            else pick[field] = parseFloat(value) || 0;
-            updateStorage();
+            if (pick) { pick[field] = (field === 'event') ? value : parseFloat(value) || 0; updateStorage(); }
         }
 
         function setStatus(id, status) {
             const pick = picks.find(p => p.id === id);
-            if (!pick) return;
-            pick.status = status;
-            if (status === 'win') pick.profit = pick.stake * (pick.odd - 1);
-            else if (status === 'loss') pick.profit = -pick.stake;
-            else if (status === 'void') pick.profit = 0;
-            updateStorage();
-        }
-
-        function deletePick(id) {
-            if (confirm('¿Eliminar esta operación?')) {
-                picks = picks.filter(p => p.id !== id);
+            if (pick) {
+                pick.status = status;
+                pick.profit = status === 'win' ? pick.stake * (pick.odd - 1) : (status === 'loss' ? -pick.stake : 0);
                 updateStorage();
             }
         }
+
+        function deletePick(id) { if (confirm('¿Eliminar?')) { picks = picks.filter(p => p.id !== id); updateStorage(); } }
 
         function updateStorage() {
             localStorage.setItem('ht_engine_v4_picks', JSON.stringify(picks));
@@ -504,18 +444,14 @@
             const settled = picks.filter(p => p.status !== 'pendiendo');
             let totalProfit = 0, totalStake = 0, wins = 0;
             let profitHistory = [0];
-
             settled.forEach(p => {
-                totalProfit += p.profit || 0;
-                totalStake += p.stake || 1;
+                totalProfit += p.profit; totalStake += p.stake;
                 if (p.status === 'win') wins++;
                 profitHistory.push(totalProfit);
             });
-
             document.getElementById('statProfit').innerText = totalProfit.toFixed(2) + " u";
             document.getElementById('statYield').innerText = totalStake > 0 ? ((totalProfit / totalStake) * 100).toFixed(1) : "0";
             document.getElementById('statWinRate').innerText = settled.length > 0 ? ((wins / settled.length) * 100).toFixed(0) : "0";
-
             updateChart(profitHistory);
         }
 
@@ -526,80 +462,44 @@
                 type: 'line',
                 data: {
                     labels: data.map((_, i) => i),
-                    datasets: [{
-                        label: 'Profit Acumulado',
-                        data: data,
-                        borderColor: '#22d3ee',
-                        backgroundColor: 'rgba(34, 211, 238, 0.15)',
-                        fill: true,
-                        tension: 0.4,
-                        borderWidth: 3,
-                        pointRadius: 0
-                    }]
+                    datasets: [{ label: 'Profit', data: data, borderColor: '#22d3ee', backgroundColor: 'rgba(34, 211, 238, 0.15)', fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0 }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { display: false },
-                        y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' } }
-                    }
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { grid: { color: '#1e293b' } } } }
             });
         }
 
         function renderPicks() {
             const body = document.getElementById('picksBody');
             body.innerHTML = '';
-
             picks.slice().reverse().forEach(p => {
                 let rowClass = "hover:bg-slate-800/40 transition-colors";
                 let textClass = "text-white";
                 if (p.status === 'win') { rowClass = "bg-green-900/20"; textClass = "text-green-400"; }
                 else if (p.status === 'loss') { rowClass = "bg-red-900/20"; textClass = "text-red-400"; }
                 else if (p.status === 'void') { rowClass = "bg-blue-900/20"; textClass = "text-blue-400"; }
-
                 const row = document.createElement('tr');
                 row.className = rowClass + " border-b border-slate-800";
-
                 row.innerHTML = `
                     <td class="p-4 ${textClass}">
                         <span class="editable-cell" contenteditable="true" onblur="editPick(${p.id}, 'event', this.innerText)">${p.event}</span>
                         <span class="text-slate-500 text-xs"> (${p.min}')</span>
                     </td>
-                    <td class="p-4 font-bold ${textClass}">
-                        ${p.market} @ <span class="editable-cell" contenteditable="true" onblur="editPick(${p.id}, 'odd', this.innerText)">${p.odd}</span>
-                    </td>
+                    <td class="p-4 font-bold ${textClass}">${p.market} @ <span class="editable-cell" contenteditable="true" onblur="editPick(${p.id}, 'odd', this.innerText)">${p.odd}</span></td>
                     <td class="p-4 text-slate-400">${p.prob}%</td>
                     <td class="p-4 font-mono ${textClass}">1.00 u</td>
-                    <td class="p-4">
-                        <div class="flex gap-1">
-                            <button onclick="setStatus(${p.id}, 'win')" class="status-btn bg-green-900/50 text-green-400 hover:bg-green-700 ${p.status==='win' ? 'ring-2 ring-green-400' : ''}">W</button>
-                            <button onclick="setStatus(${p.id}, 'loss')" class="status-btn bg-red-900/50 text-red-400 hover:bg-red-700 ${p.status==='loss' ? 'ring-2 ring-red-400' : ''}">L</button>
-                            <button onclick="setStatus(${p.id}, 'void')" class="status-btn bg-blue-900/50 text-blue-400 hover:bg-blue-700 ${p.status==='void' ? 'ring-2 ring-blue-400' : ''}">V</button>
-                        </div>
-                    </td>
-                    <td class="p-4 text-center">
-                        <button onclick="deletePick(${p.id})" class="text-slate-500 hover:text-red-500 text-xl leading-none">×</button>
-                    </td>
+                    <td class="p-4"><div class="flex gap-1">
+                        <button onclick="setStatus(${p.id}, 'win')" class="status-btn bg-green-900/50 text-green-400 ${p.status==='win'?'ring-2 ring-green-400':''}">W</button>
+                        <button onclick="setStatus(${p.id}, 'loss')" class="status-btn bg-red-900/50 text-red-400 ${p.status==='loss'?'ring-2 ring-red-400':''}">L</button>
+                        <button onclick="setStatus(${p.id}, 'void')" class="status-btn bg-blue-900/50 text-blue-400 ${p.status==='void'?'ring-2 ring-blue-400':''}">V</button>
+                    </div></td>
+                    <td class="p-4 text-center"><button onclick="deletePick(${p.id})" class="text-slate-500 hover:text-red-500 text-xl">×</button></td>
                 `;
                 body.appendChild(row);
             });
         }
 
-        function resetStats() {
-            if (confirm('¿Borrar todas las operaciones y estadísticas?')) {
-                picks = [];
-                updateStorage();
-            }
-        }
-
-        window.onload = () => {
-            initLeagueSelector();
-            renderPicks();
-            calculateStats();
-        };
+        function resetStats() { if (confirm('¿Borrar todo?')) { picks = []; updateStorage(); } }
+        window.onload = () => { initLeagueSelector(); renderPicks(); calculateStats(); };
     </script>
 </body>
 </html>
