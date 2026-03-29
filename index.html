@@ -47,7 +47,7 @@
                 </div>
                 <a href="datos.html" class="nav-btn px-4 py-2 rounded-lg flex items-center gap-2 font-semibold text-[10px] uppercase tracking-wider">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8-4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
                     </svg>
                     Base de Datos
                 </a>
@@ -327,22 +327,29 @@
             const gfV = parseFloat(document.getElementById('gfAway').value);
             const gaV = parseFloat(document.getElementById('gaAway').value);
             const perV = parseFloat(document.getElementById('percHTAway').value) / 100;
+            const isHybrid = document.getElementById('hybridToggle').checked;
 
-            if ([avgLH, avgLV, gfH, gaH, gfV, gaV, perH, perV].some(isNaN)) return;
+            if ([gfH, gfV, perH, perV].some(isNaN)) return;
 
-            // xG FT Proyectado
-            const xG_FT_H = (gfH / avgLH) * (gaV / avgLV) * avgLH;
-            const xG_FT_V = (gfV / avgLV) * (gaH / avgLH) * avgLV;
+            let xG_HT_H, xG_HT_V;
 
-            // xG HT Proyectado (Aplicando porcentaje histórico de goles en 1T)
-            const xG_HT_H = xG_FT_H * perH;
-            const xG_HT_V = xG_FT_V * perV;
+            if (isHybrid) {
+                // Mejora: Cálculo directo basado en Goles a Favor y porcentaje HT
+                xG_HT_H = gfH * perH;
+                xG_HT_V = gfV * perV;
+            } else {
+                // Cálculo estándar usando promedios de liga
+                if ([avgLH, avgLV, gaH, gaV].some(isNaN)) return;
+                const xG_FT_H = (gfH / avgLH) * (gaV / avgLV) * avgLH;
+                const xG_FT_V = (gfV / avgLV) * (gaH / avgLH) * avgLV;
+                xG_HT_H = xG_FT_H * perH;
+                xG_HT_V = xG_FT_V * perV;
+            }
             
             document.getElementById('resXgh').innerText = xG_HT_H.toFixed(2);
             document.getElementById('resXgv').innerText = xG_HT_V.toFixed(2);
             document.getElementById('xgProjectionBox').style.opacity = "1";
 
-            // Cálculo de Probabilidades de Goles HT (Suma de Lambdas para mercado over)
             lambdaHTBase = xG_HT_H + xG_HT_V;
             const p0 = poisson(0, lambdaHTBase);
             const p1 = poisson(1, lambdaHTBase);
@@ -350,9 +357,8 @@
             document.getElementById('probO05HT').innerText = ((1 - p0) * 100).toFixed(1) + "%";
             document.getElementById('probO15HT_Pre').innerText = ((1 - (p0 + p1)) * 100).toFixed(1) + "%";
 
-            // Cálculo de Mercado 1X2 HT mediante Matriz de Poisson (Simplificada)
             let probHomeWin = 0, probDraw = 0, probAwayWin = 0;
-            const maxG = 6; // Límite de goles para el cálculo matricial
+            const maxG = 6; 
 
             for (let h = 0; h <= maxG; h++) {
                 for (let v = 0; v <= maxG; v++) {
