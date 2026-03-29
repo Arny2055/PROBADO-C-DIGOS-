@@ -118,11 +118,11 @@
 
                         <div id="xgProjectionBox" class="grid grid-cols-2 gap-2 mt-2 opacity-0 transition-opacity">
                             <div class="text-center p-2 bg-slate-900 rounded-lg">
-                                <p class="text-[8px] text-slate-500 uppercase">xG Estimado Local</p>
+                                <p class="text-[8px] text-slate-500 uppercase">xG Estimado Local HT</p>
                                 <p id="resXgh" class="text-xs font-bold text-blue-400">0.00</p>
                             </div>
                             <div class="text-center p-2 bg-slate-900 rounded-lg">
-                                <p class="text-[8px] text-slate-500 uppercase">xG Estimado Visita</p>
+                                <p class="text-[8px] text-slate-500 uppercase">xG Estimado Visita HT</p>
                                 <p id="resXgv" class="text-xs font-bold text-green-400">0.00</p>
                             </div>
                         </div>
@@ -142,7 +142,25 @@
                     </div>
                 </div>
 
-                <div class="glass-card p-6 rounded-2xl border border-slate-700/30 flex flex-col items-center justify-center min-h-[200px] text-center">
+                <div class="glass-card p-6 rounded-2xl border-t-4 border-yellow-500">
+                    <h3 class="text-[10px] font-bold text-yellow-500 uppercase tracking-[0.2em] mb-4 text-center">Probabilidades 1X2 Primer Tiempo</h3>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="text-center p-4 bg-blue-500/10 rounded-xl border border-blue-500/20">
+                            <p class="text-[9px] text-blue-400 font-bold uppercase mb-1">Local (1)</p>
+                            <p id="prob1HT" class="text-2xl font-black text-white">-</p>
+                        </div>
+                        <div class="text-center p-4 bg-slate-500/10 rounded-xl border border-slate-500/20">
+                            <p class="text-[9px] text-slate-400 font-bold uppercase mb-1">Empate (X)</p>
+                            <p id="probXHT" class="text-2xl font-black text-white">-</p>
+                        </div>
+                        <div class="text-center p-4 bg-green-500/10 rounded-xl border border-green-500/20">
+                            <p class="text-[9px] text-green-400 font-bold uppercase mb-1">Visita (2)</p>
+                            <p id="prob2HT" class="text-2xl font-black text-white">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6 rounded-2xl border border-slate-700/30 flex flex-col items-center justify-center min-h-[100px] text-center">
                     <p class="text-slate-500 italic">Resultados basados en distribución de Poisson y tendencia de segmentos 1°T.</p>
                     <button onclick="window.location.reload()" class="mt-4 px-6 py-2 text-red-500 border border-red-900/50 hover:bg-red-900/20 rounded font-bold uppercase text-[10px] tracking-widest">
                         Limpiar Análisis
@@ -202,7 +220,6 @@
             const select = document.getElementById('selectLeague');
             const selectAway = document.getElementById('selectLeagueAway');
             
-            // Limpiar
             select.innerHTML = '<option value="">-- Elige una liga --</option>';
             selectAway.innerHTML = '<option value="">-- Elige liga visita --</option>';
             
@@ -228,7 +245,6 @@
             } else {
                 containerAway.classList.add('hidden');
                 labelHome.innerText = "Seleccionar Liga";
-                // Resetear liga visitante a la misma que local por consistencia
                 document.getElementById('selectLeagueAway').value = document.getElementById('selectLeague').value;
                 loadTeams(); 
             }
@@ -312,23 +328,47 @@
             const gaV = parseFloat(document.getElementById('gaAway').value);
             const perV = parseFloat(document.getElementById('percHTAway').value) / 100;
 
-            if ([avgLH, avgLV, gfH, gaH, gfV, gaV].some(isNaN)) return;
+            if ([avgLH, avgLV, gfH, gaH, gfV, gaV, perH, perV].some(isNaN)) return;
 
-            const xGH = (gfH / avgLH) * (gaV / avgLV) * avgLH;
-            const xGV = (gfV / avgLV) * (gaH / avgLH) * avgLV;
+            // xG FT Proyectado
+            const xG_FT_H = (gfH / avgLH) * (gaV / avgLV) * avgLH;
+            const xG_FT_V = (gfV / avgLV) * (gaH / avgLH) * avgLV;
+
+            // xG HT Proyectado (Aplicando porcentaje histórico de goles en 1T)
+            const xG_HT_H = xG_FT_H * perH;
+            const xG_HT_V = xG_FT_V * perV;
             
-            document.getElementById('resXgh').innerText = xGH.toFixed(2);
-            document.getElementById('resXgv').innerText = xGV.toFixed(2);
+            document.getElementById('resXgh').innerText = xG_HT_H.toFixed(2);
+            document.getElementById('resXgv').innerText = xG_HT_V.toFixed(2);
             document.getElementById('xgProjectionBox').style.opacity = "1";
 
-            lambdaHTBase = (xGH * perH) + (xGV * perV);
-            
+            // Cálculo de Probabilidades de Goles HT (Suma de Lambdas para mercado over)
+            lambdaHTBase = xG_HT_H + xG_HT_V;
             const p0 = poisson(0, lambdaHTBase);
             const p1 = poisson(1, lambdaHTBase);
-            currentProbs.pre = { O05HT: 1 - p0, O15HT: 1 - (p0 + p1) };
             
-            document.getElementById('probO05HT').innerText = (currentProbs.pre.O05HT * 100).toFixed(1) + "%";
-            document.getElementById('probO15HT_Pre').innerText = (currentProbs.pre.O15HT * 100).toFixed(1) + "%";
+            document.getElementById('probO05HT').innerText = ((1 - p0) * 100).toFixed(1) + "%";
+            document.getElementById('probO15HT_Pre').innerText = ((1 - (p0 + p1)) * 100).toFixed(1) + "%";
+
+            // Cálculo de Mercado 1X2 HT mediante Matriz de Poisson (Simplificada)
+            let probHomeWin = 0, probDraw = 0, probAwayWin = 0;
+            const maxG = 6; // Límite de goles para el cálculo matricial
+
+            for (let h = 0; h <= maxG; h++) {
+                for (let v = 0; v <= maxG; v++) {
+                    const pH = poisson(h, xG_HT_H);
+                    const pV = poisson(v, xG_HT_V);
+                    const pComp = pH * pV;
+
+                    if (h > v) probHomeWin += pComp;
+                    else if (h === v) probDraw += pComp;
+                    else probAwayWin += pComp;
+                }
+            }
+
+            document.getElementById('prob1HT').innerText = (probHomeWin * 100).toFixed(1) + "%";
+            document.getElementById('probXHT').innerText = (probDraw * 100).toFixed(1) + "%";
+            document.getElementById('prob2HT').innerText = (probAwayWin * 100).toFixed(1) + "%";
         }
 
         window.onload = initLeagueSelector;
