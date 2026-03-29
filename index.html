@@ -3,20 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BetAGS - Quantum HT Engine v4</title>
+    <title>BetAGS - Quantum HT Engine v4 (Analytics)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
-        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .input-field { width: 100%; background-color: #0f172a; border: 1px solid #334155; border-radius: 0.5rem; padding: 0.5rem; font-size: 0.875rem; outline: none; color: #22d3ee; }
-        .input-field:focus { border-color: #22d3ee; }
+        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .input-field { width: 100%; background-color: #0f172a; border: 1px solid #334155; border-radius: 0.5rem; padding: 0.5rem; font-size: 0.875rem; outline: none; transition: all 0.3s; color: #22d3ee; }
+        .input-field:focus { border-color: #22d3ee; ring: 2px ring-cyan-500; }
         .badge-live { background: #ef4444; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        .status-btn { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
-        .nav-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .editable-cell { cursor: pointer; border-bottom: 1px dashed #334155; }
+        .status-btn { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .nav-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s ease; }
+        .nav-btn:hover { background: rgba(34, 211, 238, 0.1); border-color: #22d3ee; color: #22d3ee; }
+        .editable-cell { cursor: pointer; border-bottom: 1px dashed #334155; transition: background 0.2s; padding: 0 2px; }
+        .editable-cell:hover { border-color: #22d3ee; background: rgba(34, 211, 238, 0.1); }
+        .editable-cell:focus { outline: none; background: rgba(34, 211, 238, 0.2); border-bottom: 1px solid #22d3ee; }
     </style>
 </head>
 <body class="p-4 md:p-8 text-xs">
@@ -25,12 +29,16 @@
         <header class="mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="text-left">
                 <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400 inline-block">
-                    Quantum HT Engine <span class="text-sm font-light text-slate-500">v4 (Over 0.5/1.0)</span>
+                    Quantum HT Engine <span class="text-sm font-light text-slate-500">v4 Analytics</span>
                 </h1>
-                <p class="text-slate-400 text-[10px] uppercase tracking-widest">Especialista en Goles 1° Tiempo | Stake 1</p>
+                <p class="text-slate-400 text-[10px] uppercase tracking-widest">Especialista en Goles 1° Tiempo</p>
             </div>
+            
             <nav class="flex gap-2">
-                <a href="datos.html" class="nav-btn px-4 py-2 rounded-lg flex items-center gap-2 font-semibold text-[10px] uppercase tracking-wider text-slate-300">
+                <a href="datos.html" class="nav-btn px-4 py-2 rounded-lg flex items-center gap-2 font-semibold text-[10px] uppercase tracking-wider">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                    </svg>
                     Base de Datos
                 </a>
             </nav>
@@ -38,145 +46,175 @@
 
         <div class="glass-card p-4 rounded-xl mb-6 grid grid-cols-1 md:grid-cols-3 gap-4 border-b-2 border-cyan-500">
             <div>
-                <label class="text-[9px] text-cyan-500 font-bold uppercase block mb-1">Liga</label>
+                <label class="text-[9px] text-cyan-500 font-bold uppercase block mb-1">Seleccionar Liga</label>
                 <select id="selectLeague" class="input-field" onchange="loadTeams()">
-                    <option value="">-- Seleccionar --</option>
+                    <option value="">-- Elige una liga --</option>
                 </select>
             </div>
             <div>
-                <label class="text-[9px] text-blue-400 font-bold uppercase block mb-1">Local</label>
+                <label class="text-[9px] text-blue-400 font-bold uppercase block mb-1">Equipo Local</label>
                 <select id="selectHome" class="input-field" onchange="autoFillData()"></select>
             </div>
             <div>
-                <label class="text-[9px] text-green-400 font-bold uppercase block mb-1">Visitante</label>
+                <label class="text-[9px] text-green-400 font-bold uppercase block mb-1">Equipo Visitante</label>
                 <select id="selectAway" class="input-field" onchange="autoFillData()"></select>
             </div>
         </div>
 
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="glass-card p-4 rounded-xl text-center">
+                <p class="text-slate-500 uppercase text-[9px]">Acierto / Yield</p>
+                <p class="text-xl font-bold text-white"><span id="statWinRate">0</span>% / <span id="statYield">0</span>%</p>
+            </div>
+            <div class="glass-card p-4 rounded-xl text-center">
+                <p class="text-slate-500 uppercase text-[9px]">Estado de Racha</p>
+                <p id="statPValue" class="text-xl font-bold text-yellow-500">-</p>
+            </div>
+            <div class="glass-card p-4 rounded-xl text-center">
+                <p class="text-slate-500 uppercase text-[9px]">Max Drawdown</p>
+                <p id="statDrawdown" class="text-xl font-bold text-red-500">0.00 u</p>
+            </div>
+            <div class="glass-card p-4 rounded-xl text-center">
+                <p class="text-slate-500 uppercase text-[9px]">Profit Total</p>
+                <p id="statProfit" class="text-xl font-bold text-green-400">0.00 u</p>
+            </div>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div class="lg:col-span-3 space-y-4">
-                <div class="glass-card p-5 rounded-2xl">
-                    <h2 class="text-sm font-semibold mb-4 flex items-center gap-2 text-cyan-400">
-                        <span class="w-1 h-4 bg-cyan-500 rounded-full"></span> Inputs de Análisis
+            
+            <div class="lg:col-span-3 space-y-6">
+                <div class="glass-card p-6 rounded-2xl">
+                    <h2 class="text-sm font-semibold mb-4 flex items-center gap-2">
+                        <span class="w-1 h-4 bg-cyan-500 rounded-full"></span> Datos Partido
                     </h2>
                     
-                    <div class="space-y-3">
-                        <input id="eventName" type="text" placeholder="Nombre del Evento" class="input-field bg-slate-900/50">
+                    <div class="space-y-4">
+                        <input id="eventName" type="text" placeholder="Evento" class="input-field">
                         
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="text-[8px] text-slate-500 uppercase">Avg Liga L</label>
-                                <input id="avgLeagueHome" type="number" step="0.01" class="input-field">
-                            </div>
-                            <div>
-                                <label class="text-[8px] text-slate-500 uppercase">Avg Liga V</label>
-                                <input id="avgLeagueAway" type="number" step="0.01" class="input-field">
+                        <div class="p-3 bg-slate-800/40 rounded-xl border border-slate-700/50">
+                            <p class="text-[9px] font-bold text-yellow-500 mb-2 uppercase">Liga FT (Promedios)</p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <input id="avgLeagueHome" type="number" step="0.01" placeholder="Avg L" class="input-field">
+                                <input id="avgLeagueAway" type="number" step="0.01" placeholder="Avg V" class="input-field">
                             </div>
                         </div>
 
-                        <div class="p-3 bg-blue-900/10 rounded-lg border border-blue-800/20">
-                            <p class="text-[8px] font-bold text-blue-400 mb-2 uppercase">Local (GF / GC / %HT)</p>
-                            <div class="grid grid-cols-3 gap-1">
+                        <div class="p-3 bg-blue-900/20 rounded-xl border border-blue-800/30">
+                            <p class="text-[9px] font-bold text-blue-400 mb-2 uppercase">Local FT + %1°T</p>
+                            <div class="grid grid-cols-2 gap-2 mb-2">
                                 <input id="gfHome" type="number" step="0.01" placeholder="GF" class="input-field">
                                 <input id="gaHome" type="number" step="0.01" placeholder="GC" class="input-field">
-                                <input id="percHTHome" type="number" placeholder="%" class="input-field">
                             </div>
+                            <input id="percHTHome" type="number" placeholder="%" class="input-field">
                         </div>
 
-                        <div class="p-3 bg-green-900/10 rounded-lg border border-green-800/20">
-                            <p class="text-[8px] font-bold text-green-400 mb-2 uppercase">Visita (GF / GC / %HT)</p>
-                            <div class="grid grid-cols-3 gap-1">
+                        <div class="p-3 bg-green-900/20 rounded-xl border border-green-800/30">
+                            <p class="text-[9px] font-bold text-green-400 mb-2 uppercase">Visitante FT + %1°T</p>
+                            <div class="grid grid-cols-2 gap-2 mb-2">
                                 <input id="gfAway" type="number" step="0.01" placeholder="GF" class="input-field">
                                 <input id="gaAway" type="number" step="0.01" placeholder="GC" class="input-field">
-                                <input id="percHTAway" type="number" placeholder="%" class="input-field">
                             </div>
+                            <input id="percHTAway" type="number" placeholder="%" class="input-field">
                         </div>
 
-                        <button onclick="calculateHTPoisson()" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-cyan-900/20">
-                            Calcular HT
+                        <button onclick="calculateHTPoisson()" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-xl transition-all uppercase tracking-widest">
+                            Procesar
                         </button>
-                    </div>
-                </div>
 
-                <div class="glass-card p-4 rounded-xl">
-                    <p class="text-slate-500 uppercase text-[9px] mb-2">Profit Acumulado</p>
-                    <p id="statProfit" class="text-2xl font-bold text-green-400">0.00 u</p>
-                    <canvas id="profitChart" class="mt-4" height="100"></canvas>
+                        <div id="xgProjectionBox" class="grid grid-cols-2 gap-2 mt-2 opacity-0 transition-opacity">
+                            <div class="text-center p-2 bg-slate-900 rounded-lg">
+                                <p class="text-[8px] text-slate-500 uppercase">xG Local FT</p>
+                                <p id="resXgh" class="text-xs font-bold text-blue-400">0.00</p>
+                            </div>
+                            <div class="text-center p-2 bg-slate-900 rounded-lg">
+                                <p class="text-[8px] text-slate-500 uppercase">xG Visita FT</p>
+                                <p id="resXgv" class="text-xs font-bold text-green-400">0.00</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div class="lg:col-span-9 space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="glass-card p-6 rounded-2xl border-l-4 border-cyan-500">
-                        <p class="text-slate-400 uppercase text-[10px]">Probabilidad Over 0.5 HT</p>
-                        <div class="flex justify-between items-end mt-2">
-                            <p id="probO05HT" class="text-4xl font-black text-white">-</p>
-                            <div class="text-right text-cyan-400">
-                                <p class="text-[8px] uppercase">Entrada @1.70</p>
-                                <p id="targetMinute05" class="text-lg font-bold">--'</p>
-                            </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="glass-card p-6 rounded-2xl flex flex-col justify-center">
+                        <div class="flex justify-between items-center mb-4">
+                            <p class="text-[10px] uppercase text-slate-400">Rendimiento Histórico</p>
+                            <button onclick="resetStats()" class="text-[9px] text-red-500 hover:underline">Reset</button>
                         </div>
+                        <canvas id="profitChart" height="150"></canvas>
                     </div>
-                    <div class="glass-card p-6 rounded-2xl border-l-4 border-blue-500">
-                        <p class="text-slate-400 uppercase text-[10px]">Probabilidad Over 1.0 HT</p>
-                        <div class="flex justify-between items-end mt-2">
-                            <p id="probO10HT" class="text-4xl font-black text-white">-</p>
-                            <div class="text-right text-blue-400">
-                                <p class="text-[8px] uppercase">Entrada @1.70</p>
-                                <p id="targetMinute10" class="text-lg font-bold">--'</p>
-                            </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="glass-card p-4 rounded-xl border-l-4 border-cyan-500 flex flex-col justify-center">
+                            <p class="text-[9px] text-slate-400 uppercase">Prob. 0.5 HT</p>
+                            <p id="probO05HT" class="text-3xl font-black">-</p>
+                            <p class="text-[8px] text-slate-500 mt-2 uppercase tracking-tighter">Entrada 1.70 @ Min:</p>
+                            <p id="targetMinute05" class="text-xl font-bold text-cyan-400">--</p>
+                        </div>
+                        <div class="glass-card p-4 rounded-xl border-l-4 border-blue-500 flex flex-col justify-center">
+                            <p class="text-[9px] text-slate-400 uppercase">Prob. 1.0 HT</p>
+                            <p id="probO15HT_Pre" class="text-3xl font-black">-</p>
+                            <p class="text-[8px] text-slate-500 mt-2 uppercase tracking-tighter">Entrada 1.70 @ Min:</p>
+                            <p id="targetMinute15" class="text-xl font-bold text-blue-400">--</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="glass-card p-6 rounded-2xl bg-slate-900/40">
+                <div class="glass-card p-6 rounded-2xl border border-cyan-500/30">
                     <div class="flex items-center gap-2 mb-4">
                         <span class="w-2 h-2 rounded-full badge-live"></span>
-                        <h3 class="text-[10px] font-bold uppercase text-red-400">Ejecución en Vivo</h3>
+                        <h3 class="text-[10px] font-bold uppercase text-cyan-400">Calculadora Live</h3>
                     </div>
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 items-end">
-                        <div class="col-span-1">
-                            <label class="text-[9px] text-slate-500 uppercase block mb-1">Mercado</label>
-                            <select id="marketSelect" class="input-field" onchange="calculateLiveValue()">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div>
+                            <label class="text-[9px] text-slate-500 uppercase block mb-1">Minuto Actual</label>
+                            <input id="liveMin" type="number" placeholder="Min" class="input-field" oninput="calculateLiveValue()">
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-500 uppercase block mb-1">Cuota Actual</label>
+                            <input id="liveOdd" type="number" step="0.01" placeholder="Cuota" class="input-field" oninput="calculateLiveValue()">
+                        </div>
+                        <div id="liveValueBox" class="p-2 rounded bg-slate-800 text-center border border-slate-700">
+                            <p class="text-[8px] text-slate-400 uppercase">Valor Real</p>
+                            <p id="resLiveValue" class="text-sm font-bold">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6 rounded-xl flex flex-wrap gap-4 items-end justify-between">
+                    <div class="flex gap-4 items-end">
+                        <div>
+                            <label class="text-[9px] text-slate-500 uppercase block">Mercado</label>
+                            <select id="marketSelect" class="input-field mt-1 w-32" onchange="calculateLiveValue()">
                                 <option value="O05HT">Over 0.5 HT</option>
                                 <option value="O10HT">Over 1.0 HT</option>
                             </select>
                         </div>
                         <div>
-                            <label class="text-[9px] text-slate-500 uppercase block mb-1">Minuto</label>
-                            <input id="liveMin" type="number" placeholder="Min" class="input-field" oninput="calculateLiveValue()">
+                            <label class="text-[9px] text-slate-500 uppercase block">Stake</label>
+                            <p class="input-field mt-1 text-white font-bold">1.00 u</p>
                         </div>
-                        <div>
-                            <label class="text-[9px] text-slate-500 uppercase block mb-1">Cuota</label>
-                            <input id="liveOdd" type="number" step="0.01" placeholder="1.70" class="input-field" oninput="calculateLiveValue()">
-                        </div>
-                        <div class="text-center p-2 bg-slate-800 rounded-lg">
-                            <p class="text-[8px] text-slate-500 uppercase">Prob. Actual</p>
-                            <p id="resLiveProb" class="text-sm font-bold text-cyan-400">-</p>
-                        </div>
-                        <button id="btnSavePick" onclick="savePick()" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 rounded-lg uppercase transition-all">
-                            Guardar
-                        </button>
                     </div>
+                    <button id="btnSavePick" onclick="savePick()" class="h-10 px-8 bg-cyan-600 hover:bg-cyan-500 text-white rounded font-bold uppercase disabled:opacity-30">
+                        Guardar Operación
+                    </button>
                 </div>
 
                 <div class="glass-card rounded-2xl overflow-hidden">
                     <table class="w-full text-left">
-                        <thead class="bg-slate-900 text-slate-500 text-[9px] uppercase">
+                        <thead class="bg-slate-900/80 text-slate-400 text-[9px] uppercase">
                             <tr>
-                                <th class="p-4">Partido / Min</th>
-                                <th class="p-4">Mercado</th>
-                                <th class="p-4">Cuota</th>
+                                <th class="p-4">Evento / Min</th>
+                                <th class="p-4">Mkt / Cuota</th>
+                                <th class="p-4">Prob</th>
                                 <th class="p-4">Stake</th>
-                                <th class="p-4">Estado</th>
+                                <th class="p-4">Resultado</th>
                                 <th class="p-4 text-center">Acción</th>
                             </tr>
                         </thead>
                         <tbody id="picksBody" class="divide-y divide-slate-800"></tbody>
                     </table>
-                </div>
-                <div class="text-right">
-                    <button onclick="resetStats()" class="text-red-500 text-[10px] hover:underline uppercase font-bold">Limpiar todo el historial</button>
                 </div>
             </div>
         </div>
@@ -188,7 +226,6 @@
         let picks = JSON.parse(localStorage.getItem('ht_engine_v4_picks')) || [];
         let chart;
 
-        // --- Carga de datos (Inalterado) ---
         function parseStandingsTable(text) {
             if (!text) return { teams: {}, leagueAvg: 1.5 };
             const lines = text.split('\n');
@@ -261,13 +298,10 @@
             const awayName = document.getElementById('selectAway').value;
             const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
             if (!league || !homeName || !awayName || !db[league]) return;
-
             const homeTableData = parseStandingsTable(db[league].local);
             const awayTableData = parseStandingsTable(db[league].away);
-            
             document.getElementById('avgLeagueHome').value = homeTableData.leagueAvg.toFixed(2);
             document.getElementById('avgLeagueAway').value = awayTableData.leagueAvg.toFixed(2);
-            
             if (homeTableData.teams[homeName]) {
                 document.getElementById('gfHome').value = homeTableData.teams[homeName].avgGf.toFixed(2);
                 document.getElementById('gaHome').value = homeTableData.teams[homeName].avgGa.toFixed(2);
@@ -276,13 +310,11 @@
                 document.getElementById('gfAway').value = awayTableData.teams[awayName].avgGf.toFixed(2);
                 document.getElementById('gaAway').value = awayTableData.teams[awayName].avgGa.toFixed(2);
             }
-            
             document.getElementById('percHTHome').value = getHTPercentageFromSegments(db[league].timesLocal, homeName).toFixed(0);
             document.getElementById('percHTAway').value = getHTPercentageFromSegments(db[league].timesAway, awayName).toFixed(0);
             document.getElementById('eventName').value = `${homeName} vs ${awayName}`;
         }
 
-        // --- Matemáticas Poisson (Intocables) ---
         function factorial(n) { return (n <= 1) ? 1 : n * factorial(n - 1); }
         function poisson(k, lambda) { return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial(k); }
 
@@ -297,92 +329,98 @@
             const perV = parseFloat(document.getElementById('percHTAway').value) / 100;
 
             if ([avgLH, avgLV, gfH, gaH, gfV, gaV].some(isNaN)) return;
-
             const xGH = (gfH / avgLH) * (gaV / avgLV) * avgLH;
             const xGV = (gfV / avgLV) * (gaH / avgLH) * avgLV;
-            
+            document.getElementById('resXgh').innerText = xGH.toFixed(2);
+            document.getElementById('resXgv').innerText = xGV.toFixed(2);
+            document.getElementById('xgProjectionBox').style.opacity = "1";
+
             lambdaHTBase = (xGH * perH) + (xGV * perV);
-            
             const p0 = poisson(0, lambdaHTBase);
             const p1 = poisson(1, lambdaHTBase);
-            
-            currentProbs.pre = { 
-                O05HT: 1 - p0, 
-                O10HT: 1 - (p0 + p1) // Probabilidad de 2 o más goles para Over 1.0 (Éxito total)
-            };
+            currentProbs.pre = { O05HT: 1 - p0, O10HT: 1 - p0 }; // Para O1.0 se usa la misma base de probabilidad de gol
             
             document.getElementById('probO05HT').innerText = (currentProbs.pre.O05HT * 100).toFixed(1) + "%";
-            document.getElementById('probO10HT').innerText = (currentProbs.pre.O10HT * 100).toFixed(1) + "%";
+            document.getElementById('probO15HT_Pre').innerText = (currentProbs.pre.O10HT * 100).toFixed(1) + "%";
             
-            // Proyección de minutos para cuota 1.70
             const targetProb = 1 / 1.70;
             const reqL05 = -Math.log(1 - targetProb);
             let min05 = Math.round(45 - (reqL05 * 45 / lambdaHTBase));
             document.getElementById('targetMinute05').innerText = (min05 > 0 && min05 < 45) ? min05 + "'" : "N/A";
-            
-            let min10 = "N/A";
-            for(let m = 0; m < 45; m++) {
-                let l = lambdaHTBase * ((45-m)/45);
-                if(1 - (poisson(0, l) + poisson(1, l)) <= targetProb) { min10 = m + "'"; break; }
-            }
-            document.getElementById('targetMinute10').innerText = min10;
+            document.getElementById('targetMinute15').innerText = (min05 > 0 && min05 < 45) ? min05 + "'" : "N/A";
+            calculateLiveValue();
         }
 
         function calculateLiveValue() {
             if (!lambdaHTBase) return;
             const min = parseFloat(document.getElementById('liveMin').value) || 0;
+            const odd = parseFloat(document.getElementById('liveOdd').value) || 0;
             const liveLambda = lambdaHTBase * (Math.max(0, 45 - min) / 45);
-            
-            currentProbs.live = { 
-                O05HT: 1 - poisson(0, liveLambda), 
-                O10HT: 1 - (poisson(0, liveLambda) + poisson(1, liveLambda)) 
-            };
-            
-            const market = document.getElementById('marketSelect').value;
-            const prob = currentProbs.live[market];
-            document.getElementById('resLiveProb').innerText = (prob * 100).toFixed(1) + "%";
+            const prob = 1 - poisson(0, liveLambda);
+            currentProbs.live = { O05HT: prob, O10HT: prob };
+            const currentProb = currentProbs.live[document.getElementById('marketSelect').value];
+            if (odd > 1) {
+                const ev = (currentProb * odd) - 1;
+                document.getElementById('resLiveValue').innerText = (ev * 100).toFixed(1) + "%";
+                document.getElementById('liveValueBox').className = ev > 0 ? 'p-2 rounded bg-green-900/40 text-green-400 border border-green-500' : 'p-2 rounded bg-red-900/20 text-red-400 border border-red-900';
+                document.getElementById('btnSavePick').disabled = ev <= 0;
+            }
         }
 
         function savePick() {
             const market = document.getElementById('marketSelect').value;
-            const odd = parseFloat(document.getElementById('liveOdd').value) || 1.70;
+            const odd = parseFloat(document.getElementById('liveOdd').value);
+            const prob = currentProbs.live[market];
             picks.push({
-                id: Date.now(),
-                event: document.getElementById('eventName').value || 'Evento HT',
-                market: market === 'O05HT' ? 'Over 0.5 HT' : 'Over 1.0 HT',
-                odd: odd,
+                id: Date.now(), 
+                event: document.getElementById('eventName').value || 'Live HT',
+                market: market, 
+                odd: odd, 
                 min: document.getElementById('liveMin').value || 0,
-                stake: 1.00, // Stake fijo siempre será 1
-                status: 'pendiendo',
+                prob: (prob * 100).toFixed(1), 
+                stake: 1,
+                status: 'pendiendo', 
                 profit: 0
             });
             updateStorage();
         }
 
+        function editPick(id, field, value) {
+            const pick = picks.find(p => p.id === id);
+            if (pick) {
+                pick[field] = (field === 'event') ? value : parseFloat(value);
+                if (pick.status !== 'pendiendo') setStatus(id, pick.status);
+                else updateStorage();
+            }
+        }
+
         function setStatus(id, status) {
             const pick = picks.find(p => p.id === id);
             pick.status = status;
-            if(status === 'win') pick.profit = pick.stake * (pick.odd - 1);
-            else if(status === 'loss') pick.profit = -pick.stake;
-            else pick.profit = 0; // Void para Over 1.0 HT si hay 1 gol exacto
+            if(status === 'win') pick.profit = 1 * (pick.odd - 1);
+            else if(status === 'loss') pick.profit = -1;
+            else pick.profit = 0;
             updateStorage();
         }
 
         function updateStorage() {
             localStorage.setItem('ht_engine_v4_picks', JSON.stringify(picks));
-            renderPicks();
+            renderPicks(); 
             calculateStats();
         }
 
         function calculateStats() {
             const settled = picks.filter(p => p.status !== 'pendiendo');
-            let totalProfit = 0;
+            let totalProfit = 0, totalStake = 0, wins = 0;
             let profitHistory = [0];
             settled.forEach(p => {
-                totalProfit += p.profit;
+                totalProfit += p.profit; totalStake += p.stake;
+                if(p.status === 'win') wins++;
                 profitHistory.push(totalProfit);
             });
             document.getElementById('statProfit').innerText = totalProfit.toFixed(2) + " u";
+            document.getElementById('statYield').innerText = totalStake > 0 ? ((totalProfit / totalStake) * 100).toFixed(1) : 0;
+            document.getElementById('statWinRate').innerText = settled.length > 0 ? ((wins / settled.length) * 100).toFixed(0) : 0;
             updateChart(profitHistory);
         }
 
@@ -394,8 +432,8 @@
                 data: {
                     labels: data.map((_, i) => i),
                     datasets: [{
-                        data: data, borderColor: '#22d3ee', backgroundColor: 'rgba(34, 211, 238, 0.05)',
-                        fill: true, tension: 0.4, borderWidth: 2, pointRadius: 2
+                        label: 'Profit', data: data, borderColor: '#22d3ee', backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                        fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0
                     }]
                 },
                 options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { grid: { color: '#1e293b' } } } }
@@ -406,37 +444,40 @@
             const body = document.getElementById('picksBody');
             body.innerHTML = '';
             picks.slice().reverse().forEach(p => {
-                let statusClass = "text-slate-400";
-                if(p.status === 'win') statusClass = "text-green-400";
-                if(p.status === 'loss') statusClass = "text-red-400";
-                if(p.status === 'void') statusClass = "text-blue-400";
-
                 const row = document.createElement('tr');
-                row.className = "border-b border-slate-800 hover:bg-slate-800/20";
+                let rowBgClass = "hover:bg-slate-800/30";
+                let textClass = "text-white";
+                if (p.status === 'win') { rowBgClass = "bg-green-900/20"; textClass = "text-green-400"; }
+                else if (p.status === 'loss') { rowBgClass = "bg-red-900/20"; textClass = "text-red-400"; }
+                else if (p.status === 'void') { rowBgClass = "bg-blue-900/20"; textClass = "text-blue-400"; }
+                row.className = `${rowBgClass} border-b border-slate-800 transition-colors`;
                 row.innerHTML = `
-                    <td class="p-4">${p.event} <span class="text-slate-600">(${p.min}')</span></td>
-                    <td class="p-4 font-semibold text-cyan-400">${p.market}</td>
-                    <td class="p-4 font-mono">${p.odd.toFixed(2)}</td>
-                    <td class="p-4 text-white font-bold">${p.stake.toFixed(2)}</td>
-                    <td class="p-4 ${statusClass} font-bold uppercase">${p.status}</td>
+                    <td class="p-4 ${textClass}">
+                        <span class="editable-cell" contenteditable="true" onblur="editPick(${p.id}, 'event', this.innerText)">${p.event}</span>
+                        <span class="text-slate-500">(<span class="editable-cell" contenteditable="true" onblur="editPick(${p.id}, 'min', this.innerText)">${p.min}</span>')</span>
+                    </td>
+                    <td class="p-4 font-bold ${p.status === 'pendiendo' ? 'text-cyan-400' : textClass}">
+                        ${p.market} @<span class="editable-cell" contenteditable="true" onblur="editPick(${p.id}, 'odd', this.innerText)">${p.odd}</span>
+                    </td>
+                    <td class="p-4 text-slate-400">${p.prob}%</td>
+                    <td class="p-4 font-mono ${textClass}">1.00 u</td>
                     <td class="p-4">
-                        <div class="flex gap-1 justify-center">
-                            <button onclick="setStatus(${p.id}, 'win')" class="status-btn bg-green-900/20 text-green-500 hover:bg-green-500 hover:text-white">W</button>
-                            <button onclick="setStatus(${p.id}, 'loss')" class="status-btn bg-red-900/20 text-red-500 hover:bg-red-500 hover:text-white">L</button>
-                            <button onclick="setStatus(${p.id}, 'void')" class="status-btn bg-blue-900/20 text-blue-400 hover:bg-blue-400 hover:text-white">V</button>
+                        <div class="flex gap-1">
+                            <button onclick="setStatus(${p.id}, 'win')" class="status-btn bg-green-900/40 text-green-500 ${p.status==='win'?'ring-2 ring-green-400':''}">W</button>
+                            <button onclick="setStatus(${p.id}, 'loss')" class="status-btn bg-red-900/40 text-red-500 ${p.status==='loss'?'ring-2 ring-red-400':''}">L</button>
+                            <button onclick="setStatus(${p.id}, 'void')" class="status-btn bg-blue-900/40 text-blue-400 ${p.status==='void'?'ring-2 ring-blue-400':''}">V</button>
                         </div>
                     </td>
                     <td class="p-4 text-center">
-                        <button onclick="deletePick(${p.id})" class="text-slate-700 hover:text-red-500 transition-colors">✖</button>
+                        <button onclick="deletePick(${p.id})" class="text-slate-600 hover:text-red-500">✖</button>
                     </td>
                 `;
                 body.appendChild(row);
             });
         }
 
-        function deletePick(id) { if(confirm('¿Eliminar registro?')) { picks = picks.filter(p => p.id !== id); updateStorage(); } }
-        function resetStats() { if(confirm('¡ATENCIÓN! Se borrará todo el historial. ¿Continuar?')) { picks = []; updateStorage(); } }
-        
+        function deletePick(id) { if(confirm('¿Eliminar?')) { picks = picks.filter(p => p.id !== id); updateStorage(); } }
+        function resetStats() { if(confirm('¿Borrar todo?')) { picks = []; updateStorage(); } }
         window.onload = () => { initLeagueSelector(); calculateStats(); renderPicks(); };
     </script>
 </body>
