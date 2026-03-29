@@ -153,7 +153,7 @@
                             <p id="targetMinute05" class="text-xl font-bold text-cyan-400">--</p>
                         </div>
                         <div class="glass-card p-4 rounded-xl border-l-4 border-blue-500 flex flex-col justify-center">
-                            <p class="text-[9px] text-slate-400 uppercase">Prob. 1.0 HT</p>
+                            <p class="text-[9px] text-slate-400 uppercase">Prob. 1.5 HT</p>
                             <p id="probO15HT_Pre" class="text-3xl font-black">-</p>
                             <p class="text-[8px] text-slate-500 mt-2 uppercase tracking-tighter">Entrada 1.70 @ Min:</p>
                             <p id="targetMinute15" class="text-xl font-bold text-blue-400">--</p>
@@ -188,12 +188,12 @@
                             <label class="text-[9px] text-slate-500 uppercase block">Mercado</label>
                             <select id="marketSelect" class="input-field mt-1 w-32" onchange="calculateLiveValue()">
                                 <option value="O05HT">Over 0.5 HT</option>
-                                <option value="O10HT">Over 1.0 HT</option>
+                                <option value="O15HT">Over 1.5 HT</option>
                             </select>
                         </div>
                         <div>
-                            <label class="text-[9px] text-slate-500 uppercase block">Stake</label>
-                            <p class="input-field mt-1 text-white font-bold">1.00 u</p>
+                            <label class="text-[9px] text-slate-500 uppercase block">Stake Sugerido</label>
+                            <p id="resKelly" class="input-field mt-1 text-cyan-400 font-bold">0.00%</p>
                         </div>
                     </div>
                     <button id="btnSavePick" onclick="savePick()" class="h-10 px-8 bg-cyan-600 hover:bg-cyan-500 text-white rounded font-bold uppercase disabled:opacity-30">
@@ -226,6 +226,7 @@
         let picks = JSON.parse(localStorage.getItem('ht_engine_v4_picks')) || [];
         let chart;
 
+        // --- PARSEO DE DATOS ---
         function parseStandingsTable(text) {
             if (!text) return { teams: {}, leagueAvg: 1.5 };
             const lines = text.split('\n');
@@ -298,10 +299,13 @@
             const awayName = document.getElementById('selectAway').value;
             const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
             if (!league || !homeName || !awayName || !db[league]) return;
+
             const homeTableData = parseStandingsTable(db[league].local);
             const awayTableData = parseStandingsTable(db[league].away);
+            
             document.getElementById('avgLeagueHome').value = homeTableData.leagueAvg.toFixed(2);
             document.getElementById('avgLeagueAway').value = awayTableData.leagueAvg.toFixed(2);
+            
             if (homeTableData.teams[homeName]) {
                 document.getElementById('gfHome').value = homeTableData.teams[homeName].avgGf.toFixed(2);
                 document.getElementById('gaHome').value = homeTableData.teams[homeName].avgGa.toFixed(2);
@@ -310,11 +314,13 @@
                 document.getElementById('gfAway').value = awayTableData.teams[awayName].avgGf.toFixed(2);
                 document.getElementById('gaAway').value = awayTableData.teams[awayName].avgGa.toFixed(2);
             }
+            
             document.getElementById('percHTHome').value = getHTPercentageFromSegments(db[league].timesLocal, homeName).toFixed(0);
             document.getElementById('percHTAway').value = getHTPercentageFromSegments(db[league].timesAway, awayName).toFixed(0);
             document.getElementById('eventName').value = `${homeName} vs ${awayName}`;
         }
 
+        // --- MATEMÁTICAS ---
         function factorial(n) { return (n <= 1) ? 1 : n * factorial(n - 1); }
         function poisson(k, lambda) { return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial(k); }
 
@@ -329,33 +335,34 @@
             const perV = parseFloat(document.getElementById('percHTAway').value) / 100;
 
             if ([avgLH, avgLV, gfH, gaH, gfV, gaV].some(isNaN)) return;
+
             const xGH = (gfH / avgLH) * (gaV / avgLV) * avgLH;
             const xGV = (gfV / avgLV) * (gaH / avgLH) * avgLV;
+            
             document.getElementById('resXgh').innerText = xGH.toFixed(2);
             document.getElementById('resXgv').innerText = xGV.toFixed(2);
             document.getElementById('xgProjectionBox').style.opacity = "1";
 
             lambdaHTBase = (xGH * perH) + (xGV * perV);
             
-            // Lógica corregida: Over 0.5 HT es 1 - P(0)
             const p0 = poisson(0, lambdaHTBase);
-            // Over 1.0 HT es una línea asiática, su probabilidad de éxito base es 1 - P(0)
-            // pero para ser conservadores en pre-match mostramos 1 - (P0 + P1) como referencia de 2 goles
             const p1 = poisson(1, lambdaHTBase);
-
-            currentProbs.pre = { 
-                O05HT: 1 - p0, 
-                O10HT: 1 - p0 // En línea asiática 1.0, el éxito es > 0 goles (con 1 es void)
-            };
+            currentProbs.pre = { O05HT: 1 - p0, O15HT: 1 - (p0 + p1) };
             
             document.getElementById('probO05HT').innerText = (currentProbs.pre.O05HT * 100).toFixed(1) + "%";
-            document.getElementById('probO15HT_Pre').innerText = (currentProbs.pre.O10HT * 100).toFixed(1) + "%";
+            document.getElementById('probO15HT_Pre').innerText = (currentProbs.pre.O15HT * 100).toFixed(1) + "%";
             
             const targetProb = 1 / 1.70;
             const reqL05 = -Math.log(1 - targetProb);
             let min05 = Math.round(45 - (reqL05 * 45 / lambdaHTBase));
             document.getElementById('targetMinute05').innerText = (min05 > 0 && min05 < 45) ? min05 + "'" : "N/A";
-            document.getElementById('targetMinute15').innerText = (min05 > 0 && min05 < 45) ? min05 + "'" : "N/A";
+            
+            let min15 = "N/A";
+            for(let m = 0; m < 45; m++) {
+                let l = lambdaHTBase * ((45-m)/45);
+                if(1 - (poisson(0, l) + poisson(1, l)) <= targetProb) { min15 = m + "'"; break; }
+            }
+            document.getElementById('targetMinute15').innerText = min15;
             calculateLiveValue();
         }
 
@@ -365,25 +372,27 @@
             const odd = parseFloat(document.getElementById('liveOdd').value) || 0;
             const liveLambda = lambdaHTBase * (Math.max(0, 45 - min) / 45);
             
-            // Cálculo de probabilidad en vivo corregido
-            const prob = 1 - poisson(0, liveLambda);
-            currentProbs.live = { O05HT: prob, O10HT: prob };
+            currentProbs.live = { 
+                O05HT: 1 - poisson(0, liveLambda), 
+                O15HT: 1 - (poisson(0, liveLambda) + poisson(1, liveLambda)) 
+            };
             
-            const market = document.getElementById('marketSelect').value;
-            const currentProb = currentProbs.live[market];
-            
+            const prob = currentProbs.live[document.getElementById('marketSelect').value];
             if (odd > 1) {
-                const ev = (currentProb * odd) - 1;
+                const ev = (prob * odd) - 1;
                 document.getElementById('resLiveValue').innerText = (ev * 100).toFixed(1) + "%";
                 document.getElementById('liveValueBox').className = ev > 0 ? 'p-2 rounded bg-green-900/40 text-green-400 border border-green-500' : 'p-2 rounded bg-red-900/20 text-red-400 border border-red-900';
+                document.getElementById('resKelly').innerText = ev > 0 ? ((ev / (odd - 1)) * 0.25 * 100).toFixed(2) + "%" : "0.00%";
                 document.getElementById('btnSavePick').disabled = ev <= 0;
             }
         }
 
+        // --- GESTIÓN DE PICKS ---
         function savePick() {
             const market = document.getElementById('marketSelect').value;
             const odd = parseFloat(document.getElementById('liveOdd').value);
             const prob = currentProbs.live[market];
+            const ev = (prob * odd) - 1;
             picks.push({
                 id: Date.now(), 
                 event: document.getElementById('eventName').value || 'Live HT',
@@ -391,7 +400,7 @@
                 odd: odd, 
                 min: document.getElementById('liveMin').value || 0,
                 prob: (prob * 100).toFixed(1), 
-                stake: 1,
+                stake: parseFloat((ev / (odd - 1) * 0.25 * 100).toFixed(2)),
                 status: 'pendiendo', 
                 profit: 0
             });
@@ -410,8 +419,9 @@
         function setStatus(id, status) {
             const pick = picks.find(p => p.id === id);
             pick.status = status;
-            if(status === 'win') pick.profit = 1 * (pick.odd - 1);
-            else if(status === 'loss') pick.profit = -1;
+            const stake = parseFloat(pick.stake);
+            if(status === 'win') pick.profit = stake * (pick.odd - 1);
+            else if(status === 'loss') pick.profit = -stake;
             else pick.profit = 0;
             updateStorage();
         }
@@ -426,11 +436,13 @@
             const settled = picks.filter(p => p.status !== 'pendiendo');
             let totalProfit = 0, totalStake = 0, wins = 0;
             let profitHistory = [0];
+            
             settled.forEach(p => {
                 totalProfit += p.profit; totalStake += p.stake;
                 if(p.status === 'win') wins++;
                 profitHistory.push(totalProfit);
             });
+            
             document.getElementById('statProfit').innerText = totalProfit.toFixed(2) + " u";
             document.getElementById('statYield').innerText = totalStake > 0 ? ((totalProfit / totalStake) * 100).toFixed(1) : 0;
             document.getElementById('statWinRate').innerText = settled.length > 0 ? ((wins / settled.length) * 100).toFixed(0) : 0;
@@ -458,12 +470,24 @@
             body.innerHTML = '';
             picks.slice().reverse().forEach(p => {
                 const row = document.createElement('tr');
+                
+                // MEJORA: Lógica de colores por estado de fila
                 let rowBgClass = "hover:bg-slate-800/30";
                 let textClass = "text-white";
-                if (p.status === 'win') { rowBgClass = "bg-green-900/20"; textClass = "text-green-400"; }
-                else if (p.status === 'loss') { rowBgClass = "bg-red-900/20"; textClass = "text-red-400"; }
-                else if (p.status === 'void') { rowBgClass = "bg-blue-900/20"; textClass = "text-blue-400"; }
-                row.className = `${rowBgClass} border-b border-slate-800 transition-colors`;
+                
+                if (p.status === 'win') {
+                    rowBgClass = "bg-green-900/20 hover:bg-green-900/30";
+                    textClass = "text-green-400";
+                } else if (p.status === 'loss') {
+                    rowBgClass = "bg-red-900/20 hover:bg-red-900/30";
+                    textClass = "text-red-400";
+                } else if (p.status === 'void') {
+                    rowBgClass = "bg-blue-900/20 hover:bg-blue-900/30";
+                    textClass = "text-blue-400";
+                }
+
+                row.className = `${rowBgClass} border-b border-slate-800 transition-colors duration-200`;
+                
                 row.innerHTML = `
                     <td class="p-4 ${textClass}">
                         <span class="editable-cell" contenteditable="true" onblur="editPick(${p.id}, 'event', this.innerText)">${p.event}</span>
@@ -473,7 +497,7 @@
                         ${p.market} @<span class="editable-cell" contenteditable="true" onblur="editPick(${p.id}, 'odd', this.innerText)">${p.odd}</span>
                     </td>
                     <td class="p-4 text-slate-400">${p.prob}%</td>
-                    <td class="p-4 font-mono ${textClass}">1.00 u</td>
+                    <td class="p-4 font-mono ${textClass}"><span class="editable-cell" contenteditable="true" onblur="editPick(${p.id}, 'stake', this.innerText)">${p.stake}</span>%</td>
                     <td class="p-4">
                         <div class="flex gap-1">
                             <button onclick="setStatus(${p.id}, 'win')" class="status-btn bg-green-900/40 text-green-500 ${p.status==='win'?'ring-2 ring-green-400':''}">W</button>
@@ -482,7 +506,7 @@
                         </div>
                     </td>
                     <td class="p-4 text-center">
-                        <button onclick="deletePick(${p.id})" class="text-slate-600 hover:text-red-500">✖</button>
+                        <button onclick="deletePick(${p.id})" class="text-slate-600 hover:text-red-500 transition-colors">✖</button>
                     </td>
                 `;
                 body.appendChild(row);
@@ -491,6 +515,7 @@
 
         function deletePick(id) { if(confirm('¿Eliminar?')) { picks = picks.filter(p => p.id !== id); updateStorage(); } }
         function resetStats() { if(confirm('¿Borrar todo?')) { picks = []; updateStorage(); } }
+        
         window.onload = () => { initLeagueSelector(); calculateStats(); renderPicks(); };
     </script>
 </body>
