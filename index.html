@@ -23,6 +23,10 @@
         .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: #22d3ee; }
         input:checked + .slider:before { transform: translateX(20px); }
+
+        /* Mejora visual para las probabilidades 1x2 */
+        .prob-pill { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 0.75rem; padding: 0.5rem; transition: all 0.3s; }
+        .prob-value { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.025em; }
     </style>
 </head>
 <body class="p-4 md:p-8 text-xs">
@@ -130,40 +134,77 @@
             </div>
 
             <div class="lg:col-span-8 space-y-6">
+                
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="glass-card p-6 rounded-xl border-l-4 border-cyan-500">
-                        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Over 0.5 HT</p>
-                        <p id="probO05HT" class="text-4xl font-black text-white mt-1">-</p>
-                        <div class="mt-4 grid grid-cols-3 gap-1 text-center">
-                            <div><p class="text-[8px] text-blue-400">1 (HT)</p><p id="prob1HT" class="font-bold text-xs">-</p></div>
-                            <div><p class="text-[8px] text-slate-400">X (HT)</p><p id="probXHT" class="font-bold text-xs">-</p></div>
-                            <div><p class="text-[8px] text-green-400">2 (HT)</p><p id="prob2HT" class="font-bold text-xs">-</p></div>
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Over 0.5 HT</p>
+                                <p id="probO05HT" class="text-4xl font-black text-white mt-1">-</p>
+                            </div>
+                            <div class="bg-cyan-500/10 px-2 py-1 rounded border border-cyan-500/20">
+                                <span class="text-[9px] font-bold text-cyan-400 uppercase">1° Tiempo</span>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-3 gap-2 mt-4">
+                            <div class="prob-pill text-center border-blue-500/30">
+                                <p class="text-[8px] text-blue-400 font-bold uppercase mb-1">Local</p>
+                                <p id="prob1HT" class="prob-value text-blue-100">-</p>
+                            </div>
+                            <div class="prob-pill text-center border-slate-500/30">
+                                <p class="text-[8px] text-slate-400 font-bold uppercase mb-1">Empate</p>
+                                <p id="probXHT" class="prob-value text-slate-100">-</p>
+                            </div>
+                            <div class="prob-pill text-center border-green-500/30">
+                                <p class="text-[8px] text-green-400 font-bold uppercase mb-1">Visita</p>
+                                <p id="prob2HT" class="prob-value text-green-100">-</p>
+                            </div>
                         </div>
                     </div>
-                    <div class="glass-card p-6 rounded-xl border-l-4 border-blue-500">
+
+                    <div class="glass-card p-6 rounded-xl border-l-4 border-blue-500 flex flex-col justify-center">
                         <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Over 1.5 HT</p>
-                        <p id="probO15HT_Pre" class="text-4xl font-black text-white mt-1">-</p>
+                        <p id="probO15HT_Pre" class="text-5xl font-black text-white mt-2">-</p>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="glass-card p-6 rounded-xl border-l-4 border-emerald-500 bg-emerald-500/5">
-                        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Over 0.5 2T (Goles en 2T)</p>
-                        <p id="probO05_2T" class="text-4xl font-black text-white mt-1">-</p>
-                        <div class="mt-4 grid grid-cols-3 gap-1 text-center">
-                            <div><p class="text-[8px] text-blue-400">1 (2T)</p><p id="prob1_2T" class="font-bold text-xs">-</p></div>
-                            <div><p class="text-[8px] text-slate-400">X (2T)</p><p id="probX_2T" class="font-bold text-xs">-</p></div>
-                            <div><p class="text-[8px] text-green-400">2 (2T)</p><p id="prob2_2T" class="font-bold text-xs">-</p></div>
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Over 0.5 2T</p>
+                                <p id="probO05_2T" class="text-4xl font-black text-white mt-1">-</p>
+                            </div>
+                            <div class="bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">
+                                <span class="text-[9px] font-bold text-emerald-400 uppercase">2° Tiempo</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2 mt-4">
+                            <div class="prob-pill text-center border-blue-500/30">
+                                <p class="text-[8px] text-blue-400 font-bold uppercase mb-1">Local</p>
+                                <p id="prob1_2T" class="prob-value text-blue-100">-</p>
+                            </div>
+                            <div class="prob-pill text-center border-slate-500/30">
+                                <p class="text-[8px] text-slate-400 font-bold uppercase mb-1">Empate</p>
+                                <p id="probX_2T" class="prob-value text-slate-100">-</p>
+                            </div>
+                            <div class="prob-pill text-center border-green-500/30">
+                                <p class="text-[8px] text-green-400 font-bold uppercase mb-1">Visita</p>
+                                <p id="prob2_2T" class="prob-value text-green-100">-</p>
+                            </div>
                         </div>
                     </div>
-                    <div class="glass-card p-6 rounded-xl border-l-4 border-teal-500 bg-teal-500/5">
-                        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Over 1.5 2T (Goles en 2T)</p>
-                        <p id="probO15_2T" class="text-4xl font-black text-white mt-1">-</p>
+
+                    <div class="glass-card p-6 rounded-xl border-l-4 border-teal-500 bg-teal-500/5 flex flex-col justify-center">
+                        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Over 1.5 2T</p>
+                        <p id="probO15_2T" class="text-5xl font-black text-white mt-2">-</p>
                     </div>
                 </div>
 
                 <div class="glass-card p-6 rounded-2xl border border-slate-700/30 flex flex-col items-center justify-center min-h-[100px] text-center">
-                    <p class="text-slate-500 italic">Los cálculos de 2T proyectan los goles anotados exclusivamente entre el min 46 y 90.</p>
+                    <p class="text-slate-500 italic">Los cálculos proyectan los goles anotados exclusivamente en cada mitad del encuentro.</p>
                     <button onclick="window.location.reload()" class="mt-4 px-6 py-2 text-red-500 border border-red-900/50 hover:bg-red-900/20 rounded font-bold uppercase text-[10px] tracking-widest">
                         Limpiar Análisis
                     </button>
@@ -312,12 +353,10 @@
 
             if ([gfH, gfV, perH_HT, perV_HT].some(isNaN)) return;
 
-            // Lógica de Complementos para 2T
             const perH_2T = 1 - perH_HT;
             const perV_2T = 1 - perV_HT;
 
             let xG_FT_H, xG_FT_V;
-
             if (isHybrid) {
                 xG_FT_H = gfH;
                 xG_FT_V = gfV;
@@ -327,17 +366,14 @@
                 xG_FT_V = (gfV / avgLV) * (gaH / avgLH) * avgLV;
             }
 
-            // --- CÁLCULOS 1° TIEMPO ---
             const xG_HT_H = xG_FT_H * perH_HT;
             const xG_HT_V = xG_FT_V * perV_HT;
             processSection(xG_HT_H, xG_HT_V, "probO05HT", "probO15HT_Pre", "prob1HT", "probXHT", "prob2HT");
 
-            // --- CÁLCULOS 2° TIEMPO ---
             const xG_2T_H = xG_FT_H * perH_2T;
             const xG_2T_V = xG_FT_V * perV_2T;
             processSection(xG_2T_H, xG_2T_V, "probO05_2T", "probO15_2T", "prob1_2T", "probX_2T", "prob2_2T");
 
-            // Mostrar Proyecciones Globales (Lambda Total)
             document.getElementById('resXgh').innerText = (xG_HT_H + xG_HT_V).toFixed(2);
             document.getElementById('resXgv').innerText = (xG_2T_H + xG_2T_V).toFixed(2);
             document.getElementById('xgProjectionBox').style.opacity = "1";
