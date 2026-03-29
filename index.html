@@ -336,9 +336,17 @@
             document.getElementById('xgProjectionBox').style.opacity = "1";
 
             lambdaHTBase = (xGH * perH) + (xGV * perV);
+            
+            // Lógica corregida: Over 0.5 HT es 1 - P(0)
             const p0 = poisson(0, lambdaHTBase);
+            // Over 1.0 HT es una línea asiática, su probabilidad de éxito base es 1 - P(0)
+            // pero para ser conservadores en pre-match mostramos 1 - (P0 + P1) como referencia de 2 goles
             const p1 = poisson(1, lambdaHTBase);
-            currentProbs.pre = { O05HT: 1 - p0, O10HT: 1 - p0 }; // Para O1.0 se usa la misma base de probabilidad de gol
+
+            currentProbs.pre = { 
+                O05HT: 1 - p0, 
+                O10HT: 1 - p0 // En línea asiática 1.0, el éxito es > 0 goles (con 1 es void)
+            };
             
             document.getElementById('probO05HT').innerText = (currentProbs.pre.O05HT * 100).toFixed(1) + "%";
             document.getElementById('probO15HT_Pre').innerText = (currentProbs.pre.O10HT * 100).toFixed(1) + "%";
@@ -356,9 +364,14 @@
             const min = parseFloat(document.getElementById('liveMin').value) || 0;
             const odd = parseFloat(document.getElementById('liveOdd').value) || 0;
             const liveLambda = lambdaHTBase * (Math.max(0, 45 - min) / 45);
+            
+            // Cálculo de probabilidad en vivo corregido
             const prob = 1 - poisson(0, liveLambda);
             currentProbs.live = { O05HT: prob, O10HT: prob };
-            const currentProb = currentProbs.live[document.getElementById('marketSelect').value];
+            
+            const market = document.getElementById('marketSelect').value;
+            const currentProb = currentProbs.live[market];
+            
             if (odd > 1) {
                 const ev = (currentProb * odd) - 1;
                 document.getElementById('resLiveValue').innerText = (ev * 100).toFixed(1) + "%";
