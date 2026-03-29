@@ -121,48 +121,18 @@
                     </div>
                 </div>
 
-                <div class="glass-card p-6 rounded-2xl border border-cyan-500/30">
-                    <div class="flex items-center gap-2 mb-4">
-                        <span class="w-2 h-2 rounded-full badge-live"></span>
-                        <h3 class="text-[10px] font-bold uppercase text-cyan-400">Calculadora de Valor en Vivo</h3>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                        <div>
-                            <label class="text-[9px] text-slate-500 uppercase block mb-1">Minuto</label>
-                            <input id="liveMin" type="number" placeholder="Min" class="input-field" oninput="calculateLiveValue()">
-                        </div>
-                        <div>
-                            <label class="text-[9px] text-slate-500 uppercase block mb-1">Mercado</label>
-                            <select id="marketSelect" class="input-field" onchange="calculateLiveValue()">
-                                <option value="O05HT">Over 0.5 HT</option>
-                                <option value="O15HT">Over 1.5 HT</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="text-[9px] text-slate-500 uppercase block mb-1">Cuota Actual</label>
-                            <input id="liveOdd" type="number" step="0.01" placeholder="Cuota" class="input-field" oninput="calculateLiveValue()">
-                        </div>
-                        <div id="liveValueBox" class="p-2 rounded bg-slate-800 text-center border border-slate-700 h-[38px] flex flex-col justify-center">
-                            <p class="text-[8px] text-slate-400 uppercase">EV%</p>
-                            <p id="resLiveValue" class="text-sm font-bold">-</p>
-                        </div>
-                    </div>
-                    <div class="mt-6 p-4 bg-slate-900/50 rounded-xl flex justify-between items-center">
-                        <div>
-                            <p class="text-[9px] text-slate-500 uppercase">Kelly Sugerido (0.25)</p>
-                            <p id="resKelly" class="text-xl font-bold text-cyan-400">0.00%</p>
-                        </div>
-                        <button onclick="window.location.reload()" class="px-4 py-2 text-red-500 border border-red-900/50 hover:bg-red-900/20 rounded font-bold uppercase text-[9px]">
-                            Limpiar Todo
-                        </button>
-                    </div>
+                <div class="glass-card p-6 rounded-2xl border border-slate-700/30 flex flex-col items-center justify-center min-h-[200px] text-center">
+                    <p class="text-slate-500 italic">Resultados basados en distribución de Poisson y tendencia de segmentos 1°T.</p>
+                    <button onclick="window.location.reload()" class="mt-4 px-6 py-2 text-red-500 border border-red-900/50 hover:bg-red-900/20 rounded font-bold uppercase text-[10px] tracking-widest">
+                        Limpiar Análisis
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        let currentProbs = { pre: {}, live: {} };
+        let currentProbs = { pre: {} };
         let lambdaHTBase = 0;
 
         function parseStandingsTable(text) {
@@ -287,28 +257,6 @@
             
             document.getElementById('probO05HT').innerText = (currentProbs.pre.O05HT * 100).toFixed(1) + "%";
             document.getElementById('probO15HT_Pre').innerText = (currentProbs.pre.O15HT * 100).toFixed(1) + "%";
-            
-            calculateLiveValue();
-        }
-
-        function calculateLiveValue() {
-            if (!lambdaHTBase) return;
-            const min = parseFloat(document.getElementById('liveMin').value) || 0;
-            const odd = parseFloat(document.getElementById('liveOdd').value) || 0;
-            const liveLambda = lambdaHTBase * (Math.max(0, 45 - min) / 45);
-            
-            currentProbs.live = { 
-                O05HT: 1 - poisson(0, liveLambda), 
-                O15HT: 1 - (poisson(0, liveLambda) + poisson(1, liveLambda)) 
-            };
-            
-            const prob = currentProbs.live[document.getElementById('marketSelect').value];
-            if (odd > 1) {
-                const ev = (prob * odd) - 1;
-                document.getElementById('resLiveValue').innerText = (ev * 100).toFixed(1) + "%";
-                document.getElementById('liveValueBox').className = ev > 0 ? 'p-2 rounded bg-green-900/40 text-green-400 border border-green-500 flex flex-col justify-center' : 'p-2 rounded bg-red-900/20 text-red-400 border border-red-900 flex flex-col justify-center';
-                document.getElementById('resKelly').innerText = ev > 0 ? ((ev / (odd - 1)) * 0.25 * 100).toFixed(2) + "%" : "0.00%";
-            }
         }
 
         window.onload = initLeagueSelector;
