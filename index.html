@@ -27,30 +27,21 @@
         .prob-pill { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 0.75rem; padding: 0.5rem; transition: all 0.3s; }
         .prob-value { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.025em; }
 
-        /* Estilos para Tablas de Rangos */
         .range-table { width: 100%; border-collapse: separate; border-spacing: 0 4px; }
         .range-table th { color: #64748b; font-size: 8px; text-transform: uppercase; letter-spacing: 0.05em; padding: 8px; text-align: center; }
         .range-table td { background: rgba(30, 41, 59, 0.4); padding: 8px; text-align: center; font-weight: 600; font-size: 10px; border-top: 1px solid rgba(255, 255, 255, 0.05); }
         .range-table tr td:first-child { border-radius: 8px 0 0 8px; color: #22d3ee; border-left: 2px solid #22d3ee; }
         .range-table tr td:last-child { border-radius: 0 8px 8px 0; }
 
-        /* Mejora visual para probabilidades >= 60% */
+        .prob-green { color: #10b981 !important; text-shadow: 0 0 8px rgba(16, 185, 129, 0.6); font-weight: 800 !important; }
+        .prob-yellow { color: #fbbf24 !important; text-shadow: 0 0 5px rgba(251, 191, 36, 0.4); font-weight: 800 !important; }
+        .prob-red { color: #f43f5e !important; text-shadow: 0 0 8px rgba(244, 63, 94, 0.5); font-weight: 800 !important; }
+
         .high-prob-glow {
             color: #22d3ee !important;
             text-shadow: 0 0 10px rgba(34, 211, 238, 0.8);
             position: relative;
             animation: glow-text 1.5s ease-in-out infinite alternate;
-        }
-        
-        /* Clases de Semáforo solicitadas */
-        .prob-green { color: #10b981 !important; text-shadow: 0 0 8px rgba(16, 185, 129, 0.6); font-weight: 800 !important; }
-        .prob-yellow { color: #fbbf24 !important; text-shadow: 0 0 5px rgba(251, 191, 36, 0.4); font-weight: 800 !important; }
-        .prob-red { color: #f43f5e !important; text-shadow: 0 0 8px rgba(244, 63, 94, 0.5); font-weight: 800 !important; }
-
-        .high-prob-cell {
-            background: linear-gradient(90deg, rgba(34, 211, 238, 0.1) 0%, rgba(30, 41, 59, 0.6) 100%) !important;
-            border-left: 2px solid #22d3ee !important;
-            font-weight: 800 !important;
         }
         @keyframes glow-text {
             from { text-shadow: 0 0 5px rgba(34, 211, 238, 0.5); }
@@ -249,15 +240,14 @@
                                     <th>2</th>
                                 </tr>
                             </thead>
-                            <tbody id="table15min">
-                                </tbody>
+                            <tbody id="table15min"></tbody>
                         </table>
                     </div>
 
                     <div class="glass-card p-4 rounded-xl border-t-2 border-purple-500">
                         <h3 class="text-[10px] font-bold uppercase text-purple-500 mb-3 flex items-center gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-                            Rangos Extendidos (30 min)
+                            Rangos Extendidos
                         </h3>
                         <table class="range-table">
                             <thead>
@@ -270,8 +260,7 @@
                                     <th>2</th>
                                 </tr>
                             </thead>
-                            <tbody id="table30min">
-                                </tbody>
+                            <tbody id="table30min"></tbody>
                         </table>
                     </div>
                 </div>
@@ -287,8 +276,7 @@
     </div>
 
     <script>
-        // Variables globales para guardar las proporciones actuales
-        let currentHomeSegments = [16,16,16,16,16,20]; // Default flat
+        let currentHomeSegments = [16,16,16,16,16,20]; 
         let currentAwaySegments = [16,16,16,16,16,20];
 
         function parseStandingsTable(text) {
@@ -449,7 +437,6 @@
                 xG_FT_V = (gfV / avgLV) * (gaH / avgLH) * avgLV;
             }
 
-            // Cálculos HT y 2T
             const xG_HT_H = xG_FT_H * perH_HT;
             const xG_HT_V = xG_FT_V * perV_HT;
             processSection(xG_HT_H, xG_HT_V, "probO05HT", "probO15HT_Pre", "prob1HT", "probXHT", "prob2HT");
@@ -462,7 +449,6 @@
             document.getElementById('resXgv').innerText = (xG_2T_H + xG_2T_V).toFixed(2);
             document.getElementById('xgProjectionBox').style.opacity = "1";
 
-            // Cálculos para Tablas de Rangos
             renderRangeTables(xG_FT_H, xG_FT_V);
         }
 
@@ -473,27 +459,52 @@
             table30.innerHTML = "";
 
             const ranges15 = ["0-15", "16-30", "31-45", "46-60", "61-75", "76-90"];
-            
-            // Tabla 15 min
             ranges15.forEach((label, i) => {
                 const xH = xfH * (currentHomeSegments[i] / 100);
                 const xV = xfV * (currentAwaySegments[i] / 100);
                 table15.appendChild(createRangeRow(label, xH, xV));
             });
 
-            // Tabla 30 min (Suma de proporciones)
-            const ranges30 = [
-                { label: "0-30", idx: [0,1] },
-                { label: "16-45", idx: [1,2] },
-                { label: "46-75", idx: [3,4] },
-                { label: "61-90", idx: [4,5] }
+            // Definición de Rangos Solicitados
+            // idx: 0=(0-15), 1=(16-30), 2=(31-45), 3=(46-60), 4=(61-75), 5=(76-90)
+            const customRanges = [
+                { label: "15-45", logic: "sumFull", idx: [1,2] }, // 16 al 45
+                { label: "20-45", logic: "interpolated", startMin: 20, endMin: 45 }, 
+                { label: "25-45", logic: "interpolated", startMin: 25, endMin: 45 },
+                { label: "0-30", logic: "sumFull", idx: [0,1] },
+                { label: "16-45", logic: "sumFull", idx: [1,2] },
+                { label: "46-75", logic: "sumFull", idx: [3,4] },
+                { label: "61-90", logic: "sumFull", idx: [4,5] }
             ];
 
-            ranges30.forEach(r => {
-                const pH = r.idx.reduce((acc, cur) => acc + currentHomeSegments[cur], 0) / 100;
-                const pV = r.idx.reduce((acc, cur) => acc + currentAwaySegments[cur], 0) / 100;
-                table30.appendChild(createRangeRow(r.label, xfH * pH, xfV * pV));
+            customRanges.forEach(r => {
+                let xH = 0, xV = 0;
+                if(r.logic === "sumFull") {
+                    const pH = r.idx.reduce((acc, cur) => acc + currentHomeSegments[cur], 0) / 100;
+                    const pV = r.idx.reduce((acc, cur) => acc + currentAwaySegments[cur], 0) / 100;
+                    xH = xfH * pH; xV = xfV * pV;
+                } else {
+                    // Interpolación lineal simple para rangos no alineados a 15 min
+                    xH = calculateInterpolatedXG(xfH, currentHomeSegments, r.startMin, r.endMin);
+                    xV = calculateInterpolatedXG(xfV, currentAwaySegments, r.startMin, r.endMin);
+                }
+                table30.appendChild(createRangeRow(r.label, xH, xV));
             });
+        }
+
+        function calculateInterpolatedXG(totalXG, segments, start, end) {
+            let partialSum = 0;
+            for (let i = 0; i < 6; i++) {
+                const segStart = i * 15;
+                const segEnd = (i + 1) * 15;
+                const overlapStart = Math.max(start, segStart);
+                const overlapEnd = Math.min(end, segEnd);
+                if (overlapEnd > overlapStart) {
+                    const weight = (overlapEnd - overlapStart) / 15;
+                    partialSum += (segments[i] / 100) * weight;
+                }
+            }
+            return totalXG * partialSum;
         }
 
         function createRangeRow(label, xh, xv) {
@@ -502,15 +513,10 @@
             const rawProb = (1 - p0) * 100;
             const o05 = rawProb.toFixed(1) + "%";
             
-            // Lógica de Semáforo para O 0.5
             let colorClass = "text-white";
-            if (rawProb >= 70) {
-                colorClass = "prob-green";
-            } else if (rawProb >= 60) {
-                colorClass = "prob-yellow";
-            } else if (rawProb >= 50) {
-                colorClass = "prob-red";
-            }
+            if (rawProb >= 70) colorClass = "prob-green";
+            else if (rawProb >= 60) colorClass = "prob-yellow";
+            else if (rawProb >= 50) colorClass = "prob-red";
 
             let pW = 0, pD = 0, pL = 0;
             for (let i = 0; i <= 4; i++) {
@@ -537,17 +543,10 @@
             const p0 = poisson(0, lambda);
             const p1 = poisson(1, lambda);
             const rawProb05 = (1 - p0) * 100;
-            
             const el05 = document.getElementById(id05);
             el05.innerText = rawProb05.toFixed(1) + "%";
-            
-            // Aplicar realce visual en bloques principales si >= 60%
-            if (rawProb05 >= 60) {
-                el05.classList.add('high-prob-glow');
-            } else {
-                el05.classList.remove('high-prob-glow');
-            }
-
+            if (rawProb05 >= 60) el05.classList.add('high-prob-glow');
+            else el05.classList.remove('high-prob-glow');
             document.getElementById(id15).innerText = ((1 - (p0 + p1)) * 100).toFixed(1) + "%";
             let pW = 0, pD = 0, pL = 0;
             for (let i = 0; i <= 6; i++) {
