@@ -175,7 +175,7 @@
         }
 
         function clearFields() {
-            document.getElementById('leagueName').value = '';
+            // Se mantiene leagueName intacto y solo se limpian los datos
             document.getElementById('dataLocal').value = '';
             document.getElementById('dataAway').value = '';
             document.getElementById('dataTimesLocal').value = '';
@@ -221,7 +221,11 @@
                 delete allLeagues[name];
                 localStorage.setItem('betags_leagues_db', JSON.stringify(allLeagues));
                 renderLeagueList();
-                if(document.getElementById('leagueName').value === name) clearFields();
+                // Si borramos la liga que estaba en pantalla, entonces sí limpiamos todo incluyendo el nombre
+                if(document.getElementById('leagueName').value === name) {
+                    document.getElementById('leagueName').value = '';
+                    clearFields();
+                }
             }
         }
 
