@@ -42,7 +42,10 @@
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <div class="lg:col-span-1 space-y-4">
                 <div class="glass-card p-6 rounded-2xl">
-                    <label class="text-[9px] font-bold text-cyan-400 uppercase mb-2 block">Nueva Liga / Editar</label>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-[9px] font-bold text-cyan-400 uppercase block">Nueva Liga / Editar</label>
+                        <span id="lastUpdatedDisplay" class="text-[8px] text-slate-500 italic"></span>
+                    </div>
                     <input id="leagueName" type="text" placeholder="Ej: Premier League" class="input-field mb-4">
                     <div class="grid grid-cols-1 gap-2">
                         <button onclick="saveAllData()" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-xl transition-all uppercase tracking-widest">
@@ -133,18 +136,20 @@
             const league = document.getElementById('leagueName').value.trim();
             if (!league) { alert("Por favor, ingresa el nombre de la liga."); return; }
 
+            const now = new Date().toLocaleString();
             const leagueData = {
                 local: document.getElementById('dataLocal').value,
                 away: document.getElementById('dataAway').value,
                 timesLocal: document.getElementById('dataTimesLocal').value,
                 timesAway: document.getElementById('dataTimesAway').value,
-                lastUpdated: new Date().toLocaleString()
+                lastUpdated: now
             };
 
             let allLeagues = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
             allLeagues[league] = leagueData;
             localStorage.setItem('betags_leagues_db', JSON.stringify(allLeagues));
             
+            document.getElementById('lastUpdatedDisplay').innerText = `Act: ${now}`;
             renderLeagueList();
             showStatus();
         }
@@ -158,13 +163,15 @@
                 return;
             }
 
+            const now = new Date().toLocaleString();
             allLeagues[league].local = document.getElementById('dataLocal').value;
             allLeagues[league].away = document.getElementById('dataAway').value;
             allLeagues[league].timesLocal = document.getElementById('dataTimesLocal').value;
             allLeagues[league].timesAway = document.getElementById('dataTimesAway').value;
-            allLeagues[league].lastUpdated = new Date().toLocaleString();
+            allLeagues[league].lastUpdated = now;
 
             localStorage.setItem('betags_leagues_db', JSON.stringify(allLeagues));
+            document.getElementById('lastUpdatedDisplay').innerText = `Act: ${now}`;
             showStatus();
         }
 
@@ -175,11 +182,11 @@
         }
 
         function clearFields() {
-            // Se mantiene leagueName intacto y solo se limpian los datos
             document.getElementById('dataLocal').value = '';
             document.getElementById('dataAway').value = '';
             document.getElementById('dataTimesLocal').value = '';
             document.getElementById('dataTimesAway').value = '';
+            document.getElementById('lastUpdatedDisplay').innerText = '';
         }
 
         function renderLeagueList() {
@@ -211,6 +218,7 @@
                 document.getElementById('dataAway').value = data.away || '';
                 document.getElementById('dataTimesLocal').value = data.timesLocal || '';
                 document.getElementById('dataTimesAway').value = data.timesAway || '';
+                document.getElementById('lastUpdatedDisplay').innerText = data.lastUpdated ? `Act: ${data.lastUpdated}` : '';
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
@@ -221,7 +229,6 @@
                 delete allLeagues[name];
                 localStorage.setItem('betags_leagues_db', JSON.stringify(allLeagues));
                 renderLeagueList();
-                // Si borramos la liga que estaba en pantalla, entonces sí limpiamos todo incluyendo el nombre
                 if(document.getElementById('leagueName').value === name) {
                     document.getElementById('leagueName').value = '';
                     clearFields();
