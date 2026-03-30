@@ -41,6 +41,12 @@
             position: relative;
             animation: glow-text 1.5s ease-in-out infinite alternate;
         }
+        
+        /* Clases de Semáforo solicitadas */
+        .prob-green { color: #10b981 !important; text-shadow: 0 0 8px rgba(16, 185, 129, 0.6); font-weight: 800 !important; }
+        .prob-yellow { color: #fbbf24 !important; text-shadow: 0 0 5px rgba(251, 191, 36, 0.4); font-weight: 800 !important; }
+        .prob-red { color: #f43f5e !important; text-shadow: 0 0 8px rgba(244, 63, 94, 0.5); font-weight: 800 !important; }
+
         .high-prob-cell {
             background: linear-gradient(90deg, rgba(34, 211, 238, 0.1) 0%, rgba(30, 41, 59, 0.6) 100%) !important;
             border-left: 2px solid #22d3ee !important;
@@ -496,8 +502,15 @@
             const rawProb = (1 - p0) * 100;
             const o05 = rawProb.toFixed(1) + "%";
             
-            // Determinar si es probabilidad alta (>= 60)
-            const isHigh = rawProb >= 60;
+            // Lógica de Semáforo para O 0.5
+            let colorClass = "text-white";
+            if (rawProb >= 70) {
+                colorClass = "prob-green";
+            } else if (rawProb >= 60) {
+                colorClass = "prob-yellow";
+            } else if (rawProb >= 50) {
+                colorClass = "prob-red";
+            }
 
             let pW = 0, pD = 0, pL = 0;
             for (let i = 0; i <= 4; i++) {
@@ -511,7 +524,7 @@
             tr.innerHTML = `
                 <td>${label}</td>
                 <td>${lambda.toFixed(2)}</td>
-                <td class="${isHigh ? 'high-prob-cell high-prob-glow' : 'text-white'}">${o05}</td>
+                <td class="${colorClass}">${o05}</td>
                 <td class="text-blue-400">${(pW * 100).toFixed(0)}%</td>
                 <td class="text-slate-400">${(pD * 100).toFixed(0)}%</td>
                 <td class="text-green-400">${(pL * 100).toFixed(0)}%</td>
