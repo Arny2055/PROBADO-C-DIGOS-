@@ -41,7 +41,19 @@
     </div>
 
     <script>
-        // Cargar partidos al iniciar la página
+        // Configuración de jerarquía de ligas (Menor número = Más arriba)
+        const LEAGUE_PRIORITY = {
+            "Brasil - Serie A / B / Paulista": 1,
+            "España - LaLiga 2": 2,
+            "Colombia - Primera / Ascenso": 3,
+            "Paraguay - Primera División": 4,
+            "Uruguay - Primera / Segunda": 5,
+            "Amistosos Internacionales / Nations": 6,
+            "Otras Ligas / Copa": 7,
+            "Femenil / Women's League": 8,
+            "Juveniles / Development League": 9
+        };
+
         window.onload = function() {
             const savedMatches = localStorage.getItem('betags_daily_matches');
             if (savedMatches) {
@@ -76,21 +88,31 @@
             
             // Renderizar
             renderMatches(organized);
-            document.getElementById('rawInput').value = ""; // Limpiar textarea
+            document.getElementById('rawInput').value = ""; 
         }
 
         function renderMatches(organized) {
             const container = document.getElementById('resultsContainer');
             container.innerHTML = "";
 
-            for (const league in organized) {
+            // Obtener las ligas y ordenarlas por jerarquía
+            const sortedLeagues = Object.keys(organized).sort((a, b) => {
+                const priorityA = LEAGUE_PRIORITY[a] || 99;
+                const priorityB = LEAGUE_PRIORITY[b] || 99;
+                return priorityA - priorityB;
+            });
+
+            sortedLeagues.forEach(league => {
                 const section = document.createElement('div');
                 section.className = "glass-card rounded-xl overflow-hidden mb-4";
                 
                 let html = `<div class="league-header px-4 py-2 font-bold text-cyan-300 uppercase tracking-tighter">${league}</div>`;
                 html += `<div class="divide-y divide-slate-700/50">`;
                 
-                organized[league].forEach(m => {
+                // Ordenar partidos de esta liga por HORARIO antes de mapear
+                const sortedMatches = organized[league].sort((a, b) => a.time.localeCompare(b.time));
+
+                sortedMatches.forEach(m => {
                     html += `
                         <div class="px-4 py-3 flex items-center justify-between hover:bg-slate-800/40 transition-colors">
                             <span class="text-slate-500 font-mono w-12">${m.time}</span>
@@ -105,7 +127,7 @@
                 html += `</div>`;
                 section.innerHTML = html;
                 container.appendChild(section);
-            }
+            });
         }
 
         function clearMatches() {
