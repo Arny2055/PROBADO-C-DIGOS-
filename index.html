@@ -48,9 +48,50 @@
             from { text-shadow: 0 0 5px rgba(34, 211, 238, 0.5); }
             to { text-shadow: 0 0 15px rgba(34, 211, 238, 1); }
         }
+
+        /* Nueva animación de Marquesina (Ticker) */
+        .ticker-container {
+            width: 100%;
+            overflow: hidden;
+            background: rgba(15, 23, 42, 0.9);
+            border-bottom: 1px solid rgba(34, 211, 238, 0.3);
+            white-space: nowrap;
+            padding: 8px 0;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        .ticker-wrapper {
+            display: inline-block;
+            animation: ticker 30s linear infinite;
+        }
+        .ticker-item {
+            display: inline-block;
+            padding: 0 2rem;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        @keyframes ticker {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .match-badge {
+            background: linear-gradient(90deg, #22d3ee 0%, #3b82f6 100%);
+            color: #0f172a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 800;
+            font-size: 9px;
+            margin-right: 8px;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8 text-xs">
+
+    <div class="ticker-container mb-6 -mx-4 md:-mx-8">
+        <div class="ticker-wrapper" id="topMatchesTicker">
+            <div class="ticker-item"><span class="match-badge">LIVE</span> <span class="text-slate-300">Cargando partidos top...</span></div>
+        </div>
+    </div>
 
     <div class="max-w-7xl mx-auto">
         <header class="mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -240,6 +281,42 @@
     </div>
 
     <script>
+        // --- NUEVA FUNCIÓN PARA LA MARQUESINA ---
+        function updateTicker() {
+            const savedMatches = JSON.parse(localStorage.getItem('betags_daily_matches')) || {};
+            const ticker = document.getElementById('topMatchesTicker');
+            let allMatches = [];
+
+            // Filtrar partidos de ligas "Top" o simplemente mostrar los primeros disponibles
+            for (const league in savedMatches) {
+                savedMatches[league].forEach(m => {
+                    allMatches.push({ ...m, league });
+                });
+            }
+
+            if (allMatches.length === 0) {
+                ticker.innerHTML = '<div class="ticker-item"><span class="text-slate-500">No hay partidos cargados hoy.</span></div>';
+                return;
+            }
+
+            // Duplicar el contenido para que el loop sea infinito y fluido
+            let html = "";
+            const matchesToDisplay = [...allMatches, ...allMatches]; // Duplicamos para el efecto infinito
+            
+            matchesToDisplay.forEach(m => {
+                html += `
+                    <div class="ticker-item">
+                        <span class="match-badge">TOP</span>
+                        <span class="text-blue-400 font-bold">${m.home}</span>
+                        <span class="text-slate-500 mx-2">vs</span>
+                        <span class="text-green-400 font-bold">${m.away}</span>
+                        <span class="text-slate-600 ml-3 text-[9px] uppercase tracking-tighter">${m.league} (${m.time})</span>
+                    </div>
+                `;
+            });
+            ticker.innerHTML = html;
+        }
+
         let currentHomeSegments = [16,16,16,16,16,20];
         let currentAwaySegments = [16,16,16,16,16,20];
 
@@ -445,7 +522,11 @@
             document.getElementById(idX).innerText = (pD * 100).toFixed(1) + "%";
             document.getElementById(id2).innerText = (pL * 100).toFixed(1) + "%";
         }
-        window.onload = initLeagueSelector;
+
+        window.onload = function() {
+            initLeagueSelector();
+            updateTicker(); // Cargar la marquesina al iniciar
+        };
     </script>
 </body>
 </html>
