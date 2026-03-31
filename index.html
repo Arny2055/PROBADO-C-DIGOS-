@@ -49,10 +49,11 @@
             to { text-shadow: 0 0 15px rgba(34, 211, 238, 1); }
         }
 
-        /* Nueva animación de Marquesina (Ticker) */
+        /* Ticker Optimizado: Más lento y con Scroll Manual */
         .ticker-container {
             width: 100%;
-            overflow: hidden;
+            overflow-x: auto; /* Permite scroll manual */
+            overflow-y: hidden;
             background: rgba(15, 23, 42, 0.9);
             border-bottom: 1px solid rgba(34, 211, 238, 0.3);
             white-space: nowrap;
@@ -60,10 +61,19 @@
             position: sticky;
             top: 0;
             z-index: 50;
+            scrollbar-width: none; /* Oculta scroll en Firefox */
+            -ms-overflow-style: none; /* Oculta scroll en IE/Edge */
+            cursor: grab;
+        }
+        .ticker-container::-webkit-scrollbar {
+            display: none; /* Oculta scroll en Chrome/Safari/iPhone */
         }
         .ticker-wrapper {
             display: inline-block;
-            animation: ticker 30s linear infinite;
+            animation: ticker 60s linear infinite; /* Velocidad reducida (de 30s a 60s) */
+        }
+        .ticker-container:active .ticker-wrapper {
+            animation-play-state: paused; /* Pausa la animación al tocar/clicar para facilitar el scroll manual */
         }
         .ticker-item {
             display: inline-block;
@@ -281,13 +291,12 @@
     </div>
 
     <script>
-        // --- NUEVA FUNCIÓN PARA LA MARQUESINA ---
+        // --- FUNCIÓN PARA LA MARQUESINA ---
         function updateTicker() {
             const savedMatches = JSON.parse(localStorage.getItem('betags_daily_matches')) || {};
             const ticker = document.getElementById('topMatchesTicker');
             let allMatches = [];
 
-            // Filtrar partidos de ligas "Top" o simplemente mostrar los primeros disponibles
             for (const league in savedMatches) {
                 savedMatches[league].forEach(m => {
                     allMatches.push({ ...m, league });
@@ -299,9 +308,8 @@
                 return;
             }
 
-            // Duplicar el contenido para que el loop sea infinito y fluido
             let html = "";
-            const matchesToDisplay = [...allMatches, ...allMatches]; // Duplicamos para el efecto infinito
+            const matchesToDisplay = [...allMatches, ...allMatches]; 
             
             matchesToDisplay.forEach(m => {
                 html += `
@@ -525,7 +533,7 @@
 
         window.onload = function() {
             initLeagueSelector();
-            updateTicker(); // Cargar la marquesina al iniciar
+            updateTicker(); 
         };
     </script>
 </body>
