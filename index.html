@@ -49,10 +49,9 @@
             to { text-shadow: 0 0 15px rgba(34, 211, 238, 1); }
         }
 
-        /* Ticker Optimizado: Más lento y con Scroll Manual */
         .ticker-container {
             width: 100%;
-            overflow-x: auto; /* Permite scroll manual */
+            overflow-x: auto;
             overflow-y: hidden;
             background: rgba(15, 23, 42, 0.9);
             border-bottom: 1px solid rgba(34, 211, 238, 0.3);
@@ -61,37 +60,18 @@
             position: sticky;
             top: 0;
             z-index: 50;
-            scrollbar-width: none; /* Oculta scroll en Firefox */
-            -ms-overflow-style: none; /* Oculta scroll en IE/Edge */
+            scrollbar-width: none;
+            -ms-overflow-style: none;
             cursor: grab;
         }
-        .ticker-container::-webkit-scrollbar {
-            display: none; /* Oculta scroll en Chrome/Safari/iPhone */
-        }
-        .ticker-wrapper {
-            display: inline-block;
-            animation: ticker 300s linear infinite; /* Velocidad reducida (de 30s a 300s) */
-        }
-        .ticker-container:active .ticker-wrapper {
-            animation-play-state: paused; /* Pausa la animación al tocar/clicar para facilitar el scroll manual */
-        }
-        .ticker-item {
-            display: inline-block;
-            padding: 0 2rem;
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        @keyframes ticker {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-        }
+        .ticker-container::-webkit-scrollbar { display: none; }
+        .ticker-wrapper { display: inline-block; animation: ticker 300s linear infinite; }
+        .ticker-container:active .ticker-wrapper { animation-play-state: paused; }
+        .ticker-item { display: inline-block; padding: 0 2rem; border-right: 1px solid rgba(255, 255, 255, 0.1); cursor: pointer; }
+        @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         .match-badge {
             background: linear-gradient(90deg, #22d3ee 0%, #3b82f6 100%);
-            color: #0f172a;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: 800;
-            font-size: 9px;
-            margin-right: 8px;
+            color: #0f172a; padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 9px; margin-right: 8px;
         }
     </style>
 </head>
@@ -291,7 +271,6 @@
     </div>
 
     <script>
-        // --- FUNCIÓN PARA LA MARQUESINA ---
         function updateTicker() {
             const savedMatches = JSON.parse(localStorage.getItem('betags_daily_matches')) || {};
             const ticker = document.getElementById('topMatchesTicker');
@@ -313,7 +292,7 @@
             
             matchesToDisplay.forEach(m => {
                 html += `
-                    <div class="ticker-item">
+                    <div class="ticker-item" onclick="autoLoadFromTicker('${m.home}', '${m.away}', '${m.league}')">
                         <span class="match-badge">TOP</span>
                         <span class="text-blue-400 font-bold">${m.home}</span>
                         <span class="text-slate-500 mx-2">vs</span>
@@ -323,6 +302,21 @@
                 `;
             });
             ticker.innerHTML = html;
+        }
+
+        // --- AUTOMATIZACIÓN DE CARGA DESDE TICKER ---
+        function autoLoadFromTicker(h, v, l) {
+            const leagueSelect = document.getElementById('selectLeague');
+            if ([...leagueSelect.options].some(o => o.value === l)) {
+                leagueSelect.value = l;
+                loadTeams();
+                setTimeout(() => {
+                    document.getElementById('selectHome').value = h;
+                    document.getElementById('selectAway').value = v;
+                    autoFillData();
+                    calculateAllProbs();
+                }, 100);
+            }
         }
 
         let currentHomeSegments = [16,16,16,16,16,20];
@@ -530,6 +524,11 @@
             document.getElementById(idX).innerText = (pD * 100).toFixed(1) + "%";
             document.getElementById(id2).innerText = (pL * 100).toFixed(1) + "%";
         }
+
+        // --- SINCRONIZACIÓN AUTOMÁTICA ---
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'betags_leagues_db') initLeagueSelector();
+        });
 
         window.onload = function() {
             initLeagueSelector();
