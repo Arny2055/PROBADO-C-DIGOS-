@@ -68,16 +68,6 @@
                     </h3>
                     <div id="leagueList" class="space-y-1 max-h-64 overflow-y-auto pr-2 custom-scrollbar"></div>
                 </div>
-
-                <div class="glass-card p-6 rounded-2xl">
-                    <h3 class="text-[10px] font-bold text-slate-400 uppercase mb-4">Instrucciones de Carga</h3>
-                    <ul class="space-y-2 text-slate-500 leading-relaxed text-[10px]">
-                        <li>• <b>Score/Concede:</b> Tablas generales de goles.</li>
-                        <li>• <b>Tiempos Local:</b> Tabla de segmentos 15' (Home).</li>
-                        <li>• <b>Tiempos Visitante:</b> Tabla de segmentos 15' (Away).</li>
-                        <li>• Copia y pega directamente desde la fuente.</li>
-                    </ul>
-                </div>
             </div>
 
             <div class="lg:col-span-3">
@@ -91,28 +81,15 @@
 
                     <div class="p-6">
                         <div id="tabLocal" class="tab-content active space-y-4">
-                            <div class="flex justify-between items-center">
-                                <label class="text-[10px] text-cyan-400 font-bold uppercase tracking-widest">Goles Anotados / Recibidos - Local</label>
-                            </div>
                             <textarea id="dataLocal" class="input-field h-80 font-mono text-[10px]" placeholder="Pega aquí la tabla de local (General)..."></textarea>
                         </div>
-
                         <div id="tabAway" class="tab-content space-y-4">
-                            <label class="text-[10px] text-cyan-400 font-bold uppercase tracking-widest">Goles Anotados / Recibidos - Visitante</label>
                             <textarea id="dataAway" class="input-field h-80 font-mono text-[10px]" placeholder="Pega aquí la tabla de visitante (General)..."></textarea>
                         </div>
-
                         <div id="tabTiemposLocal" class="tab-content space-y-4">
-                            <div class="bg-cyan-900/20 p-3 rounded-lg border border-cyan-500/20 mb-2">
-                                <p class="text-cyan-300 text-[10px]">Segmentos 0-15 hasta 76-90 para el equipo de <b>CASA</b>.</p>
-                            </div>
                             <textarea id="dataTimesLocal" class="input-field h-80 font-mono text-[10px]" placeholder="Pega aquí la tabla: Goals per time segment (at home)..."></textarea>
                         </div>
-
                         <div id="tabTiemposAway" class="tab-content space-y-4">
-                            <div class="bg-blue-900/20 p-3 rounded-lg border border-blue-500/20 mb-2">
-                                <p class="text-blue-300 text-[10px]">Segmentos 0-15 hasta 76-90 para el equipo <b>VISITANTE</b>.</p>
-                            </div>
                             <textarea id="dataTimesAway" class="input-field h-80 font-mono text-[10px]" placeholder="Pega aquí la tabla: Goals per time segment (away)..."></textarea>
                         </div>
                     </div>
@@ -127,7 +104,6 @@
             const buttons = document.getElementsByClassName('tab-btn');
             for (let content of contents) content.classList.remove('active');
             for (let btn of buttons) btn.classList.remove('active');
-            
             document.getElementById(tabName).classList.add('active');
             evt.currentTarget.classList.add('active');
         }
@@ -135,7 +111,6 @@
         function saveAllData() {
             const league = document.getElementById('leagueName').value.trim();
             if (!league) { alert("Por favor, ingresa el nombre de la liga."); return; }
-
             const now = new Date().toLocaleString();
             const leagueData = {
                 local: document.getElementById('dataLocal').value,
@@ -144,12 +119,9 @@
                 timesAway: document.getElementById('dataTimesAway').value,
                 lastUpdated: now
             };
-
             let allLeagues = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
             allLeagues[league] = leagueData;
             localStorage.setItem('betags_leagues_db', JSON.stringify(allLeagues));
-            
-            document.getElementById('lastUpdatedDisplay').innerText = `Act: ${now}`;
             renderLeagueList();
             showStatus();
         }
@@ -157,21 +129,12 @@
         function updateLeagueData() {
             const league = document.getElementById('leagueName').value.trim();
             let allLeagues = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
-
-            if (!league || !allLeagues[league]) {
-                alert("La liga seleccionada no existe en la base de datos para ser actualizada.");
-                return;
-            }
-
-            const now = new Date().toLocaleString();
+            if (!league || !allLeagues[league]) return;
             allLeagues[league].local = document.getElementById('dataLocal').value;
             allLeagues[league].away = document.getElementById('dataAway').value;
             allLeagues[league].timesLocal = document.getElementById('dataTimesLocal').value;
             allLeagues[league].timesAway = document.getElementById('dataTimesAway').value;
-            allLeagues[league].lastUpdated = now;
-
             localStorage.setItem('betags_leagues_db', JSON.stringify(allLeagues));
-            document.getElementById('lastUpdatedDisplay').innerText = `Act: ${now}`;
             showStatus();
         }
 
@@ -181,61 +144,39 @@
             setTimeout(() => status.classList.add('hidden'), 3000);
         }
 
-        function clearFields() {
-            document.getElementById('dataLocal').value = '';
-            document.getElementById('dataAway').value = '';
-            document.getElementById('dataTimesLocal').value = '';
-            document.getElementById('dataTimesAway').value = '';
-            document.getElementById('lastUpdatedDisplay').innerText = '';
-        }
-
         function renderLeagueList() {
             const listElement = document.getElementById('leagueList');
-            const countElement = document.getElementById('leagueCount');
             const allLeagues = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
-            const sortedLeagues = Object.keys(allLeagues).sort((a, b) => a.localeCompare(b));
-            
+            const sortedLeagues = Object.keys(allLeagues).sort();
+            document.getElementById('leagueCount').innerText = sortedLeagues.length;
             listElement.innerHTML = '';
-            countElement.innerText = sortedLeagues.length;
-
             sortedLeagues.forEach(league => {
                 const item = document.createElement('div');
-                item.className = 'league-item p-2 cursor-pointer text-slate-400 hover:text-cyan-400 rounded flex justify-between items-center group';
-                item.innerHTML = `
-                    <span onclick="loadLeague('${league}')" class="flex-1 font-medium italic">${league}</span>
-                    <button onclick="deleteLeague('${league}')" class="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-400 px-2 text-[14px]">×</button>
-                `;
+                item.className = 'league-item p-2 cursor-pointer text-slate-400 hover:text-cyan-400 flex justify-between items-center group';
+                item.innerHTML = `<span onclick="loadLeague('${league}')" class="flex-1 italic">${league}</span>
+                    <button onclick="deleteLeague('${league}')" class="opacity-0 group-hover:opacity-100 text-red-500 px-2">×</button>`;
                 listElement.appendChild(item);
             });
         }
 
         function loadLeague(name) {
             const allLeagues = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
-            if (allLeagues[name]) {
-                const data = allLeagues[name];
-                document.getElementById('leagueName').value = name;
-                document.getElementById('dataLocal').value = data.local || '';
-                document.getElementById('dataAway').value = data.away || '';
-                document.getElementById('dataTimesLocal').value = data.timesLocal || '';
-                document.getElementById('dataTimesAway').value = data.timesAway || '';
-                document.getElementById('lastUpdatedDisplay').innerText = data.lastUpdated ? `Act: ${data.lastUpdated}` : '';
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
+            const data = allLeagues[name];
+            document.getElementById('leagueName').value = name;
+            document.getElementById('dataLocal').value = data.local;
+            document.getElementById('dataAway').value = data.away;
+            document.getElementById('dataTimesLocal').value = data.timesLocal;
+            document.getElementById('dataTimesAway').value = data.timesAway;
         }
 
         function deleteLeague(name) {
-            if(confirm(`¿Deseas eliminar permanentemente los datos de "${name}"?`)) {
+            if(confirm(`¿Eliminar "${name}"?`)) {
                 let allLeagues = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
                 delete allLeagues[name];
                 localStorage.setItem('betags_leagues_db', JSON.stringify(allLeagues));
                 renderLeagueList();
-                if(document.getElementById('leagueName').value === name) {
-                    document.getElementById('leagueName').value = '';
-                    clearFields();
-                }
             }
         }
-
         window.onload = () => renderLeagueList();
     </script>
 </body>
