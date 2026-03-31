@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -49,10 +50,10 @@
             to { text-shadow: 0 0 15px rgba(34, 211, 238, 1); }
         }
 
-        /* Ticker Optimizado */
+        /* Ticker Optimizado: Más lento y con Scroll Manual */
         .ticker-container {
             width: 100%;
-            overflow-x: auto;
+            overflow-x: auto; /* Permite scroll manual */
             overflow-y: hidden;
             background: rgba(15, 23, 42, 0.9);
             border-bottom: 1px solid rgba(34, 211, 238, 0.3);
@@ -61,35 +62,41 @@
             position: sticky;
             top: 0;
             z-index: 50;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
+            scrollbar-width: none; /* Oculta scroll en Firefox */
+            -ms-overflow-style: none; /* Oculta scroll en IE/Edge */
             cursor: grab;
         }
-        .ticker-container::-webkit-scrollbar { display: none; }
-        .ticker-wrapper { display: inline-block; animation: ticker 300s linear infinite; }
-        .ticker-container:active .ticker-wrapper { animation-play-state: paused; }
-        .ticker-item { display: inline-block; padding: 0 2rem; border-right: 1px solid rgba(255, 255, 255, 0.1); }
-        @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-        .match-badge { background: linear-gradient(90deg, #22d3ee 0%, #3b82f6 100%); color: #0f172a; padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 9px; margin-right: 8px; }
-
-        /* Estilos del Modal */
-        #predictionModal { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(8px); }
-        .modal-content { max-width: 900px; width: 95%; max-height: 90vh; overflow-y: auto; margin: 2rem auto; }
+        .ticker-container::-webkit-scrollbar {
+            display: none; /* Oculta scroll en Chrome/Safari/iPhone */
+        }
+        .ticker-wrapper {
+            display: inline-block;
+            animation: ticker 300s linear infinite; /* Velocidad reducida (de 30s a 300s) */
+        }
+        .ticker-container:active .ticker-wrapper {
+            animation-play-state: paused; /* Pausa la animación al tocar/clicar para facilitar el scroll manual */
+        }
+        .ticker-item {
+            display: inline-block;
+            padding: 0 2rem;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        @keyframes ticker {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .match-badge {
+            background: linear-gradient(90deg, #22d3ee 0%, #3b82f6 100%);
+            color: #0f172a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 800;
+            font-size: 9px;
+            margin-right: 8px;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8 text-xs">
-
-    <div id="predictionModal">
-        <div class="modal-content glass-card p-6 rounded-2xl relative">
-            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl">&times;</button>
-            <div id="modalHeader" class="mb-6 border-b border-slate-700 pb-4">
-                <h2 id="modalTitle" class="text-2xl font-bold text-cyan-400">Predicción Automática</h2>
-                <p id="modalSubtitle" class="text-slate-400 text-[10px] uppercase tracking-widest mt-1"></p>
-            </div>
-            <div id="modalBody" class="space-y-6">
-                </div>
-        </div>
-    </div>
 
     <div class="ticker-container mb-6 -mx-4 md:-mx-8">
         <div class="ticker-wrapper" id="topMatchesTicker">
@@ -152,7 +159,7 @@
             </div>
         </div>
 
-        <div id="mainResultsArea" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div class="lg:col-span-4 space-y-6">
                 <div class="glass-card p-6 rounded-2xl">
                     <h2 class="text-sm font-semibold mb-4 flex items-center gap-2">
@@ -199,7 +206,7 @@
                 </div>
             </div>
 
-            <div id="calculationsOutput" class="lg:col-span-8 space-y-6">
+            <div class="lg:col-span-8 space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="glass-card p-6 rounded-xl border-l-4 border-cyan-500">
                         <div class="flex justify-between items-start mb-4">
@@ -285,50 +292,26 @@
     </div>
 
     <script>
-        // --- LOGICA DEL MODAL ---
-        function closeModal() {
-            document.getElementById('predictionModal').style.display = 'none';
-            document.getElementById('modalBody').innerHTML = '';
-        }
-
-        function checkForExternalRequest() {
-            const request = localStorage.getItem('betags_auto_calc');
-            if (request) {
-                const data = JSON.parse(request);
-                localStorage.removeItem('betags_auto_calc'); // Limpiar para que no se repita
-                
-                // Forzar carga de liga y equipos
-                document.getElementById('selectLeague').value = data.league;
-                loadTeams();
-                document.getElementById('selectHome').value = data.home;
-                document.getElementById('selectAway').value = data.away;
-                
-                autoFillData();
-                calculateAllProbs();
-
-                // Mostrar en Modal
-                document.getElementById('modalTitle').innerText = `${data.home} vs ${data.away}`;
-                document.getElementById('modalSubtitle').innerText = data.league;
-                
-                const resultsClone = document.getElementById('calculationsOutput').cloneNode(true);
-                // Eliminar IDs duplicados en el clon para evitar conflictos
-                resultsClone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
-                
-                document.getElementById('modalBody').innerHTML = '';
-                document.getElementById('modalBody').appendChild(resultsClone);
-                document.getElementById('predictionModal').style.display = 'block';
-            }
-        }
-
-        // --- FUNCIONES ORIGINALES (SIN MODIFICAR LÓGICA) ---
+        // --- FUNCIÓN PARA LA MARQUESINA ---
         function updateTicker() {
             const savedMatches = JSON.parse(localStorage.getItem('betags_daily_matches')) || {};
             const ticker = document.getElementById('topMatchesTicker');
             let allMatches = [];
-            for (const league in savedMatches) { savedMatches[league].forEach(m => { allMatches.push({ ...m, league }); }); }
-            if (allMatches.length === 0) { ticker.innerHTML = '<div class="ticker-item"><span class="text-slate-500">No hay partidos cargados hoy.</span></div>'; return; }
+
+            for (const league in savedMatches) {
+                savedMatches[league].forEach(m => {
+                    allMatches.push({ ...m, league });
+                });
+            }
+
+            if (allMatches.length === 0) {
+                ticker.innerHTML = '<div class="ticker-item"><span class="text-slate-500">No hay partidos cargados hoy.</span></div>';
+                return;
+            }
+
             let html = "";
             const matchesToDisplay = [...allMatches, ...allMatches]; 
+            
             matchesToDisplay.forEach(m => {
                 html += `
                     <div class="ticker-item">
@@ -337,7 +320,8 @@
                         <span class="text-slate-500 mx-2">vs</span>
                         <span class="text-green-400 font-bold">${m.away}</span>
                         <span class="text-slate-600 ml-3 text-[9px] uppercase tracking-tighter">${m.league} (${m.time})</span>
-                    </div>`;
+                    </div>
+                `;
             });
             ticker.innerHTML = html;
         }
@@ -505,7 +489,9 @@
             const table30 = document.getElementById('table30min');
             table15.innerHTML = ""; table30.innerHTML = "";
             const ranges15 = ["0-15", "16-30", "31-45", "46-60", "61-75", "76-90"];
-            ranges15.forEach((label, i) => { table15.appendChild(createRangeRow(label, xfH * (currentHomeSegments[i] / 100), xfV * (currentAwaySegments[i] / 100))); });
+            ranges15.forEach((label, i) => {
+                table15.appendChild(createRangeRow(label, xfH * (currentHomeSegments[i] / 100), xfV * (currentAwaySegments[i] / 100)));
+            });
             const ranges30 = [{ label: "0-30", idx: [0,1] }, { label: "16-45", idx: [1,2] }, { label: "46-75", idx: [3,4] }, { label: "61-90", idx: [4,5] }];
             ranges30.forEach(r => {
                 const pH = r.idx.reduce((acc, cur) => acc + currentHomeSegments[cur], 0) / 100;
@@ -519,7 +505,10 @@
             const rawProb = (1 - poisson(0, lambda)) * 100;
             let c = "text-white"; if (rawProb >= 70) c = "prob-green"; else if (rawProb >= 60) c = "prob-yellow"; else if (rawProb >= 50) c = "prob-red";
             let pW = 0, pD = 0, pL = 0;
-            for (let i = 0; i <= 4; i++) { for (let j = 0; j <= 4; j++) { const prob = poisson(i, xh) * poisson(j, xv); if (i > j) pW += prob; else if (i === j) pD += prob; else pL += prob; }}
+            for (let i = 0; i <= 4; i++) { for (let j = 0; j <= 4; j++) {
+                const prob = poisson(i, xh) * poisson(j, xv);
+                if (i > j) pW += prob; else if (i === j) pD += prob; else pL += prob;
+            }}
             const tr = document.createElement('tr');
             tr.innerHTML = `<td>${label}</td><td>${lambda.toFixed(2)}</td><td class="${c}">${rawProb.toFixed(1)}%</td><td class="text-blue-400">${(pW * 100).toFixed(0)}%</td><td class="text-slate-400">${(pD * 100).toFixed(0)}%</td><td class="text-green-400">${(pL * 100).toFixed(0)}%</td>`;
             return tr;
@@ -529,23 +518,23 @@
             const lambda = xh + xv;
             const p0 = poisson(0, lambda);
             const rawProb05 = (1 - p0) * 100;
-            const el = document.getElementById(id05);
-            if (el) {
-                el.innerText = rawProb05.toFixed(1) + "%";
-                if (rawProb05 >= 60) el.classList.add('high-prob-glow'); else el.classList.remove('high-prob-glow');
-                document.getElementById(id15).innerText = ((1 - (p0 + poisson(1, lambda))) * 100).toFixed(1) + "%";
-                let pW = 0, pD = 0, pL = 0;
-                for (let i = 0; i <= 6; i++) { for (let j = 0; j <= 6; j++) { const prob = poisson(i, xh) * poisson(j, xv); if (i > j) pW += prob; else if (i === j) pD += prob; else pL += prob; }}
-                document.getElementById(id1).innerText = (pW * 100).toFixed(1) + "%";
-                document.getElementById(idX).innerText = (pD * 100).toFixed(1) + "%";
-                document.getElementById(id2).innerText = (pL * 100).toFixed(1) + "%";
-            }
+            const el05 = document.getElementById(id05);
+            el05.innerText = rawProb05.toFixed(1) + "%";
+            if (rawProb05 >= 60) el05.classList.add('high-prob-glow'); else el05.classList.remove('high-prob-glow');
+            document.getElementById(id15).innerText = ((1 - (p0 + poisson(1, lambda))) * 100).toFixed(1) + "%";
+            let pW = 0, pD = 0, pL = 0;
+            for (let i = 0; i <= 6; i++) { for (let j = 0; j <= 6; j++) {
+                const prob = poisson(i, xh) * poisson(j, xv);
+                if (i > j) pW += prob; else if (i === j) pD += prob; else pL += prob;
+            }}
+            document.getElementById(id1).innerText = (pW * 100).toFixed(1) + "%";
+            document.getElementById(idX).innerText = (pD * 100).toFixed(1) + "%";
+            document.getElementById(id2).innerText = (pL * 100).toFixed(1) + "%";
         }
 
         window.onload = function() {
             initLeagueSelector();
-            updateTicker();
-            checkForExternalRequest(); // Revisar si venimos de partidos.html
+            updateTicker(); 
         };
     </script>
 </body>
