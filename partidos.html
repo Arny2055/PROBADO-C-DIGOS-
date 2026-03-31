@@ -79,12 +79,29 @@
         }
 
         function clearMatches() { if(confirm("¿Limpiar todo?")) { localStorage.removeItem('betags_daily_matches'); location.reload(); } }
+        
         function detectLeague(h, v) { 
             const n = (h + " " + v).toUpperCase();
+            
+            // 1. Intento de detección por Base de Datos Guardada (Mejora)
+            const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
+            for (const [leagueName, data] of Object.entries(db)) {
+                // Buscamos si el nombre de los equipos aparece en el texto crudo de la tabla local o away guardada
+                if (data.local && (data.local.toUpperCase().includes(h.toUpperCase()) || data.local.toUpperCase().includes(v.toUpperCase()))) {
+                    return leagueName;
+                }
+                if (data.away && (data.away.toUpperCase().includes(h.toUpperCase()) || data.away.toUpperCase().includes(v.toUpperCase()))) {
+                    return leagueName;
+                }
+            }
+
+            // 2. Reglas manuales por defecto (Lógica original)
             if (n.includes("BRASIL") || n.includes("CRUZEIRO") || n.includes("FLAMENGO")) return "Brasil - Serie A";
             if (n.includes("ESPAÑA") || n.includes("ALBACETE") || n.includes("CADIZ")) return "España - LaLiga 2";
+            
             return "Otras Ligas";
         }
+
         window.onload = () => { if(localStorage.getItem('betags_daily_matches')) renderMatches(JSON.parse(localStorage.getItem('betags_daily_matches'))); };
     </script>
 </body>
