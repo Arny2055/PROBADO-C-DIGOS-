@@ -68,25 +68,43 @@
             const lines = input.split('\n');
             const organized = {};
 
-            lines.forEach(line => {
-                const parts = line.split('\t').map(p => p.trim()).filter(p => p !== "");
+            for (let i = 0; i < lines.length; i++) {
+                const currentLine = lines[i].split('\t').map(p => p.trim()).filter(p => p !== "");
                 
-                if (parts.length >= 4 && parts[0].includes(':')) {
-                    const time = parts[0];
-                    const home = parts[1];
-                    const away = parts[3];
+                // Formato 1: Horario y Local están en la misma línea (como en tu nuevo formato)
+                // Buscamos algo que parezca un horario (XX:XX)
+                const timeIndex = currentLine.findIndex(p => p.includes(':') && p.length <= 5);
+                
+                if (timeIndex !== -1) {
+                    const time = currentLine[timeIndex];
+                    const home = currentLine[0] === time ? currentLine[1] : currentLine[0];
+                    let away = "Por definir";
+
+                    // Buscamos al visitante en la siguiente línea
+                    if (i + 1 < lines.length) {
+                        const nextLine = lines[i + 1].split('\t').map(p => p.trim()).filter(p => p !== "");
+                        if (nextLine.length > 0 && !nextLine[0].includes(':')) {
+                            away = nextLine[0];
+                            i++; // Saltamos la línea del visitante ya que la procesamos
+                        }
+                    }
                     
                     const league = detectLeague(home, away);
-                    
+                    if (!organized[league]) organized[league] = [];
+                    organized[league].push({ time, home, away });
+                } 
+                // Formato 2: El original (Local - Hora - Visitante en una sola línea larga)
+                else if (currentLine.length >= 4 && currentLine.some(p => p.includes(':'))) {
+                    const time = currentLine.find(p => p.includes(':'));
+                    const home = currentLine[0];
+                    const away = currentLine[3];
+                    const league = detectLeague(home, away);
                     if (!organized[league]) organized[league] = [];
                     organized[league].push({ time, home, away });
                 }
-            });
+            }
 
-            // Guardar en LocalStorage
             localStorage.setItem('betags_daily_matches', JSON.stringify(organized));
-            
-            // Renderizar
             renderMatches(organized);
             document.getElementById('rawInput').value = ""; 
         }
@@ -95,7 +113,6 @@
             const container = document.getElementById('resultsContainer');
             container.innerHTML = "";
 
-            // Obtener las ligas y ordenarlas por jerarquía
             const sortedLeagues = Object.keys(organized).sort((a, b) => {
                 const priorityA = LEAGUE_PRIORITY[a] || 99;
                 const priorityB = LEAGUE_PRIORITY[b] || 99;
@@ -109,7 +126,6 @@
                 let html = `<div class="league-header px-4 py-2 font-bold text-cyan-300 uppercase tracking-tighter">${league}</div>`;
                 html += `<div class="divide-y divide-slate-700/50">`;
                 
-                // Ordenar partidos de esta liga por HORARIO antes de mapear
                 const sortedMatches = organized[league].sort((a, b) => a.time.localeCompare(b.time));
 
                 sortedMatches.forEach(m => {
@@ -143,10 +159,10 @@
             if (names.includes("U21") || names.includes("U23")) return "Juveniles / Development League";
             if (names.includes(" W") || names.includes("WOMEN")) return "Femenil / Women's League";
             
-            const countries = ["ITALY", "CZECH", "DENMARK", "KOSOVO", "TURKEY", "SWEDEN", "POLAND", "LATVIA", "GIBRALTAR", "LUXEMBOURG", "MALTA", "BOSNIA"];
+            const countries = ["LATVIA", "GIBRALTAR", "LUXEMBOURG", "MALTA", "BOSNIA", "ITALY", "CZECH", "DENMARK", "KOSOVO", "TURKEY", "SWEDEN", "POLAND"];
             if (countries.some(c => names.includes(c))) return "Amistosos Internacionales / Nations";
 
-            const colombia = ["ORSOMARSO", "MILLONARIOS", "FORTALEZA CEIF", "BARRANQUILLA", "ENVIGADO", "CALI", "BOCA JUNIORS", "REAL SANTANDER", "TIGRES", "ATLETICO CALI"];
+            const colombia = ["ORSOMARSO", "MILLONARIOS", "FORTALEZA CEIF", "BARRANQUILLA", "ENVIGADO", "CALI", "BOCA JUNIORS", "REAL SANTANDER", "TIGRES", "ATLETICO CALI", "INTER PALMIRA"];
             if (colombia.some(c => names.includes(c))) return "Colombia - Primera / Ascenso";
 
             const uru = ["PROGRESO", "LIVERPOOL M.", "DEFENSOR", "ALBION", "MALDONADO", "CENTRAL ESPANOL"];
