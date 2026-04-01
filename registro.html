@@ -97,6 +97,9 @@
 
             filtered.reverse().forEach(apuesta => {
                 const tr = document.createElement('tr');
+                // Lógica para mostrar probabilidad de rango si existe
+                const probRangoStr = apuesta.probRango ? ` | <span class="text-cyan-500">16-45: ${apuesta.probRango}</span>` : "";
+                
                 tr.innerHTML = `
                     <td>
                         <div class="font-bold text-cyan-400">${apuesta.liga}</div>
@@ -105,7 +108,7 @@
                     <td>${apuesta.evento}</td>
                     <td>
                         <div class="font-semibold">${apuesta.mercado}</div>
-                        <div class="text-[9px] text-slate-400">Modelo: ${apuesta.prob}</div>
+                        <div class="text-[9px] text-slate-400">Modelo: ${apuesta.prob}${probRangoStr}</div>
                     </td>
                     <td>
                         <div class="flex items-center gap-1">
