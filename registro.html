@@ -10,6 +10,9 @@
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; font-size: 11px; }
         .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
         .input-field { background-color: #0f172a; border: 1px solid #334155; border-radius: 0.4rem; padding: 0.4rem; color: #22d3ee; outline: none; }
+        .editable-input { background: transparent; border: 1px solid transparent; color: #60a5fa; width: 50px; transition: all 0.2s; }
+        .editable-input:hover { border-color: #334155; background: rgba(15, 23, 42, 0.5); }
+        .editable-input:focus { border-color: #22d3ee; background: #0f172a; outline: none; }
         th { text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-size: 9px; padding: 10px; }
         td { padding: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
         .status-win { color: #10b981; font-weight: bold; }
@@ -104,8 +107,18 @@
                         <div class="text-[9px] text-slate-400">Modelo: ${apuesta.prob}</div>
                     </td>
                     <td>
-                        <div class="text-blue-400">Min: ${apuesta.minuto}'</div>
-                        <div class="font-bold">@${apuesta.cuota.toFixed(2)}</div>
+                        <div class="flex items-center gap-1">
+                            <span class="text-slate-500">Min:</span>
+                            <input type="number" value="${apuesta.minuto}" 
+                                onchange="updateMinuto(${apuesta.id}, this.value)" 
+                                class="editable-input text-blue-400 font-semibold">'
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="text-slate-500">@</span>
+                            <input type="number" step="0.01" value="${apuesta.cuota.toFixed(2)}" 
+                                onchange="updateCuota(${apuesta.id}, this.value)" 
+                                class="editable-input text-white font-bold">
+                        </div>
                     </td>
                     <td>
                         <select onchange="updateStatus(${apuesta.id}, this.value)" class="input-field text-[10px] ${getStatusClass(apuesta.estado)}">
@@ -143,6 +156,26 @@
             }
         }
 
+        function updateMinuto(id, newMin) {
+            let registro = JSON.parse(localStorage.getItem('betags_registro')) || [];
+            const index = registro.findIndex(a => a.id === id);
+            if(index !== -1) {
+                registro[index].minuto = parseInt(newMin) || 0;
+                localStorage.setItem('betags_registro', JSON.stringify(registro));
+                // No es necesario renderizar todo de nuevo para el minuto ya que no afecta stats
+            }
+        }
+
+        function updateCuota(id, newCuota) {
+            let registro = JSON.parse(localStorage.getItem('betags_registro')) || [];
+            const index = registro.findIndex(a => a.id === id);
+            if(index !== -1) {
+                registro[index].cuota = parseFloat(newCuota) || 1.01;
+                localStorage.setItem('betags_registro', JSON.stringify(registro));
+                renderTable(); // Renderizamos para que las estadísticas se actualicen con la nueva cuota
+            }
+        }
+
         function deleteApuesta(id) {
             if(confirm("¿Seguro que quieres borrar esta apuesta?")) {
                 let registro = JSON.parse(localStorage.getItem('betags_registro')) || [];
@@ -161,7 +194,13 @@
 
         function calculateStats(data) {
             const finished = data.filter(a => a.estado !== "Pendiente");
-            if(finished.length === 0) return;
+            if(finished.length === 0) {
+                document.getElementById('statWinRate').innerText = "0%";
+                document.getElementById('statYield').innerText = "0%";
+                document.getElementById('statDrawdown').innerText = "0u";
+                document.getElementById('statPValue').innerText = "0.00";
+                return;
+            };
 
             const wins = finished.filter(a => a.estado === "Ganada").length;
             const winRate = (wins / finished.length) * 100;
@@ -186,15 +225,12 @@
 
             const yieldVal = (balance / turnover) * 100;
 
-            // P-Value aproximado usando Distribución Normal (Z-score)
-            // Fórmula: P(Z > (Observed Wins - Expected Wins) / sqrt(n * p * q))
             const avgOdds = finished.reduce((acc, cur) => acc + cur.cuota, 0) / finished.length;
             const expectedWinRate = 1 / avgOdds;
             const expectedWins = finished.length * expectedWinRate;
             const sd = Math.sqrt(finished.length * expectedWinRate * (1 - expectedWinRate));
-            const zScore = (wins - expectedWins) / sd;
+            const zScore = sd === 0 ? 0 : (wins - expectedWins) / sd;
             
-            // Función de error aproximada para P-Value
             const pValue = 1 - (0.5 * (1 + Math.sign(zScore) * Math.sqrt(1 - Math.exp(-Math.pow(zScore, 2) * (4/Math.PI + 0.147 * Math.pow(zScore, 2)) / (1 + 0.147 * Math.pow(zScore, 2))))));
 
             document.getElementById('statWinRate').innerText = winRate.toFixed(1) + "%";
