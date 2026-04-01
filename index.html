@@ -108,7 +108,7 @@
                 </div>
                 <a href="datos.html" class="nav-btn px-4 py-2 rounded-lg flex items-center gap-2 font-semibold text-[10px] uppercase tracking-wider">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8-4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21-3.582-4 8-4s8 1.79 8-4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
                     </svg>
                     Base de Datos
                 </a>
@@ -304,7 +304,6 @@
             ticker.innerHTML = html;
         }
 
-        // --- AUTOMATIZACIÓN DE CARGA DESDE TICKER ---
         function autoLoadFromTicker(h, v, l) {
             const leagueSelect = document.getElementById('selectLeague');
             if ([...leagueSelect.options].some(o => o.value === l)) {
@@ -349,7 +348,13 @@
             for (let line of lines) {
                 const parts = line.split('\t').filter(p => p.trim() !== "");
                 if (parts.length >= 7 && parts[0].trim() === teamName) {
-                    const g = parts.slice(1, 7).map(val => parseInt(val.split('-')[0]) || 0);
+                    // Mejora: Ahora sumamos goles a favor y en contra en cada segmento para el cálculo
+                    const g = parts.slice(1, 7).map(val => {
+                        const score = val.split('-');
+                        const gf = parseInt(score[0]) || 0;
+                        const ga = parseInt(score[1]) || 0;
+                        return gf + ga; // TOTAL DE GOLES EN EL SEGMENTO
+                    });
                     const total = g.reduce((a, b) => a + b, 0);
                     if (total === 0) return [16.6, 16.6, 16.6, 16.6, 16.6, 16.6];
                     return g.map(v => (v / total) * 100);
@@ -525,7 +530,6 @@
             document.getElementById(id2).innerText = (pL * 100).toFixed(1) + "%";
         }
 
-        // --- SINCRONIZACIÓN AUTOMÁTICA ---
         window.addEventListener('storage', (e) => {
             if (e.key === 'betags_leagues_db') initLeagueSelector();
         });
