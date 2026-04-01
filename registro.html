@@ -57,6 +57,7 @@
                 <option value="Over 1.5 HT">Over 1.5 HT</option>
                 <option value="Over 0.5 2T">Over 0.5 2T</option>
                 <option value="Over 1.5 2T">Over 1.5 2T</option>
+                <option value="Over 0.5 (16-45)">Over 0.5 (16-45)</option>
             </select>
             <input type="number" id="filterCuota" placeholder="Cuota min..." class="input-field text-[10px]" oninput="renderTable()">
         </div>
@@ -111,11 +112,11 @@
                             <span class="text-slate-500">Min:</span>
                             <input type="number" value="${apuesta.minuto}" 
                                 onchange="updateMinuto(${apuesta.id}, this.value)" 
-                                class="editable-input text-blue-400 font-semibold">'
+                                class="editable-input text-blue-400 font-semibold">
                         </div>
                         <div class="flex items-center gap-1">
                             <span class="text-slate-500">@</span>
-                            <input type="number" step="0.01" value="${apuesta.cuota.toFixed(2)}" 
+                            <input type="number" step="0.01" value="${parseFloat(apuesta.cuota).toFixed(2)}" 
                                 onchange="updateCuota(${apuesta.id}, this.value)" 
                                 class="editable-input text-white font-bold">
                         </div>
@@ -162,7 +163,6 @@
             if(index !== -1) {
                 registro[index].minuto = parseInt(newMin) || 0;
                 localStorage.setItem('betags_registro', JSON.stringify(registro));
-                // No es necesario renderizar todo de nuevo para el minuto ya que no afecta stats
             }
         }
 
@@ -172,7 +172,7 @@
             if(index !== -1) {
                 registro[index].cuota = parseFloat(newCuota) || 1.01;
                 localStorage.setItem('betags_registro', JSON.stringify(registro));
-                renderTable(); // Renderizamos para que las estadísticas se actualicen con la nueva cuota
+                renderTable();
             }
         }
 
@@ -206,7 +206,7 @@
             const winRate = (wins / finished.length) * 100;
             
             let profit = 0;
-            let turnover = finished.length; // Stake 1 unitario
+            let turnover = finished.length;
             let currentDrawdown = 0;
             let maxDrawdown = 0;
             let peak = 0;
@@ -214,7 +214,7 @@
 
             finished.forEach(a => {
                 if(a.estado === "Ganada") {
-                    balance += (a.cuota - 1);
+                    balance += (parseFloat(a.cuota) - 1);
                 } else {
                     balance -= 1;
                 }
@@ -225,7 +225,7 @@
 
             const yieldVal = (balance / turnover) * 100;
 
-            const avgOdds = finished.reduce((acc, cur) => acc + cur.cuota, 0) / finished.length;
+            const avgOdds = finished.reduce((acc, cur) => acc + parseFloat(cur.cuota), 0) / finished.length;
             const expectedWinRate = 1 / avgOdds;
             const expectedWins = finished.length * expectedWinRate;
             const sd = Math.sqrt(finished.length * expectedWinRate * (1 - expectedWinRate));
