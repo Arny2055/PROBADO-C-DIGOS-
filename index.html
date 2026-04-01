@@ -282,6 +282,7 @@
                                 <option value="Over 1.5 HT">Over 1.5 1T</option>
                                 <option value="Over 0.5 2T">Over 0.5 2T</option>
                                 <option value="Over 1.5 2T">Over 1.5 2T</option>
+                                <option value="Over 0.5 (16-45)">Over 0.5 (16-45)</option>
                             </select>
                         </div>
                         <div>
@@ -308,6 +309,8 @@
     </div>
 
     <script>
+        let currentRange1645Prob = "-"; // Variable global para guardar la prob calculada
+
         function updateTicker() {
             const savedMatches = JSON.parse(localStorage.getItem('betags_daily_matches')) || {};
             const ticker = document.getElementById('topMatchesTicker');
@@ -530,7 +533,13 @@
             ranges30.forEach(r => {
                 const pH = r.idx.reduce((acc, cur) => acc + currentHomeSegments[cur], 0) / 100;
                 const pV = r.idx.reduce((acc, cur) => acc + currentAwaySegments[cur], 0) / 100;
-                table30.appendChild(createRangeRow(r.label, xfH * pH, xfV * pV));
+                const row = createRangeRow(r.label, xfH * pH, xfV * pV);
+                table30.appendChild(row);
+                
+                // Guardamos la prob de 16-45 específicamente
+                if(r.label === "16-45") {
+                   currentRange1645Prob = row.cells[2].innerText;
+                }
             });
         }
 
@@ -584,6 +593,7 @@
             if(mercado === "Over 1.5 HT") prob = document.getElementById('probO15HT_Pre').innerText;
             if(mercado === "Over 0.5 2T") prob = document.getElementById('probO05_2T').innerText;
             if(mercado === "Over 1.5 2T") prob = document.getElementById('probO15_2T').innerText;
+            if(mercado === "Over 0.5 (16-45)") prob = currentRange1645Prob;
 
             const nuevaApuesta = {
                 id: Date.now(),
