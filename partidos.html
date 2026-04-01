@@ -41,7 +41,6 @@
             
             lines.forEach(line => {
                 const clean = line.split(/\t|\s{2,}/).map(p => p.trim()).filter(p => p !== "");
-                
                 if (clean.length >= 3) {
                     const time = clean[0];
                     const home = clean[1];
@@ -51,25 +50,8 @@
                     if (time.includes(':')) {
                         const l = detectLeague(home, away);
                         
-                        // MEJORA: Validar mínimo 5 partidos jugados para local y visitante
-                        // Buscamos números en la línea que representen los partidos jugados (PJ)
-                        const numbers = line.match(/\d+/g); 
-                        let meetsRequirement = true;
-
-                        // Si el formato de entrada incluye las estadísticas de partidos jugados
-                        // Intentamos extraer los valores de PJ (habitualmente cerca de los nombres de los equipos)
-                        if (numbers && numbers.length >= 2) {
-                            const pjHome = parseInt(numbers[0]); // Asume el primer número como PJ Local
-                            const pjAway = parseInt(numbers[1]); // Asume el segundo número como PJ Visitante
-                            
-                            // Si detectamos números pero son menores a 5, no se muestra
-                            if (pjHome < 5 || pjAway < 5) {
-                                meetsRequirement = false;
-                            }
-                        }
-
-                        // Solo añadir si la liga NO es "Otras Ligas" y cumple con el mínimo de partidos
-                        if (l !== "Otras Ligas" && meetsRequirement) {
+                        // MEJORA: Solo añadir si la liga NO es "Otras Ligas"
+                        if (l !== "Otras Ligas") {
                             if (!organized[l]) organized[l] = [];
                             organized[l].push({ time, home, away, score: middle.includes(':') ? middle : null });
                         }
@@ -85,6 +67,7 @@
             const container = document.getElementById('resultsContainer');
             container.innerHTML = "";
             
+            // Ordenar ligas si es necesario o simplemente iterar
             Object.keys(organized).forEach(league => {
                 const section = document.createElement('div');
                 section.className = "glass-card rounded-xl overflow-hidden mb-4";
@@ -111,6 +94,7 @@
         function detectLeague(h, v) { 
             const n = (h + " " + v).toUpperCase();
             
+            // 1. Intento de detección por Base de Datos Guardada
             const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
             for (const [leagueName, data] of Object.entries(db)) {
                 if (data.local && (data.local.toUpperCase().includes(h.toUpperCase()) || data.local.toUpperCase().includes(v.toUpperCase()))) {
@@ -121,9 +105,11 @@
                 }
             }
 
+            // 2. Reglas manuales por defecto
             if (n.includes("BRASIL") || n.includes("CRUZEIRO") || n.includes("FLAMENGO")) return "Brasil - Serie A";
             if (n.includes("ESPAÑA") || n.includes("ALBACETE") || n.includes("CADIZ")) return "España - LaLiga 2";
             
+            // Si no coincide con nada, marcar como "Otras Ligas" para filtrar en processMatches
             return "Otras Ligas";
         }
 
