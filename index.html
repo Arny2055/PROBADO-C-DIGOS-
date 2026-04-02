@@ -259,7 +259,7 @@
                         </table>
                     </div>
                     <div class="glass-card p-4 rounded-xl border-t-2 border-purple-500">
-                        <h3 class="text-[10px] font-bold uppercase text-purple-500 mb-3 flex items-center gap-2">Rangos (30 min)</h3>
+                        <h3 class="text-[10px] font-bold uppercase text-purple-500 mb-3 flex items-center gap-2">Rangos Dinámicos</h3>
                         <table class="range-table">
                             <thead><tr><th>Rango</th><th>xG</th><th>O 0.5</th><th>1</th><th>X</th><th>2</th></tr></thead>
                             <tbody id="table30min"></tbody>
@@ -283,6 +283,7 @@
                                 <option value="Over 0.5 2T">Over 0.5 2T</option>
                                 <option value="Over 1.5 2T">Over 1.5 2T</option>
                                 <option value="Over 0.5 (16-45)">Over 0.5 (16-45)</option>
+                                <option value="Over 0.5 (0-30)">Over 0.5 (0-30)</option>
                             </select>
                         </div>
                         <div>
@@ -309,7 +310,8 @@
     </div>
 
     <script>
-        let currentRange1645Prob = "-"; 
+        let currentRange1645Prob = "-";
+        let currentRange030Prob = "-";
 
         function updateTicker() {
             const savedMatches = JSON.parse(localStorage.getItem('betags_daily_matches')) || {};
@@ -387,12 +389,19 @@
             const lines = text.split('\n');
             for (let line of lines) {
                 const parts = line.split('\t').filter(p => p.trim() !== "");
+                // Lógica para detectar la nueva tabla de Opening Goals (0-15 en index 3)
+                if (parts.length >= 10 && parts[0].trim() === teamName) {
+                    const g = parts.slice(3, 9).map(val => parseInt(val) || 0);
+                    const total = g.reduce((a, b) => a + b, 0);
+                    if (total === 0) return [16.6, 16.6, 16.6, 16.6, 16.6, 16.6];
+                    return g.map(v => (v / total) * 100);
+                }
+                // Respaldo para formato antiguo GF-GA
                 if (parts.length >= 7 && parts[0].trim() === teamName) {
                     const g = parts.slice(1, 7).map(val => {
                         const score = val.split('-');
-                        const gf = parseInt(score[0]) || 0;
-                        const ga = parseInt(score[1]) || 0;
-                        return gf + ga; 
+                        if(score.length < 2) return parseInt(val) || 0;
+                        return (parseInt(score[0]) || 0) + (parseInt(score[1]) || 0);
                     });
                     const total = g.reduce((a, b) => a + b, 0);
                     if (total === 0) return [16.6, 16.6, 16.6, 16.6, 16.6, 16.6];
@@ -536,9 +545,8 @@
                 const row = createRangeRow(r.label, xfH * pH, xfV * pV);
                 table30.appendChild(row);
                 
-                if(r.label === "16-45") {
-                    currentRange1645Prob = row.cells[2].innerText;
-                }
+                if(r.label === "16-45") currentRange1645Prob = row.cells[2].innerText;
+                if(r.label === "0-30") currentRange030Prob = row.cells[2].innerText;
             });
         }
 
@@ -593,6 +601,7 @@
             if(mercado === "Over 0.5 2T") prob = document.getElementById('probO05_2T').innerText;
             if(mercado === "Over 1.5 2T") prob = document.getElementById('probO15_2T').innerText;
             if(mercado === "Over 0.5 (16-45)") prob = currentRange1645Prob;
+            if(mercado === "Over 0.5 (0-30)") prob = currentRange030Prob;
 
             const nuevaApuesta = {
                 id: Date.now(),
