@@ -309,7 +309,7 @@
     </div>
 
     <script>
-        let currentRange1645Prob = "-"; // Variable global para guardar la prob calculada
+        let currentRange1645Prob = "-"; // Variable global para guardar la prob del rango 16-45
 
         function updateTicker() {
             const savedMatches = JSON.parse(localStorage.getItem('betags_daily_matches')) || {};
@@ -536,9 +536,9 @@
                 const row = createRangeRow(r.label, xfH * pH, xfV * pV);
                 table30.appendChild(row);
                 
-                // Guardamos la prob de 16-45 específicamente
+                // Actualiza la probabilidad global para el rango específico 16-45
                 if(r.label === "16-45") {
-                   currentRange1645Prob = row.cells[2].innerText;
+                    currentRange1645Prob = row.cells[2].innerText;
                 }
             });
         }
@@ -593,6 +593,7 @@
             if(mercado === "Over 1.5 HT") prob = document.getElementById('probO15HT_Pre').innerText;
             if(mercado === "Over 0.5 2T") prob = document.getElementById('probO05_2T').innerText;
             if(mercado === "Over 1.5 2T") prob = document.getElementById('probO15_2T').innerText;
+            // Nueva lógica para capturar el rango exacto 16-45
             if(mercado === "Over 0.5 (16-45)") prob = currentRange1645Prob;
 
             const nuevaApuesta = {
