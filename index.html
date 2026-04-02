@@ -262,7 +262,7 @@
                             <thead><tr><th>Rango Primer Gol</th><th>Probabilidad</th><th>Tendencia</th></tr></thead>
                             <tbody id="openingGoalsTable">
                                 <tr><td>0 - 30</td><td id="probOG_030" class="text-white">-</td><td id="trend_030">-</td></tr>
-                                <tr><td>16 - 46</td><td id="probOG_1646" class="text-white">-</td><td id="trend_1646">-</td></tr>
+                                <tr><td>16 - 45</td><td id="probOG_1645" class="text-white">-</td><td id="trend_1645">-</td></tr>
                             </tbody>
                         </table>
                         <div class="p-3 bg-slate-900/60 rounded-lg border border-slate-700/50 flex flex-col justify-center">
@@ -584,30 +584,22 @@
         function calculateOpeningRefined() {
             if(!openingDataHome || !openingDataAway) {
                 document.getElementById('probOG_030').innerText = "Sin Datos";
-                document.getElementById('probOG_1646').innerText = "Sin Datos";
                 return;
             }
 
-            // CORRECCIÓN: Frecuencia promedio real por partido
+            // Frecuencia promedio real por partido para el tramo 0-30 (Min 0-15 + 16-30)
             const freqH030 = (openingDataHome.m015 + openingDataHome.m1630) / openingDataHome.totalMatches;
             const freqA030 = (openingDataAway.m015 + openingDataAway.m1630) / openingDataAway.totalMatches;
+            
+            // Calculamos la probabilidad combinada usando el promedio de apariciones
             const combined030 = ((freqH030 + freqA030) / 2) * 100;
 
-            const freqH1646 = (openingDataHome.m1630 + openingDataHome.m3145) / openingDataHome.totalMatches;
-            const freqA1646 = (openingDataAway.m1630 + openingDataAway.m3145) / openingDataAway.totalMatches;
-            const combined1646 = ((freqH1646 + freqA1646) / 2) * 100;
-
             const el030 = document.getElementById('probOG_030');
-            const el1646 = document.getElementById('probOG_1646');
-
             el030.innerText = combined030.toFixed(1) + "%";
-            el1646.innerText = combined1646.toFixed(1) + "%";
-
             el030.className = combined030 >= 65 ? "prob-green" : combined030 >= 50 ? "prob-yellow" : "prob-red";
-            el1646.className = combined1646 >= 65 ? "prob-green" : combined1646 >= 50 ? "prob-yellow" : "prob-red";
-
             document.getElementById('trend_030').innerText = combined030 > 60 ? "🔥 Alta" : "⚖️ Media";
-            document.getElementById('trend_1646').innerText = combined1646 > 60 ? "🔥 Alta" : "⚖️ Media";
+            
+            // Nota: El tramo 16-45 se actualiza dinámicamente desde renderRangeTables para mantener consistencia con Poisson
         }
 
         function renderRangeTables(xfH, xfV) {
@@ -625,15 +617,22 @@
                 const row = createRangeRow(r.label, xfH * pH, xfV * pV);
                 table30.appendChild(row);
                 
+                // Actualizar sección de Opening Goals para el tramo 16-45
                 if(r.label === "16-45") {
                     currentRange1645Prob = row.cells[2].innerText;
+                    const el1645 = document.getElementById('probOG_1645');
+                    el1645.innerText = currentRange1645Prob;
+                    const val = parseFloat(currentRange1645Prob);
+                    el1645.className = val >= 70 ? "prob-green" : val >= 60 ? "prob-yellow" : "prob-red";
+                    document.getElementById('trend_1646').innerText = val > 65 ? "🔥 Alta" : "⚖️ Media";
                 }
             });
         }
 
         function createRangeRow(label, xh, xv) {
             const lambda = xh + xv;
-            const rawProb = (1 - poisson(0, lambda)) * 100;
+            const p0 = Math.exp(-lambda);
+            const rawProb = (1 - p0) * 100;
             let c = "text-white"; if (rawProb >= 70) c = "prob-green"; else if (rawProb >= 60) c = "prob-yellow"; else if (rawProb >= 50) c = "prob-red";
             let pW = 0, pD = 0, pL = 0;
             for (let i = 0; i <= 4; i++) { for (let j = 0; j <= 4; j++) {
