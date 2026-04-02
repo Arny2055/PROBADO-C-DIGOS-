@@ -360,6 +360,9 @@
 
         let currentHomeSegments = [16,16,16,16,16,20];
         let currentAwaySegments = [16,16,16,16,16,20];
+        
+        // --- NUEVAS VARIABLES PARA EL RANGO 16-45 ---
+        let teamData1645 = { homeGF: 0, homeGA: 0, awayGF: 0, awayGA: 0, leagueAvgG: 0 };
 
         function parseStandingsTable(text) {
             if (!text) return { teams: {}, leagueAvg: 1.5 };
@@ -400,6 +403,42 @@
                 }
             }
             return [16.6, 16.6, 16.6, 16.6, 16.6, 16.6];
+        }
+
+        // --- NUEVA FUNCIÓN: PROMEDIO GOLES RANGO 16-45 ---
+        function getGfGaInRange(text, teamName, startIdx, endIdx) {
+            if (!text) return { gf: 0, ga: 0, gp: 1 };
+            const lines = text.split('\n');
+            for (let line of lines) {
+                const parts = line.split('\t').filter(p => p.trim() !== "");
+                if (parts.length >= 7 && parts[0].trim() === teamName) {
+                    let gfTotal = 0, gaTotal = 0;
+                    for(let i = startIdx; i <= endIdx; i++) {
+                        const score = parts[i+1].split('-');
+                        gfTotal += parseInt(score[0]) || 0;
+                        gaTotal += parseInt(score[1]) || 0;
+                    }
+                    return { gf: gfTotal, ga: gaTotal };
+                }
+            }
+            return { gf: 0, ga: 0 };
+        }
+
+        function getLeagueAvgRange(text, startIdx, endIdx) {
+            if (!text) return 0.5;
+            const lines = text.split('\n');
+            let totalG = 0, count = 0;
+            lines.forEach(line => {
+                const parts = line.split('\t').filter(p => p.trim() !== "");
+                if (parts.length >= 7) {
+                    for(let i = startIdx; i <= endIdx; i++) {
+                        const score = parts[i+1].split('-');
+                        totalG += (parseInt(score[0]) || 0) + (parseInt(score[1]) || 0);
+                    }
+                    count++;
+                }
+            });
+            return count > 0 ? (totalG / count) / 2 : 0.5; // Dividido entre 2 porque sumamos local y visita de cada fila
         }
 
         function getHTPercentageFromSegments(segments) {
@@ -474,10 +513,13 @@
             const awayName = document.getElementById('selectAway').value;
             const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
             if (!leagueHome || !homeName || !awayName || !db[leagueHome] || !db[leagueAway]) return;
+            
             const homeTableData = parseStandingsTable(db[leagueHome].local);
             const awayTableData = parseStandingsTable(db[leagueAway].away);
+            
             document.getElementById('avgLeagueHome').value = homeTableData.leagueAvg.toFixed(2);
             document.getElementById('avgLeagueAway').value = awayTableData.leagueAvg.toFixed(2);
+            
             if (homeTableData.teams[homeName]) {
                 document.getElementById('gfHome').value = homeTableData.teams[homeName].avgGf.toFixed(2);
                 document.getElementById('gaHome').value = homeTableData.teams[homeName].avgGa.toFixed(2);
@@ -486,8 +528,21 @@
                 document.getElementById('gfAway').value = awayTableData.teams[awayName].avgGf.toFixed(2);
                 document.getElementById('gaAway').value = awayTableData.teams[awayName].avgGa.toFixed(2);
             }
+            
             currentHomeSegments = getSegmentsArray(db[leagueHome].timesLocal, homeName);
             currentAwaySegments = getSegmentsArray(db[leagueAway].timesAway, awayName);
+            
+            // --- DATA 16-45 ---
+            const hRange = getGfGaInRange(db[leagueHome].timesLocal, homeName, 1, 2);
+            const aRange = getGfGaInRange(db[leagueAway].timesAway, awayName, 1, 2);
+            const lAvgRange = getLeagueAvgRange(db[leagueHome].timesLocal, 1, 2);
+            
+            teamData1645 = {
+                homeGF: hRange.gf, homeGA: hRange.ga,
+                awayGF: aRange.gf, awayGA: aRange.ga,
+                leagueAvgG: lAvgRange
+            };
+
             document.getElementById('percHTHome').value = getHTPercentageFromSegments(currentHomeSegments).toFixed(0);
             document.getElementById('percHTAway').value = getHTPercentageFromSegments(currentAwaySegments).toFixed(0);
         }
@@ -505,19 +560,32 @@
             const gaV = parseFloat(document.getElementById('gaAway').value);
             const perV_HT = parseFloat(document.getElementById('percHTAway').value) / 100;
             const isHybrid = document.getElementById('hybridToggle').checked;
+            
             if ([gfH, gfV, perH_HT, perV_HT].some(isNaN)) return;
+            
             const perH_2T = 1 - perH_HT;
             const perV_2T = 1 - perV_HT;
+            
             let xG_FT_H, xG_FT_V;
-            if (isHybrid) { xG_FT_H = gfH; xG_FT_V = gfV; }
-            else { xG_FT_H = (gfH / avgLH) * (gaV / avgLV) * avgLH; xG_FT_V = (gfV / avgLV) * (gaH / avgLH) * avgLV; }
-            const xG_HT_H = xG_FT_H * perH_HT; const xG_HT_V = xG_FT_V * perV_HT;
+            if (isHybrid) { 
+                xG_FT_H = gfH; xG_FT_V = gfV; 
+            } else { 
+                xG_FT_H = (gfH / avgLH) * (gaV / avgLV) * avgLH; 
+                xG_FT_V = (gfV / avgLV) * (gaH / avgLH) * avgLV; 
+            }
+            
+            const xG_HT_H = xG_FT_H * perH_HT; 
+            const xG_HT_V = xG_FT_V * perV_HT;
             processSection(xG_HT_H, xG_HT_V, "probO05HT", "probO15HT_Pre", "prob1HT", "probXHT", "prob2HT");
-            const xG_2T_H = xG_FT_H * perH_2T; const xG_2T_V = xG_FT_V * perV_2T;
+            
+            const xG_2T_H = xG_FT_H * perH_2T; 
+            const xG_2T_V = xG_FT_V * perV_2T;
             processSection(xG_2T_H, xG_2T_V, "probO05_2T", "probO15_2T", "prob1_2T", "probX_2T", "prob2_2T");
+            
             document.getElementById('resXgh').innerText = (xG_HT_H + xG_HT_V).toFixed(2);
             document.getElementById('resXgv').innerText = (xG_2T_H + xG_2T_V).toFixed(2);
             document.getElementById('xgProjectionBox').style.opacity = "1";
+            
             renderRangeTables(xG_FT_H, xG_FT_V);
         }
 
@@ -525,15 +593,39 @@
             const table15 = document.getElementById('table15min');
             const table30 = document.getElementById('table30min');
             table15.innerHTML = ""; table30.innerHTML = "";
+            
             const ranges15 = ["0-15", "16-30", "31-45", "46-60", "61-75", "76-90"];
             ranges15.forEach((label, i) => {
                 table15.appendChild(createRangeRow(label, xfH * (currentHomeSegments[i] / 100), xfV * (currentAwaySegments[i] / 100)));
             });
-            const ranges30 = [{ label: "0-30", idx: [0,1] }, { label: "16-45", idx: [1,2] }, { label: "46-75", idx: [3,4] }, { label: "61-90", idx: [4,5] }];
+            
+            const ranges30 = [
+                { label: "0-30", idx: [0,1] }, 
+                { label: "16-45", idx: [1,2] }, 
+                { label: "46-75", idx: [3,4] }, 
+                { label: "61-90", idx: [4,5] }
+            ];
+            
             ranges30.forEach(r => {
-                const pH = r.idx.reduce((acc, cur) => acc + currentHomeSegments[cur], 0) / 100;
-                const pV = r.idx.reduce((acc, cur) => acc + currentAwaySegments[cur], 0) / 100;
-                const row = createRangeRow(r.label, xfH * pH, xfV * pV);
+                let xh_final, xv_final;
+                
+                // Lógica Poisson 16-45 optimizada con promedios reales del rango
+                if(r.label === "16-45" && teamData1645.leagueAvgG > 0) {
+                    const attackH = teamData1645.homeGF / teamData1645.leagueAvgG;
+                    const defenseV = teamData1645.awayGA / teamData1645.leagueAvgG;
+                    const attackV = teamData1645.awayGF / teamData1645.leagueAvgG;
+                    const defenseH = teamData1645.homeGA / teamData1645.leagueAvgG;
+                    
+                    xh_final = attackH * defenseV * teamData1645.leagueAvgG;
+                    xv_final = attackV * defenseH * teamData1645.leagueAvgG;
+                } else {
+                    const pH = r.idx.reduce((acc, cur) => acc + currentHomeSegments[cur], 0) / 100;
+                    const pV = r.idx.reduce((acc, cur) => acc + currentAwaySegments[cur], 0) / 100;
+                    xh_final = xfH * pH;
+                    xv_final = xfV * pV;
+                }
+                
+                const row = createRangeRow(r.label, xh_final, xv_final);
                 table30.appendChild(row);
                 
                 if(r.label === "16-45") {
@@ -545,7 +637,11 @@
         function createRangeRow(label, xh, xv) {
             const lambda = xh + xv;
             const rawProb = (1 - poisson(0, lambda)) * 100;
-            let c = "text-white"; if (rawProb >= 70) c = "prob-green"; else if (rawProb >= 60) c = "prob-yellow"; else if (rawProb >= 50) c = "prob-red";
+            let c = "text-white"; 
+            if (rawProb >= 70) c = "prob-green"; 
+            else if (rawProb >= 60) c = "prob-yellow"; 
+            else if (rawProb >= 50) c = "prob-red";
+            
             let pW = 0, pD = 0, pL = 0;
             for (let i = 0; i <= 4; i++) { for (let j = 0; j <= 4; j++) {
                 const prob = poisson(i, xh) * poisson(j, xv);
