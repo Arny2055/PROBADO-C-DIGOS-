@@ -429,18 +429,16 @@
             return [16.6, 16.6, 16.6, 16.6, 16.6, 16.6];
         }
 
-        // NUEVA FUNCIÓN: Parsear datos de Opening Goals
         function getOpeningGoalsStats(text, teamName) {
             if (!text) return null;
             const lines = text.split('\n');
             for (let line of lines) {
                 const parts = line.split('\t').filter(p => p.trim() !== "");
-                // Buscamos coincidencia exacta de nombre de equipo
                 if (parts.length >= 8 && parts[0].trim() === teamName) {
                     return {
-                        m015: (parseInt(parts[1]) || 0) + (parseInt(parts[2]) || 0), // Anotados + Recibidos 0-15
-                        m1630: (parseInt(parts[3]) || 0) + (parseInt(parts[4]) || 0), // Anotados + Recibidos 16-30
-                        m3145: (parseInt(parts[5]) || 0) + (parseInt(parts[6]) || 0), // Anotados + Recibidos 31-45
+                        m015: (parseInt(parts[1]) || 0) + (parseInt(parts[2]) || 0), 
+                        m1630: (parseInt(parts[3]) || 0) + (parseInt(parts[4]) || 0), 
+                        m3145: (parseInt(parts[5]) || 0) + (parseInt(parts[6]) || 0), 
                         totalMatches: parseInt(parts[7]) || 1
                     };
                 }
@@ -539,7 +537,6 @@
             currentHomeSegments = getSegmentsArray(db[leagueHome].timesLocal, homeName);
             currentAwaySegments = getSegmentsArray(db[leagueAway].timesAway, awayName);
             
-            // Cargar datos de Apertura
             openingDataHome = getOpeningGoalsStats(db[leagueHome].openingLocal, homeName);
             openingDataAway = getOpeningGoalsStats(db[leagueAway].openingAway, awayName);
 
@@ -584,7 +581,6 @@
             calculateOpeningRefined();
         }
 
-        // NUEVA FUNCIÓN: Lógica refinada para el primer gol
         function calculateOpeningRefined() {
             if(!openingDataHome || !openingDataAway) {
                 document.getElementById('probOG_030').innerText = "Sin Datos";
@@ -592,12 +588,11 @@
                 return;
             }
 
-            // Frecuencia 0-30: (Goles en 0-15 + 16-30) / Partidos totales
+            // CORRECCIÓN: Frecuencia promedio real por partido
             const freqH030 = (openingDataHome.m015 + openingDataHome.m1630) / openingDataHome.totalMatches;
             const freqA030 = (openingDataAway.m015 + openingDataAway.m1630) / openingDataAway.totalMatches;
             const combined030 = ((freqH030 + freqA030) / 2) * 100;
 
-            // Frecuencia 16-46: (Goles en 16-30 + 31-45) / Partidos totales
             const freqH1646 = (openingDataHome.m1630 + openingDataHome.m3145) / openingDataHome.totalMatches;
             const freqA1646 = (openingDataAway.m1630 + openingDataAway.m3145) / openingDataAway.totalMatches;
             const combined1646 = ((freqH1646 + freqA1646) / 2) * 100;
@@ -608,7 +603,6 @@
             el030.innerText = combined030.toFixed(1) + "%";
             el1646.innerText = combined1646.toFixed(1) + "%";
 
-            // Estilos dinámicos
             el030.className = combined030 >= 65 ? "prob-green" : combined030 >= 50 ? "prob-yellow" : "prob-red";
             el1646.className = combined1646 >= 65 ? "prob-green" : combined1646 >= 50 ? "prob-yellow" : "prob-red";
 
