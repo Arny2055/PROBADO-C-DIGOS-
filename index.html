@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -250,30 +252,6 @@
                     </div>
                 </div>
 
-                <div class="glass-card p-5 rounded-xl border-t-2 border-cyan-400 bg-cyan-400/5">
-                    <h3 class="text-[11px] font-black uppercase text-cyan-400 mb-4 flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
-                        </svg>
-                        Predicción de Apertura (Opening Goals Data)
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <table class="range-table">
-                            <thead><tr><th>Rango Primer Gol</th><th>Probabilidad</th><th>Tendencia</th></tr></thead>
-                            <tbody id="openingGoalsTable">
-                                <tr><td>0 - 30</td><td id="probOG_030" class="text-white">-</td><td id="trend_030">-</td></tr>
-                                <tr><td>16 - 45</td><td id="probOG_1645" class="text-white">-</td><td id="trend_1645">-</td></tr>
-                            </tbody>
-                        </table>
-                        <div class="p-3 bg-slate-900/60 rounded-lg border border-slate-700/50 flex flex-col justify-center">
-                            <p class="text-[8px] text-slate-500 uppercase mb-1">Análisis de Datos Maestros</p>
-                            <p class="text-[10px] text-slate-300 leading-relaxed italic">
-                                Basado en la frecuencia de goles recibidos/anotados por el equipo local y visitante en sus respectivas tablas de "Opening Goals".
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="glass-card p-4 rounded-xl border-t-2 border-yellow-500">
                         <h3 class="text-[10px] font-bold uppercase text-yellow-500 mb-3 flex items-center gap-2">Rangos (15 min)</h3>
@@ -307,7 +285,6 @@
                                 <option value="Over 0.5 2T">Over 0.5 2T</option>
                                 <option value="Over 1.5 2T">Over 1.5 2T</option>
                                 <option value="Over 0.5 (16-45)">Over 0.5 (16-45)</option>
-                                <option value="GOL 0-30">Gol antes min 30</option>
                             </select>
                         </div>
                         <div>
@@ -335,8 +312,6 @@
 
     <script>
         let currentRange1645Prob = "-"; 
-        let openingDataHome = null;
-        let openingDataAway = null;
 
         function updateTicker() {
             const savedMatches = JSON.parse(localStorage.getItem('betags_daily_matches')) || {};
@@ -429,23 +404,6 @@
             return [16.6, 16.6, 16.6, 16.6, 16.6, 16.6];
         }
 
-        function getOpeningGoalsStats(text, teamName) {
-            if (!text) return null;
-            const lines = text.split('\n');
-            for (let line of lines) {
-                const parts = line.split('\t').filter(p => p.trim() !== "");
-                if (parts.length >= 8 && parts[0].trim() === teamName) {
-                    return {
-                        m015: (parseInt(parts[1]) || 0) + (parseInt(parts[2]) || 0), 
-                        m1630: (parseInt(parts[3]) || 0) + (parseInt(parts[4]) || 0), 
-                        m3145: (parseInt(parts[5]) || 0) + (parseInt(parts[6]) || 0), 
-                        totalMatches: parseInt(parts[7]) || 1
-                    };
-                }
-            }
-            return null;
-        }
-
         function getHTPercentageFromSegments(segments) {
             const firstHalf = segments[0] + segments[1] + segments[2];
             const total = segments.reduce((a, b) => a + b, 0);
@@ -518,13 +476,10 @@
             const awayName = document.getElementById('selectAway').value;
             const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
             if (!leagueHome || !homeName || !awayName || !db[leagueHome] || !db[leagueAway]) return;
-            
             const homeTableData = parseStandingsTable(db[leagueHome].local);
             const awayTableData = parseStandingsTable(db[leagueAway].away);
-            
             document.getElementById('avgLeagueHome').value = homeTableData.leagueAvg.toFixed(2);
             document.getElementById('avgLeagueAway').value = awayTableData.leagueAvg.toFixed(2);
-            
             if (homeTableData.teams[homeName]) {
                 document.getElementById('gfHome').value = homeTableData.teams[homeName].avgGf.toFixed(2);
                 document.getElementById('gaHome').value = homeTableData.teams[homeName].avgGa.toFixed(2);
@@ -533,13 +488,8 @@
                 document.getElementById('gfAway').value = awayTableData.teams[awayName].avgGf.toFixed(2);
                 document.getElementById('gaAway').value = awayTableData.teams[awayName].avgGa.toFixed(2);
             }
-            
             currentHomeSegments = getSegmentsArray(db[leagueHome].timesLocal, homeName);
             currentAwaySegments = getSegmentsArray(db[leagueAway].timesAway, awayName);
-            
-            openingDataHome = getOpeningGoalsStats(db[leagueHome].openingLocal, homeName);
-            openingDataAway = getOpeningGoalsStats(db[leagueAway].openingAway, awayName);
-
             document.getElementById('percHTHome').value = getHTPercentageFromSegments(currentHomeSegments).toFixed(0);
             document.getElementById('percHTAway').value = getHTPercentageFromSegments(currentAwaySegments).toFixed(0);
         }
@@ -557,49 +507,20 @@
             const gaV = parseFloat(document.getElementById('gaAway').value);
             const perV_HT = parseFloat(document.getElementById('percHTAway').value) / 100;
             const isHybrid = document.getElementById('hybridToggle').checked;
-            
             if ([gfH, gfV, perH_HT, perV_HT].some(isNaN)) return;
-            
             const perH_2T = 1 - perH_HT;
             const perV_2T = 1 - perV_HT;
-            
             let xG_FT_H, xG_FT_V;
             if (isHybrid) { xG_FT_H = gfH; xG_FT_V = gfV; }
             else { xG_FT_H = (gfH / avgLH) * (gaV / avgLV) * avgLH; xG_FT_V = (gfV / avgLV) * (gaH / avgLH) * avgLV; }
-            
             const xG_HT_H = xG_FT_H * perH_HT; const xG_HT_V = xG_FT_V * perV_HT;
             processSection(xG_HT_H, xG_HT_V, "probO05HT", "probO15HT_Pre", "prob1HT", "probXHT", "prob2HT");
-            
             const xG_2T_H = xG_FT_H * perH_2T; const xG_2T_V = xG_FT_V * perV_2T;
             processSection(xG_2T_H, xG_2T_V, "probO05_2T", "probO15_2T", "prob1_2T", "probX_2T", "prob2_2T");
-            
             document.getElementById('resXgh').innerText = (xG_HT_H + xG_HT_V).toFixed(2);
             document.getElementById('resXgv').innerText = (xG_2T_H + xG_2T_V).toFixed(2);
             document.getElementById('xgProjectionBox').style.opacity = "1";
-            
             renderRangeTables(xG_FT_H, xG_FT_V);
-            calculateOpeningRefined();
-        }
-
-        function calculateOpeningRefined() {
-            if(!openingDataHome || !openingDataAway) {
-                document.getElementById('probOG_030').innerText = "Sin Datos";
-                return;
-            }
-
-            // Frecuencia promedio real por partido para el tramo 0-30 (Min 0-15 + 16-30)
-            const freqH030 = (openingDataHome.m015 + openingDataHome.m1630) / openingDataHome.totalMatches;
-            const freqA030 = (openingDataAway.m015 + openingDataAway.m1630) / openingDataAway.totalMatches;
-            
-            // Calculamos la probabilidad combinada usando el promedio de apariciones
-            const combined030 = ((freqH030 + freqA030) / 2) * 100;
-
-            const el030 = document.getElementById('probOG_030');
-            el030.innerText = combined030.toFixed(1) + "%";
-            el030.className = combined030 >= 65 ? "prob-green" : combined030 >= 50 ? "prob-yellow" : "prob-red";
-            document.getElementById('trend_030').innerText = combined030 > 60 ? "🔥 Alta" : "⚖️ Media";
-            
-            // Nota: El tramo 16-45 se actualiza dinámicamente desde renderRangeTables para mantener consistencia con Poisson
         }
 
         function renderRangeTables(xfH, xfV) {
@@ -617,22 +538,15 @@
                 const row = createRangeRow(r.label, xfH * pH, xfV * pV);
                 table30.appendChild(row);
                 
-                // Actualizar sección de Opening Goals para el tramo 16-45
                 if(r.label === "16-45") {
                     currentRange1645Prob = row.cells[2].innerText;
-                    const el1645 = document.getElementById('probOG_1645');
-                    el1645.innerText = currentRange1645Prob;
-                    const val = parseFloat(currentRange1645Prob);
-                    el1645.className = val >= 70 ? "prob-green" : val >= 60 ? "prob-yellow" : "prob-red";
-                    document.getElementById('trend_1646').innerText = val > 65 ? "🔥 Alta" : "⚖️ Media";
                 }
             });
         }
 
         function createRangeRow(label, xh, xv) {
             const lambda = xh + xv;
-            const p0 = Math.exp(-lambda);
-            const rawProb = (1 - p0) * 100;
+            const rawProb = (1 - poisson(0, lambda)) * 100;
             let c = "text-white"; if (rawProb >= 70) c = "prob-green"; else if (rawProb >= 60) c = "prob-yellow"; else if (rawProb >= 50) c = "prob-red";
             let pW = 0, pD = 0, pL = 0;
             for (let i = 0; i <= 4; i++) { for (let j = 0; j <= 4; j++) {
@@ -681,7 +595,6 @@
             if(mercado === "Over 0.5 2T") prob = document.getElementById('probO05_2T').innerText;
             if(mercado === "Over 1.5 2T") prob = document.getElementById('probO15_2T').innerText;
             if(mercado === "Over 0.5 (16-45)") prob = currentRange1645Prob;
-            if(mercado === "GOL 0-30") prob = document.getElementById('probOG_030').innerText;
 
             const nuevaApuesta = {
                 id: Date.now(),
