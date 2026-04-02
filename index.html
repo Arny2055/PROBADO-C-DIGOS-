@@ -492,44 +492,78 @@
             document.getElementById('percHTAway').value = getHTPercentageFromSegments(currentAwaySegments).toFixed(0);
         }
 
-        function factorial(n) { return (n <= 1) ? 1 : n * factorial(n - 1); }
-        function poisson(k, lambda) { return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial(k); }
+        function factorial(n) {
+            if (n < 0 || !Number.isInteger(n)) return 1;
+            return (n <= 1) ? 1 : n * factorial(n - 1);
+        }
+
+        function poisson(k, lambda) {
+            if (lambda <= 0 || k < 0) return 0;
+            return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial(k);
+        }
 
         function calculateAllProbs() {
-            const avgLH = parseFloat(document.getElementById('avgLeagueHome').value);
-            const avgLV = parseFloat(document.getElementById('avgLeagueAway').value);
+            const avgLH = parseFloat(document.getElementById('avgLeagueHome').value) || 1.5;
+            const avgLV = parseFloat(document.getElementById('avgLeagueAway').value) || 1.5;
             const gfH = parseFloat(document.getElementById('gfHome').value);
             const gaH = parseFloat(document.getElementById('gaHome').value);
-            const perH_HT = parseFloat(document.getElementById('percHTHome').value) / 100;
+            const perH_HT = parseFloat(document.getElementById('percHTHome').value) / 100 || 0.5;
             const gfV = parseFloat(document.getElementById('gfAway').value);
             const gaV = parseFloat(document.getElementById('gaAway').value);
-            const perV_HT = parseFloat(document.getElementById('percHTAway').value) / 100;
+            const perV_HT = parseFloat(document.getElementById('percHTAway').value) / 100 || 0.5;
             const isHybrid = document.getElementById('hybridToggle').checked;
-            if ([gfH, gfV, perH_HT, perV_HT].some(isNaN)) return;
+
+            if ([gfH, gaH, gfV, gaV].some(isNaN)) return;
+
             const perH_2T = 1 - perH_HT;
             const perV_2T = 1 - perV_HT;
+
             let xG_FT_H, xG_FT_V;
-            if (isHybrid) { xG_FT_H = gfH; xG_FT_V = gfV; }
-            else { xG_FT_H = (gfH / avgLH) * (gaV / avgLV) * avgLH; xG_FT_V = (gfV / avgLV) * (gaH / avgLH) * avgLV; }
-            const xG_HT_H = xG_FT_H * perH_HT; const xG_HT_V = xG_FT_V * perV_HT;
+
+            if (isHybrid) {
+                xG_FT_H = gfH;
+                xG_FT_V = gfV;
+            } else {
+                // Fórmula corregida y más precisa
+                xG_FT_H = gfH * (gaV / avgLV);
+                xG_FT_V = gfV * (gaH / avgLH);
+            }
+
+            const xG_HT_H = xG_FT_H * perH_HT;
+            const xG_HT_V = xG_FT_V * perV_HT;
+
             processSection(xG_HT_H, xG_HT_V, "probO05HT", "probO15HT_Pre", "prob1HT", "probXHT", "prob2HT");
-            const xG_2T_H = xG_FT_H * perH_2T; const xG_2T_V = xG_FT_V * perV_2T;
+
+            const xG_2T_H = xG_FT_H * perH_2T;
+            const xG_2T_V = xG_FT_V * perV_2T;
+
             processSection(xG_2T_H, xG_2T_V, "probO05_2T", "probO15_2T", "prob1_2T", "probX_2T", "prob2_2T");
+
             document.getElementById('resXgh').innerText = (xG_HT_H + xG_HT_V).toFixed(2);
             document.getElementById('resXgv').innerText = (xG_2T_H + xG_2T_V).toFixed(2);
             document.getElementById('xgProjectionBox').style.opacity = "1";
+
             renderRangeTables(xG_FT_H, xG_FT_V);
         }
 
         function renderRangeTables(xfH, xfV) {
             const table15 = document.getElementById('table15min');
             const table30 = document.getElementById('table30min');
-            table15.innerHTML = ""; table30.innerHTML = "";
+            table15.innerHTML = ""; 
+            table30.innerHTML = "";
+
             const ranges15 = ["0-15", "16-30", "31-45", "46-60", "61-75", "76-90"];
             ranges15.forEach((label, i) => {
                 table15.appendChild(createRangeRow(label, xfH * (currentHomeSegments[i] / 100), xfV * (currentAwaySegments[i] / 100)));
             });
-            const ranges30 = [{ label: "0-30", idx: [0,1] }, { label: "16-45", idx: [1,2] }, { label: "46-75", idx: [3,4] }, { label: "61-90", idx: [4,5] }];
+
+            const ranges30 = [
+                { label: "0-30", idx: [0,1] }, 
+                { label: "16-45", idx: [1,2] }, 
+                { label: "46-75", idx: [3,4] }, 
+                { label: "61-90", idx: [4,5] }
+            ];
+
             ranges30.forEach(r => {
                 const pH = r.idx.reduce((acc, cur) => acc + currentHomeSegments[cur], 0) / 100;
                 const pV = r.idx.reduce((acc, cur) => acc + currentAwaySegments[cur], 0) / 100;
@@ -545,12 +579,21 @@
         function createRangeRow(label, xh, xv) {
             const lambda = xh + xv;
             const rawProb = (1 - poisson(0, lambda)) * 100;
-            let c = "text-white"; if (rawProb >= 70) c = "prob-green"; else if (rawProb >= 60) c = "prob-yellow"; else if (rawProb >= 50) c = "prob-red";
+            let c = "text-white"; 
+            if (rawProb >= 70) c = "prob-green"; 
+            else if (rawProb >= 60) c = "prob-yellow"; 
+            else if (rawProb >= 50) c = "prob-red";
+
             let pW = 0, pD = 0, pL = 0;
-            for (let i = 0; i <= 4; i++) { for (let j = 0; j <= 4; j++) {
-                const prob = poisson(i, xh) * poisson(j, xv);
-                if (i > j) pW += prob; else if (i === j) pD += prob; else pL += prob;
-            }}
+            for (let i = 0; i <= 5; i++) { 
+                for (let j = 0; j <= 5; j++) {
+                    const prob = poisson(i, xh) * poisson(j, xv);
+                    if (i > j) pW += prob; 
+                    else if (i === j) pD += prob; 
+                    else pL += prob;
+                }
+            }
+
             const tr = document.createElement('tr');
             tr.innerHTML = `<td>${label}</td><td>${lambda.toFixed(2)}</td><td class="${c}">${rawProb.toFixed(1)}%</td><td class="text-blue-400">${(pW * 100).toFixed(0)}%</td><td class="text-slate-400">${(pD * 100).toFixed(0)}%</td><td class="text-green-400">${(pL * 100).toFixed(0)}%</td>`;
             return tr;
@@ -560,15 +603,24 @@
             const lambda = xh + xv;
             const p0 = poisson(0, lambda);
             const rawProb05 = (1 - p0) * 100;
+            
             const el05 = document.getElementById(id05);
             el05.innerText = rawProb05.toFixed(1) + "%";
-            if (rawProb05 >= 60) el05.classList.add('high-prob-glow'); else el05.classList.remove('high-prob-glow');
+            if (rawProb05 >= 60) el05.classList.add('high-prob-glow'); 
+            else el05.classList.remove('high-prob-glow');
+
             document.getElementById(id15).innerText = ((1 - (p0 + poisson(1, lambda))) * 100).toFixed(1) + "%";
+
             let pW = 0, pD = 0, pL = 0;
-            for (let i = 0; i <= 6; i++) { for (let j = 0; j <= 6; j++) {
-                const prob = poisson(i, xh) * poisson(j, xv);
-                if (i > j) pW += prob; else if (i === j) pD += prob; else pL += prob;
-            }}
+            for (let i = 0; i <= 6; i++) { 
+                for (let j = 0; j <= 6; j++) {
+                    const prob = poisson(i, xh) * poisson(j, xv);
+                    if (i > j) pW += prob; 
+                    else if (i === j) pD += prob; 
+                    else pL += prob;
+                }
+            }
+
             document.getElementById(id1).innerText = (pW * 100).toFixed(1) + "%";
             document.getElementById(idX).innerText = (pD * 100).toFixed(1) + "%";
             document.getElementById(id2).innerText = (pL * 100).toFixed(1) + "%";
