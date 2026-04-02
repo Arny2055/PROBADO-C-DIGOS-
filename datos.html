@@ -77,6 +77,8 @@
                         <button onclick="openTab(event, 'tabAway')" class="tab-btn px-4 py-4 font-bold uppercase tracking-wider text-[10px]">Score Visitante</button>
                         <button onclick="openTab(event, 'tabTiemposLocal')" class="tab-btn px-4 py-4 font-bold uppercase tracking-wider text-[10px]">Tiempos (Local)</button>
                         <button onclick="openTab(event, 'tabTiemposAway')" class="tab-btn px-4 py-4 font-bold uppercase tracking-wider text-[10px]">Tiempos (Visita)</button>
+                        <button onclick="openTab(event, 'tabOpeningLocal')" class="tab-btn px-4 py-4 font-bold uppercase tracking-wider text-[10px]">Opening Goals (Local)</button>
+                        <button onclick="openTab(event, 'tabOpeningAway')" class="tab-btn px-4 py-4 font-bold uppercase tracking-wider text-[10px]">Opening Goals (Visita)</button>
                     </div>
 
                     <div class="p-6">
@@ -91,6 +93,12 @@
                         </div>
                         <div id="tabTiemposAway" class="tab-content space-y-4">
                             <textarea id="dataTimesAway" class="input-field h-80 font-mono text-[10px]" placeholder="Pega aquí la tabla: Goals per time segment (away)..."></textarea>
+                        </div>
+                        <div id="tabOpeningLocal" class="tab-content space-y-4">
+                            <textarea id="dataOpeningLocal" class="input-field h-80 font-mono text-[10px]" placeholder="Pega aquí la tabla: Opening Goals (Home)..."></textarea>
+                        </div>
+                        <div id="tabOpeningAway" class="tab-content space-y-4">
+                            <textarea id="dataOpeningAway" class="input-field h-80 font-mono text-[10px]" placeholder="Pega aquí la tabla: Opening Goals (Away)..."></textarea>
                         </div>
                     </div>
                 </div>
@@ -117,6 +125,8 @@
                 away: document.getElementById('dataAway').value,
                 timesLocal: document.getElementById('dataTimesLocal').value,
                 timesAway: document.getElementById('dataTimesAway').value,
+                openingLocal: document.getElementById('dataOpeningLocal').value,
+                openingAway: document.getElementById('dataOpeningAway').value,
                 lastUpdated: now
             };
             let allLeagues = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
@@ -134,8 +144,21 @@
             allLeagues[league].away = document.getElementById('dataAway').value;
             allLeagues[league].timesLocal = document.getElementById('dataTimesLocal').value;
             allLeagues[league].timesAway = document.getElementById('dataTimesAway').value;
+            allLeagues[league].openingLocal = document.getElementById('dataOpeningLocal').value;
+            allLeagues[league].openingAway = document.getElementById('dataOpeningAway').value;
             localStorage.setItem('betags_leagues_db', JSON.stringify(allLeagues));
             showStatus();
+        }
+
+        function clearFields() {
+            document.getElementById('leagueName').value = '';
+            document.getElementById('dataLocal').value = '';
+            document.getElementById('dataAway').value = '';
+            document.getElementById('dataTimesLocal').value = '';
+            document.getElementById('dataTimesAway').value = '';
+            document.getElementById('dataOpeningLocal').value = '';
+            document.getElementById('dataOpeningAway').value = '';
+            document.getElementById('lastUpdatedDisplay').innerText = '';
         }
 
         function showStatus() {
@@ -163,10 +186,13 @@
             const allLeagues = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
             const data = allLeagues[name];
             document.getElementById('leagueName').value = name;
-            document.getElementById('dataLocal').value = data.local;
-            document.getElementById('dataAway').value = data.away;
-            document.getElementById('dataTimesLocal').value = data.timesLocal;
-            document.getElementById('dataTimesAway').value = data.timesAway;
+            document.getElementById('dataLocal').value = data.local || '';
+            document.getElementById('dataAway').value = data.away || '';
+            document.getElementById('dataTimesLocal').value = data.timesLocal || '';
+            document.getElementById('dataTimesAway').value = data.timesAway || '';
+            document.getElementById('dataOpeningLocal').value = data.openingLocal || '';
+            document.getElementById('dataOpeningAway').value = data.openingAway || '';
+            document.getElementById('lastUpdatedDisplay').innerText = data.lastUpdated || '';
         }
 
         function deleteLeague(name) {
