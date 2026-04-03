@@ -59,7 +59,7 @@
             </select>
             <select id="filterMercado" class="input-field text-[10px]" onchange="renderTable()">
                 <option value="">Todos los Mercados</option>
-                <option value="Over 0.5 HT">Over 0.5 HT</option>
+                <option value="Over x.5 HT">Over x.5 HT</option>
                 <option value="Over 1.5 HT">Over 1.5 HT</option>
                 <option value="Over 0.5 2T">Over 0.5 2T</option>
                 <option value="Over 1.5 2T">Over 1.5 2T</option>
@@ -154,13 +154,17 @@
             });
 
             let filtered = registro.filter(item => {
+                // Mejora del filtro para que coincida con la nueva nomenclatura o la anterior (si existiera)
+                const matchMercado = (fMercado === "") || 
+                                     (item.mercado === fMercado) || 
+                                     (fMercado === "Over x.5 HT" && item.mercado === "Over 0.5 HT");
+
                 return (!fLiga || item.liga === fLiga) &&
-                       (fMercado === "" || item.mercado === fMercado) &&
+                       matchMercado &&
                        (item.cuota >= fCuota);
             });
 
             filtered.reverse().forEach(apuesta => {
-                // Lógica de colores para el estado
                 let statusClasses = "input-field text-[10px] font-bold ";
                 if (apuesta.estado === 'Ganada') statusClasses += "bg-emerald-900/40 border-emerald-500 text-emerald-400";
                 else if (apuesta.estado === 'Perdida') statusClasses += "bg-red-900/40 border-red-500 text-red-400";
@@ -249,8 +253,7 @@
             document.getElementById('statDrawdown').innerText = maxDrawdown.toFixed(2) + " u";
             document.getElementById('statProfit').innerText = profit.toFixed(2) + " u";
             
-            // P-Value aproximado (Simplificado para el ejemplo)
-            const p = 0.5; // Probabilidad base
+            const p = 0.5; 
             const n = finished.length;
             const z = (wins - n * p) / Math.sqrt(n * p * (1 - p));
             document.getElementById('statPValue').innerText = Math.abs(z).toFixed(2);
