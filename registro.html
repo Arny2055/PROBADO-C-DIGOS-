@@ -154,10 +154,10 @@
             });
 
             let filtered = registro.filter(item => {
-                // Mejora del filtro para que coincida con la nueva nomenclatura o la anterior (si existiera)
+                // Lógica de filtrado flexible: coincide con el valor exacto o mapea "Over x.5 HT" a variantes
                 const matchMercado = (fMercado === "") || 
                                      (item.mercado === fMercado) || 
-                                     (fMercado === "Over x.5 HT" && item.mercado === "Over 0.5 HT");
+                                     (fMercado === "Over x.5 HT" && (item.mercado === "Over 0.5 HT" || item.mercado === "Over x.5 HT"));
 
                 return (!fLiga || item.liga === fLiga) &&
                        matchMercado &&
