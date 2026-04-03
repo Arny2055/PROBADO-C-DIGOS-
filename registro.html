@@ -13,6 +13,11 @@
         .editable-input { background: transparent; border: 1px solid transparent; color: #60a5fa; width: 50px; transition: all 0.2s; }
         .editable-input:hover { border-color: #334155; background: rgba(15, 23, 42, 0.5); }
         .editable-input:focus { border-color: #22d3ee; background: #0f172a; outline: none; }
+        /* Variante para input de texto más ancho */
+        .editable-input-text { background: transparent; border: 1px solid transparent; color: #f8fafc; width: 100%; transition: all 0.2s; font-weight: 600; }
+        .editable-input-text:hover { border-color: #334155; background: rgba(15, 23, 42, 0.5); }
+        .editable-input-text:focus { border-color: #22d3ee; background: #0f172a; outline: none; }
+        
         th { text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-size: 9px; padding: 10px; }
         td { padding: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
         .status-win { color: #10b981; font-weight: bold; }
@@ -116,6 +121,18 @@
             }
         }
 
+        // NUEVA FUNCIÓN: Actualizar Mercado
+        function updateMercado(id, newVal) {
+            let registro = JSON.parse(localStorage.getItem('betags_registro')) || [];
+            const index = registro.findIndex(a => a.id === id);
+            if (index !== -1) {
+                registro[index].mercado = newVal;
+                localStorage.setItem('betags_registro', JSON.stringify(registro));
+                // No llamamos a renderTable aquí para no perder el foco mientras se escribe, 
+                // o bien se usa onchange en el HTML.
+            }
+        }
+
         function deleteApuesta(id) {
             if(confirm('¿Eliminar esta apuesta?')) {
                 let registro = JSON.parse(localStorage.getItem('betags_registro')) || [];
@@ -154,10 +171,9 @@
             });
 
             let filtered = registro.filter(item => {
-                // Lógica de filtrado flexible: coincide con el valor exacto o mapea "Over x.5 HT" a variantes
                 const matchMercado = (fMercado === "") || 
                                      (item.mercado === fMercado) || 
-                                     (fMercado === "Over x.5 HT" && (item.mercado === "Over 0.5 HT" || item.mercado === "Over x.5 HT"));
+                                     (fMercado === "Over x.5 HT" && item.mercado === "Over 0.5 HT");
 
                 return (!fLiga || item.liga === fLiga) &&
                        matchMercado &&
@@ -178,7 +194,7 @@
                     </td>
                     <td>${apuesta.evento}</td>
                     <td>
-                        <div class="font-semibold">${apuesta.mercado}</div>
+                        <input type="text" value="${apuesta.mercado}" onchange="updateMercado(${apuesta.id}, this.value)" class="editable-input-text">
                         <div class="text-[9px] text-slate-400">Modelo: ${apuesta.prob}</div>
                     </td>
                     <td>
