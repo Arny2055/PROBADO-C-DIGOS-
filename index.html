@@ -278,7 +278,7 @@
                         <div>
                             <label class="text-[9px] text-slate-400 uppercase block mb-1">Mercado</label>
                             <select id="regMercado" class="input-field">
-                                <option value="Over 0.5 HT">Over 0.5 1T</option>
+                                <option value="Over x.5 HT">Over 0.5 1T</option>
                                 <option value="Over 1.5 HT">Over 1.5 1T</option>
                                 <option value="Over 0.5 2T">Over 0.5 2T</option>
                                 <option value="Over 1.5 2T">Over 1.5 2T</option>
@@ -524,7 +524,6 @@
                 xG_FT_H = gfH;
                 xG_FT_V = gfV;
             } else {
-                // Fórmula corregida y más precisa
                 xG_FT_H = gfH * (gaV / avgLV);
                 xG_FT_V = gfV * (gaH / avgLH);
             }
@@ -630,7 +629,7 @@
             const league = document.getElementById('selectLeague').value;
             const home = document.getElementById('selectHome').value;
             const away = document.getElementById('selectAway').value;
-            const mercado = document.getElementById('regMercado').value;
+            let mercado = document.getElementById('regMercado').value;
             const minuto = document.getElementById('regMinuto').value;
             const cuota = parseFloat(document.getElementById('regCuota').value);
             
@@ -640,7 +639,8 @@
             }
 
             let prob = "0%";
-            if(mercado === "Over 0.5 HT") prob = document.getElementById('probO05HT').innerText;
+            // Mapeo lógico para que Over x.5 HT obtenga la probabilidad de Over 0.5 HT
+            if(mercado === "Over x.5 HT") prob = document.getElementById('probO05HT').innerText;
             if(mercado === "Over 1.5 HT") prob = document.getElementById('probO15HT_Pre').innerText;
             if(mercado === "Over 0.5 2T") prob = document.getElementById('probO05_2T').innerText;
             if(mercado === "Over 1.5 2T") prob = document.getElementById('probO15_2T').innerText;
@@ -651,7 +651,7 @@
                 fecha: new Date().toLocaleDateString(),
                 liga: league,
                 evento: `${home} vs ${away}`,
-                mercado: mercado,
+                mercado: mercado, // Se guarda como Over x.5 HT
                 prob: prob,
                 minuto: minuto || "Pre",
                 cuota: cuota,
