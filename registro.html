@@ -30,7 +30,7 @@
             </div>
         </header>
 
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
             <div class="glass-card p-4 rounded-xl border-b-2 border-blue-500">
                 <p class="text-[9px] text-slate-400 uppercase">Win Rate</p>
                 <p id="statWinRate" class="text-2xl font-black text-white">0%</p>
@@ -49,13 +49,12 @@
             </div>
             <div class="glass-card p-4 rounded-xl border-b-2 border-yellow-500">
                 <p class="text-[9px] text-slate-400 uppercase">Profit</p>
-                <p id="statProfit" class="text-2xl font-black text-white">0 u</p>
+                <p id="statProfit" class="text-2xl font-black text-white">0u</p>
             </div>
         </div>
 
         <div class="glass-card p-4 rounded-xl mb-4 flex flex-wrap gap-4 items-center">
-            <input type="text" id="filterLiga" placeholder="Filtrar Liga..." class="input-field text-[10px]" oninput="renderTable()">
-            <select id="ligaSelect" class="input-field text-[10px]" onchange="filterSelectedLiga()">
+            <select id="filterLiga" class="input-field text-[10px]" onchange="renderTable()">
                 <option value="">Todas las Ligas</option>
             </select>
             <select id="filterMercado" class="input-field text-[10px]" onchange="renderTable()">
@@ -90,34 +89,31 @@
         function renderTable() {
             const registro = JSON.parse(localStorage.getItem('betags_registro')) || [];
             const cuerpo = document.getElementById('tablaCuerpo');
-            const fLiga = document.getElementById('filterLiga').value.toLowerCase();
+            const fLiga = document.getElementById('filterLiga').value;
             const fMercado = document.getElementById('filterMercado').value;
             const fCuota = parseFloat(document.getElementById('filterCuota').value) || 0;
-            const ligaDropdown = document.getElementById('ligaSelect');
 
             cuerpo.innerHTML = "";
-            ligaDropdown.innerHTML = `<option value="">Todas las Ligas</option>`;
 
-            let ligaSet = new Set();
-            const filtered = registro.filter(item => {
-                const match = item.liga.toLowerCase().includes(fLiga) &&
-                    (fMercado === "" || item.mercado === fMercado) &&
-                    (item.cuota >= fCuota);
-                if (match) ligaSet.add(item.liga);
-                return match;
-            });
-
-            [...ligaSet].forEach(liga => {
+            // Generar ligas únicas
+            const ligas = [...new Set(registro.map(item => item.liga))];
+            const ligaSelect = document.getElementById('filterLiga');
+            ligaSelect.innerHTML = '<option value="">Todas las Ligas</option>';
+            ligas.forEach(liga => {
                 const option = document.createElement('option');
                 option.value = liga;
                 option.textContent = liga;
-                ligaDropdown.appendChild(option);
+                ligaSelect.appendChild(option);
+            });
+
+            let filtered = registro.filter(item => {
+                return (!fLiga || item.liga === fLiga) &&
+                       (fMercado === "" || item.mercado === fMercado) &&
+                       (item.cuota >= fCuota);
             });
 
             filtered.reverse().forEach(apuesta => {
                 const tr = document.createElement('tr');
-                const probRangoStr = apuesta.probRango ? ` | <span class="text-cyan-500">16-45: ${apuesta.probRango}</span>` : "";
-
                 tr.innerHTML = `
                     <td>
                         <div class="font-bold text-cyan-400">${apuesta.liga}</div>
@@ -126,24 +122,20 @@
                     <td>${apuesta.evento}</td>
                     <td>
                         <div class="font-semibold">${apuesta.mercado}</div>
-                        <div class="text-[9px] text-slate-400">Modelo: ${apuesta.prob}${probRangoStr}</div>
+                        <div class="text-[9px] text-slate-400">Modelo: ${apuesta.prob}</div>
                     </td>
                     <td>
                         <div class="flex items-center gap-1">
                             <span class="text-slate-500">Min:</span>
-                            <input type="number" value="${apuesta.minuto}" 
-                                onchange="updateMinuto(${apuesta.id}, this.value)" 
-                                class="editable-input text-blue-400 font-semibold">
+                            <input type="number" value="${apuesta.minuto}" onchange="updateMinuto(${apuesta.id}, this.value)" class="editable-input text-blue-400 font-semibold">
                         </div>
                         <div class="flex items-center gap-1">
                             <span class="text-slate-500">@</span>
-                            <input type="number" step="0.01" value="${parseFloat(apuesta.cuota).toFixed(2)}" 
-                                onchange="updateCuota(${apuesta.id}, this.value)" 
-                                class="editable-input text-white font-bold">
+                            <input type="number" step="0.01" value="${parseFloat(apuesta.cuota).toFixed(2)}" onchange="updateCuota(${apuesta.id}, this.value)" class="editable-input text-white font-bold">
                         </div>
                     </td>
                     <td>
-                        <select onchange="updateStatus(${apuesta.id}, this.value)" class="input-field text-[10px] ${getStatusClass(apuesta.estado)}">
+                        <select onchange="updateStatus(${apuesta.id}, this.value)" class="input-field text-[10px]">
                             <option value="Pendiente" ${apuesta.estado === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
                             <option value="Ganada" ${apuesta.estado === 'Ganada' ? 'selected' : ''}>Ganada</option>
                             <option value="Perdida" ${apuesta.estado === 'Perdida' ? 'selected' : ''}>Perdida</option>
@@ -162,12 +154,6 @@
             calculateStats(filtered);
         }
 
-        function filterSelectedLiga() {
-            const selectedLiga = document.getElementById('ligaSelect').value;
-            document.getElementById('filterLiga').value = selectedLiga;
-            renderTable();
-        }
-
         function calculateStats(data) {
             const finished = data.filter(a => a.estado !== "Pendiente");
             if (finished.length === 0) {
@@ -175,9 +161,9 @@
                 document.getElementById('statYield').innerText = "0%";
                 document.getElementById('statDrawdown').innerText = "0u";
                 document.getElementById('statPValue').innerText = "0.00";
-                document.getElementById('statProfit').innerText = "0 u";
+                document.getElementById('statProfit').innerText = "0u";
                 return;
-            }
+            };
 
             const wins = finished.filter(a => a.estado === "Ganada").length;
             const winRate = (wins / finished.length) * 100;
@@ -191,9 +177,12 @@
 
             finished.forEach(a => {
                 if (a.estado === "Ganada") {
-                    balance += parseFloat(a.cuota) - 1;
+                    const ganancia = parseFloat(a.cuota) - 1;
+                    balance += ganancia;
+                    profit += ganancia; // Sumar al profit total
                 } else {
                     balance -= 1;
+                    profit -= 1; // Restar del profit total
                 }
                 if (balance > peak) peak = balance;
                 currentDrawdown = peak - balance;
@@ -202,73 +191,10 @@
 
             const yieldVal = (balance / turnover) * 100;
 
-            const avgOdds = finished.reduce((acc, cur) => acc + parseFloat(cur.cuota), 0) / finished.length;
-            const expectedWinRate = 1 / avgOdds;
-            const expectedWins = finished.length * expectedWinRate;
-            const sd = Math.sqrt(finished.length * expectedWinRate * (1 - expectedWinRate));
-            const zScore = sd === 0 ? 0 : (wins - expectedWins) / sd;
-            let pValue = 0.5;
-
-            if (zScore !== 0) {
-                const t = 1 / (1 + 0.2316419 * Math.abs(zScore));
-                const d = 0.3989422804014327 * Math.exp(-0.5 * zScore * zScore);
-                pValue = d * t * (0.319381530 + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
-                if (zScore > 0) pValue = 1 - pValue;
-            }
-
             document.getElementById('statWinRate').innerText = winRate.toFixed(1) + "%";
             document.getElementById('statYield').innerText = (yieldVal > 0 ? "+" : "") + yieldVal.toFixed(2) + "%";
             document.getElementById('statDrawdown').innerText = maxDrawdown.toFixed(2) + " u";
-            document.getElementById('statPValue').innerText = pValue.toFixed(4);
-            document.getElementById('statProfit').innerText = balance.toFixed(2) + " u";
-
-            const pBox = document.getElementById('statPValue');
-            pBox.className = "text-2xl font-black " + (pValue < 0.05 ? "text-emerald-400" : "text-white");
-        }
-
-        function updateStatus(id, newStatus) {
-            let registro = JSON.parse(localStorage.getItem('betags_registro')) || [];
-            const index = registro.findIndex(a => a.id === id);
-            if (index !== -1) {
-                registro[index].estado = newStatus;
-                localStorage.setItem('betags_registro', JSON.stringify(registro));
-                renderTable();
-            }
-        }
-
-        function updateMinuto(id, newMin) {
-            let registro = JSON.parse(localStorage.getItem('betags_registro')) || [];
-            const index = registro.findIndex(a => a.id === id);
-            if (index !== -1) {
-                registro[index].minuto = parseInt(newMin) || 0;
-                localStorage.setItem('betags_registro', JSON.stringify(registro));
-            }
-        }
-
-        function updateCuota(id, newCuota) {
-            let registro = JSON.parse(localStorage.getItem('betags_registro')) || [];
-            const index = registro.findIndex(a => a.id === id);
-            if (index !== -1) {
-                registro[index].cuota = parseFloat(newCuota) || 1.01;
-                localStorage.setItem('betags_registro', JSON.stringify(registro));
-                renderTable();
-            }
-        }
-
-        function deleteApuesta(id) {
-            if (confirm("¿Seguro que quieres borrar esta apuesta?")) {
-                let registro = JSON.parse(localStorage.getItem('betags_registro')) || [];
-                registro = registro.filter(a => a.id !== id);
-                localStorage.setItem('betags_registro', JSON.stringify(registro));
-                renderTable();
-            }
-        }
-
-        function clearAll() {
-            if (confirm("¡ATENCIÓN! ¿Estás seguro de borrar TODO el historial? Esta acción no se puede deshacer.")) {
-                localStorage.removeItem('betags_registro');
-                renderTable();
-            }
+            document.getElementById('statProfit').innerText = profit.toFixed(2) + " u";
         }
 
         window.onload = renderTable;
