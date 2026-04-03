@@ -86,6 +86,52 @@
     </div>
 
     <script>
+        function updateStatus(id, newStatus) {
+            let registro = JSON.parse(localStorage.getItem('betags_registro')) || [];
+            const index = registro.findIndex(a => a.id === id);
+            if (index !== -1) {
+                registro[index].estado = newStatus;
+                localStorage.setItem('betags_registro', JSON.stringify(registro));
+                renderTable();
+            }
+        }
+
+        function updateMinuto(id, newVal) {
+            let registro = JSON.parse(localStorage.getItem('betags_registro')) || [];
+            const index = registro.findIndex(a => a.id === id);
+            if (index !== -1) {
+                registro[index].minuto = newVal;
+                localStorage.setItem('betags_registro', JSON.stringify(registro));
+                renderTable();
+            }
+        }
+
+        function updateCuota(id, newVal) {
+            let registro = JSON.parse(localStorage.getItem('betags_registro')) || [];
+            const index = registro.findIndex(a => a.id === id);
+            if (index !== -1) {
+                registro[index].cuota = parseFloat(newVal);
+                localStorage.setItem('betags_registro', JSON.stringify(registro));
+                renderTable();
+            }
+        }
+
+        function deleteApuesta(id) {
+            if(confirm('¿Eliminar esta apuesta?')) {
+                let registro = JSON.parse(localStorage.getItem('betags_registro')) || [];
+                registro = registro.filter(a => a.id !== id);
+                localStorage.setItem('betags_registro', JSON.stringify(registro));
+                renderTable();
+            }
+        }
+
+        function clearAll() {
+            if(confirm('¿BORRAR TODO EL HISTORIAL? Esta acción es irreversible.')) {
+                localStorage.removeItem('betags_registro');
+                renderTable();
+            }
+        }
+
         function renderTable() {
             const registro = JSON.parse(localStorage.getItem('betags_registro')) || [];
             const cuerpo = document.getElementById('tablaCuerpo');
@@ -95,14 +141,15 @@
 
             cuerpo.innerHTML = "";
 
-            // Generar ligas únicas
             const ligas = [...new Set(registro.map(item => item.liga))];
             const ligaSelect = document.getElementById('filterLiga');
+            const currentLiga = ligaSelect.value;
             ligaSelect.innerHTML = '<option value="">Todas las Ligas</option>';
             ligas.forEach(liga => {
                 const option = document.createElement('option');
                 option.value = liga;
                 option.textContent = liga;
+                if(liga === currentLiga) option.selected = true;
                 ligaSelect.appendChild(option);
             });
 
@@ -113,6 +160,12 @@
             });
 
             filtered.reverse().forEach(apuesta => {
+                // Lógica de colores para el estado
+                let statusClasses = "input-field text-[10px] font-bold ";
+                if (apuesta.estado === 'Ganada') statusClasses += "bg-emerald-900/40 border-emerald-500 text-emerald-400";
+                else if (apuesta.estado === 'Perdida') statusClasses += "bg-red-900/40 border-red-500 text-red-400";
+                else statusClasses += "bg-yellow-900/40 border-yellow-500 text-yellow-400";
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>
@@ -135,10 +188,10 @@
                         </div>
                     </td>
                     <td>
-                        <select onchange="updateStatus(${apuesta.id}, this.value)" class="input-field text-[10px]">
-                            <option value="Pendiente" ${apuesta.estado === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
-                            <option value="Ganada" ${apuesta.estado === 'Ganada' ? 'selected' : ''}>Ganada</option>
-                            <option value="Perdida" ${apuesta.estado === 'Perdida' ? 'selected' : ''}>Perdida</option>
+                        <select onchange="updateStatus(${apuesta.id}, this.value)" class="${statusClasses}">
+                            <option value="Pendiente" ${apuesta.estado === 'Pendiente' ? 'selected' : ''} class="bg-slate-900 text-white">Pendiente</option>
+                            <option value="Ganada" ${apuesta.estado === 'Ganada' ? 'selected' : ''} class="bg-slate-900 text-white">Ganada</option>
+                            <option value="Perdida" ${apuesta.estado === 'Perdida' ? 'selected' : ''} class="bg-slate-900 text-white">Perdida</option>
                         </select>
                     </td>
                     <td>
@@ -179,10 +232,10 @@
                 if (a.estado === "Ganada") {
                     const ganancia = parseFloat(a.cuota) - 1;
                     balance += ganancia;
-                    profit += ganancia; // Sumar al profit total
+                    profit += ganancia;
                 } else {
                     balance -= 1;
-                    profit -= 1; // Restar del profit total
+                    profit -= 1;
                 }
                 if (balance > peak) peak = balance;
                 currentDrawdown = peak - balance;
@@ -195,6 +248,12 @@
             document.getElementById('statYield').innerText = (yieldVal > 0 ? "+" : "") + yieldVal.toFixed(2) + "%";
             document.getElementById('statDrawdown').innerText = maxDrawdown.toFixed(2) + " u";
             document.getElementById('statProfit').innerText = profit.toFixed(2) + " u";
+            
+            // P-Value aproximado (Simplificado para el ejemplo)
+            const p = 0.5; // Probabilidad base
+            const n = finished.length;
+            const z = (wins - n * p) / Math.sqrt(n * p * (1 - p));
+            document.getElementById('statPValue').innerText = Math.abs(z).toFixed(2);
         }
 
         window.onload = renderTable;
