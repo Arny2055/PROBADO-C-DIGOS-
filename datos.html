@@ -19,6 +19,8 @@
         .league-item:hover { background: rgba(34, 211, 238, 0.1); border-left: 4px solid #22d3ee; padding-left: 12px; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        /* Mejora: Color amarillo neón para ligas desactualizadas */
+        .outdated-league { color: #ccff00 !important; text-shadow: 0 0 5px rgba(204, 255, 0, 0.5); }
     </style>
 </head>
 <body class="p-4 md:p-8 text-xs">
@@ -111,7 +113,7 @@
         function saveAllData() {
             const league = document.getElementById('leagueName').value.trim();
             if (!league) { alert("Por favor, ingresa el nombre de la liga."); return; }
-            const now = new Date().toLocaleString();
+            const now = new Date().toISOString(); // Guardamos en formato ISO para facilitar cálculos
             const leagueData = {
                 local: document.getElementById('dataLocal').value,
                 away: document.getElementById('dataAway').value,
@@ -124,18 +126,23 @@
             localStorage.setItem('betags_leagues_db', JSON.stringify(allLeagues));
             renderLeagueList();
             showStatus();
+            document.getElementById('lastUpdatedDisplay').innerText = new Date(now).toLocaleString();
         }
 
         function updateLeagueData() {
             const league = document.getElementById('leagueName').value.trim();
             let allLeagues = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
             if (!league || !allLeagues[league]) return;
+            const now = new Date().toISOString();
             allLeagues[league].local = document.getElementById('dataLocal').value;
             allLeagues[league].away = document.getElementById('dataAway').value;
             allLeagues[league].timesLocal = document.getElementById('dataTimesLocal').value;
             allLeagues[league].timesAway = document.getElementById('dataTimesAway').value;
+            allLeagues[league].lastUpdated = now;
             localStorage.setItem('betags_leagues_db', JSON.stringify(allLeagues));
+            renderLeagueList();
             showStatus();
+            document.getElementById('lastUpdatedDisplay').innerText = new Date(now).toLocaleString();
         }
 
         function showStatus() {
@@ -150,10 +157,26 @@
             const sortedLeagues = Object.keys(allLeagues).sort();
             document.getElementById('leagueCount').innerText = sortedLeagues.length;
             listElement.innerHTML = '';
+            
+            const now = new Date();
+
             sortedLeagues.forEach(league => {
+                const data = allLeagues[league];
+                let isOutdated = false;
+                
+                if (data.lastUpdated) {
+                    const lastUpdate = new Date(data.lastUpdated);
+                    const diffTime = Math.abs(now - lastUpdate);
+                    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+                    if (diffDays > 3) isOutdated = true;
+                }
+
                 const item = document.createElement('div');
                 item.className = 'league-item p-2 cursor-pointer text-slate-400 hover:text-cyan-400 flex justify-between items-center group';
-                item.innerHTML = `<span onclick="loadLeague('${league}')" class="flex-1 italic">${league}</span>
+                
+                const neonClass = isOutdated ? 'outdated-league' : '';
+
+                item.innerHTML = `<span onclick="loadLeague('${league}')" class="flex-1 italic ${neonClass}">${league}</span>
                     <button onclick="deleteLeague('${league}')" class="opacity-0 group-hover:opacity-100 text-red-500 px-2">×</button>`;
                 listElement.appendChild(item);
             });
@@ -167,6 +190,12 @@
             document.getElementById('dataAway').value = data.away;
             document.getElementById('dataTimesLocal').value = data.timesLocal;
             document.getElementById('dataTimesAway').value = data.timesAway;
+            
+            if (data.lastUpdated) {
+                document.getElementById('lastUpdatedDisplay').innerText = new Date(data.lastUpdated).toLocaleString();
+            } else {
+                document.getElementById('lastUpdatedDisplay').innerText = '';
+            }
         }
 
         function deleteLeague(name) {
@@ -177,7 +206,17 @@
                 renderLeagueList();
             }
         }
+
+        function clearFields() {
+            document.getElementById('leagueName').value = '';
+            document.getElementById('dataLocal').value = '';
+            document.getElementById('dataAway').value = '';
+            document.getElementById('dataTimesLocal').value = '';
+            document.getElementById('dataTimesAway').value = '';
+            document.getElementById('lastUpdatedDisplay').innerText = '';
+        }
+
         window.onload = () => renderLeagueList();
     </script>
 </body>
-</html>		
+</html>
