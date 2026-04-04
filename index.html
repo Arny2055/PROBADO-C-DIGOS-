@@ -390,9 +390,8 @@
                 if (parts.length >= 7 && parts[0].trim() === teamName) {
                     const g = parts.slice(1, 7).map(val => {
                         const score = val.split('-');
-                        const gf = parseInt(score[0]) || 0;
-                        const ga = parseInt(score[1]) || 0;
-                        return gf + ga; 
+                        const gf = parseInt(score[0]) || 0; // ÚNICAMENTE GOLES MARCADOS
+                        return gf; 
                     });
                     const total = g.reduce((a, b) => a + b, 0);
                     if (total === 0) return [16.6, 16.6, 16.6, 16.6, 16.6, 16.6];
