@@ -177,7 +177,8 @@
                        (item.cuota >= fCuota);
             });
 
-            filtered.reverse().forEach(apuesta => {
+            // Se invierte solo para mostrar lo más reciente arriba en la UI
+            [...filtered].reverse().forEach(apuesta => {
                 let statusClasses = "input-field text-[10px] font-bold ";
                 if (apuesta.estado === 'Ganada') statusClasses += "bg-emerald-900/40 border-emerald-500 text-emerald-400";
                 else if (apuesta.estado === 'Perdida') statusClasses += "bg-red-900/40 border-red-500 text-red-400";
@@ -245,6 +246,8 @@
             let peak = 0;
             let balance = 0;
 
+            // MEJORA: Asegurar orden cronológico para el cálculo de Drawdown real
+            // El 'peak' y el 'drawdown' dependen del tiempo, por lo que procesamos el array original (antiguos primero)
             finished.forEach(a => {
                 if (a.estado === "Ganada") {
                     const ganancia = parseFloat(a.cuota) - 1;
@@ -254,9 +257,19 @@
                     balance -= 1;
                     profit -= 1;
                 }
-                if (balance > peak) peak = balance;
+                
+                // Actualizar el pico más alto alcanzado por la banca
+                if (balance > peak) {
+                    peak = balance;
+                }
+                
+                // El drawdown es la caída desde el pico actual
                 currentDrawdown = peak - balance;
-                if (currentDrawdown > maxDrawdown) maxDrawdown = currentDrawdown;
+                
+                // El Max Drawdown es la caída más grande registrada históricamente
+                if (currentDrawdown > maxDrawdown) {
+                    maxDrawdown = currentDrawdown;
+                }
             });
 
             const yieldVal = (balance / turnover) * 100;
@@ -267,16 +280,11 @@
             document.getElementById('statProfit').innerText = profit.toFixed(2) + " u";
             
             // CORRECCIÓN P-VALUE: Cálculo de significancia estadística real
-            // p = probabilidad esperada (50% azar), n = muestras, x = éxitos
             const p_exp = 0.5; 
             const n = finished.length;
             const x = wins;
-            
-            // Z-score con corrección por continuidad
             const z = (Math.abs(x - n * p_exp) - 0.5) / Math.sqrt(n * p_exp * (1 - p_exp));
             
-            // Función Error (aproximación para P-value de una cola)
-            // Esto calcula la probabilidad de que el resultado sea por suerte
             function erf(x) {
                 const a1 =  0.254829592; const a2 = -0.284496736;
                 const a3 =  1.421413741; const a4 = -1.453152027;
