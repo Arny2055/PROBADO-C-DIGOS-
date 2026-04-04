@@ -71,6 +71,8 @@
                 <option value="Over 4.5 HT">Over 4.5 HT</option>
             </select>
             <input type="number" id="filterCuota" placeholder="Cuota min..." class="input-field text-[10px]" oninput="renderTable()">
+            <input type="number" id="filterMinMin" placeholder="Minuto min..." class="input-field text-[10px]" oninput="renderTable()">
+            <input type="number" id="filterMinMax" placeholder="Minuto max..." class="input-field text-[10px]" oninput="renderTable()">
         </div>
 
         <div class="glass-card rounded-xl overflow-hidden">
@@ -152,6 +154,8 @@
             const fLiga = document.getElementById('filterLiga').value;
             const fMercado = document.getElementById('filterMercado').value;
             const fCuota = parseFloat(document.getElementById('filterCuota').value) || 0;
+            const fMinMin = parseFloat(document.getElementById('filterMinMin').value) || 0;
+            const fMinMax = parseFloat(document.getElementById('filterMinMax').value) || 999;
 
             cuerpo.innerHTML = "";
 
@@ -172,9 +176,13 @@
                                      (item.mercado === fMercado) || 
                                      (fMercado === "Over x.5 HT" && item.mercado === "Over 0.5 HT");
 
+                const minApuesta = parseFloat(item.minuto) || 0;
+
                 return (!fLiga || item.liga === fLiga) &&
                        matchMercado &&
-                       (item.cuota >= fCuota);
+                       (item.cuota >= fCuota) &&
+                       (minApuesta >= fMinMin) &&
+                       (minApuesta <= fMinMax);
             });
 
             // Se invierte solo para mostrar lo más reciente arriba en la UI
@@ -247,7 +255,6 @@
             let balance = 0;
 
             // MEJORA: Asegurar orden cronológico para el cálculo de Drawdown real
-            // El 'peak' y el 'drawdown' dependen del tiempo, por lo que procesamos el array original (antiguos primero)
             finished.forEach(a => {
                 if (a.estado === "Ganada") {
                     const ganancia = parseFloat(a.cuota) - 1;
@@ -258,15 +265,12 @@
                     profit -= 1;
                 }
                 
-                // Actualizar el pico más alto alcanzado por la banca
                 if (balance > peak) {
                     peak = balance;
                 }
                 
-                // El drawdown es la caída desde el pico actual
                 currentDrawdown = peak - balance;
                 
-                // El Max Drawdown es la caída más grande registrada históricamente
                 if (currentDrawdown > maxDrawdown) {
                     maxDrawdown = currentDrawdown;
                 }
@@ -279,7 +283,6 @@
             document.getElementById('statDrawdown').innerText = maxDrawdown.toFixed(2) + " u";
             document.getElementById('statProfit').innerText = profit.toFixed(2) + " u";
             
-            // CORRECCIÓN P-VALUE: Cálculo de significancia estadística real
             const p_exp = 0.5; 
             const n = finished.length;
             const x = wins;
