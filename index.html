@@ -74,7 +74,6 @@
             color: #0f172a; padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 9px; margin-right: 8px;
         }
 
-        /* Estilos para el Smart Strategy Box */
         .strategy-pulse { border: 2px solid #22d3ee; animation: strategy-border 2s infinite; }
         @keyframes strategy-border { 0% { border-color: rgba(34, 211, 238, 0.3); } 50% { border-color: rgba(34, 211, 238, 1); } 100% { border-color: rgba(34, 211, 238, 0.3); } }
     </style>
@@ -164,7 +163,7 @@
                     </div>
                     <div>
                         <label class="text-[8px] text-slate-500 uppercase block mb-1">Minuto</label>
-                        <input id="liveMinute" type="number" value="15" class="w-16 bg-slate-800 border border-slate-600 rounded p-1 text-center font-bold text-yellow-500" onchange="calculateStrategy()">
+                        <input id="liveMinute" type="number" value="0" class="w-16 bg-slate-800 border border-slate-600 rounded p-1 text-center font-bold text-yellow-500" onchange="calculateStrategy()">
                     </div>
                 </div>
             </div>
@@ -376,6 +375,8 @@
     <script>
         let currentRange1645Prob = "-"; 
         let currentRange2045Prob = "-";
+        let currentHomeSegments = [16.6, 16.6, 16.6, 16.6, 16.6, 16.6];
+        let currentAwaySegments = [16.6, 16.6, 16.6, 16.6, 16.6, 16.6];
 
         function updateTicker() {
             const savedMatches = JSON.parse(localStorage.getItem('betags_daily_matches')) || {};
@@ -419,13 +420,10 @@
                     document.getElementById('selectHome').value = h;
                     document.getElementById('selectAway').value = v;
                     autoFillData();
-                    calculateAllProbs();
+                    setTimeout(calculateAllProbs, 150);
                 }, 100);
             }
         }
-
-        let currentHomeSegments = [16,16,16,16,16,20];
-        let currentAwaySegments = [16,16,16,16,16,20];
 
         function parseStandingsTable(text) {
             if (!text) return { teams: {}, leagueAvg: 1.5 };
@@ -494,7 +492,7 @@
         function getHTPercentageFromSegments(segments) {
             const firstHalf = segments[0] + segments[1] + segments[2];
             const total = segments.reduce((a, b) => a + b, 0);
-            return (firstHalf / total) * 100;
+            return total > 0 ? (firstHalf / total) * 100 : 50;
         }
 
         function initLeagueSelector() {
@@ -598,8 +596,6 @@
             document.getElementById('barDrawHome').style.width = drawHome;
             document.getElementById('barDrawAway').style.width = drawAway;
             document.getElementById('gameStateBox').classList.remove('hidden');
-            
-            calculateStrategy(); 
         }
 
         function calculateStrategy() {
@@ -608,47 +604,51 @@
             const scoreV = parseInt(document.getElementById('liveScoreAway').value) || 0;
             const min = parseInt(document.getElementById('liveMinute').value) || 0;
             
-            const probHT = parseFloat(document.getElementById('probO05HT').innerText) || 0;
-            const prob2T = parseFloat(document.getElementById('probO05_2T').innerText) || 0;
+            const probHTVal = parseFloat(document.getElementById('probO05HT').innerText) || 0;
+            const prob2TVal = parseFloat(document.getElementById('probO05_2T').innerText) || 0;
             const eqL = parseFloat(document.getElementById('equalRateHome').innerText) || 0;
             const eqV = parseFloat(document.getElementById('equalRateAway').innerText) || 0;
 
             let msg = "Analizando condiciones...";
             let color = "text-white";
 
-            // Caso 1: Empate 0-0 al minuto 15
-            if (scoreL === 0 && scoreV === 0 && min <= 25) {
-                if (probHT >= 70) {
-                    msg = `PARTIDO 0-0: ¡Alta probabilidad detectada! Entra al OVER 0.5 HT ahora.`;
-                    color = "text-cyan-400";
-                } else {
-                    msg = `PARTIDO 0-0: Probabilidad HT moderada (${probHT}%). Espera al minuto 25 o busca cuota 1.80.`;
-                    color = "text-yellow-400";
+            if (scoreL === 0 && scoreV === 0) {
+                if (min <= 25) {
+                    if (probHTVal >= 70) {
+                        msg = `ALTA PROBABILIDAD (HT): El sistema sugiere entrar al OVER 0.5 HT ahora.`;
+                        color = "text-cyan-400";
+                    } else if (probHTVal >= 60) {
+                        msg = `MODERADO (HT): Espera al minuto 20-25 para mejor cuota en Over 0.5 HT.`;
+                        color = "text-yellow-400";
+                    } else {
+                        msg = `PRECAUCIÓN: Probabilidades HT bajas (${probHTVal}%). Considera esperar al 2T.`;
+                        color = "text-slate-400";
+                    }
+                } else if (min > 25 && min <= 45) {
+                    msg = `ZONA CRÍTICA: 0-0 al min ${min}. Si buscas valor, entra ahora al Over 0.5 HT.`;
+                    color = "text-orange-400";
                 }
             } 
-            // Caso 2: Local ganando
             else if (scoreL > scoreV) {
-                if (eqV >= 40 || prob2T >= 75) {
-                    msg = `LOCAL GANANDO: Visita tiene un ${eqV}% de reacción. ¡ENTRA POR OTRO GOL (Over adicional)!`;
+                if (eqV >= 40 || prob2TVal >= 75) {
+                    msg = `LOCAL GANANDO: Visita tiene ${eqV}% de reacción. ¡Busca el Over adicional en 2T!`;
                     color = "text-emerald-400";
                 } else {
-                    msg = `LOCAL GANANDO: El visitante no suele empatar (${eqV}%). NO HACER MÁS ENTRADAS.`;
+                    msg = `LOCAL GANANDO: Histórico de reacción del visitante es bajo (${eqV}%).`;
                     color = "text-red-400";
                 }
             }
-            // Caso 3: Visitante ganando
             else if (scoreV > scoreL) {
-                if (eqL >= 40 || prob2T >= 75) {
-                    msg = `VISITA GANANDO: El local empata el ${eqL}% de sus partidos en desventaja. ¡ENTRA POR OTRO GOL!`;
+                if (eqL >= 40 || prob2TVal >= 75) {
+                    msg = `VISITA GANANDO: El local empata el ${eqL}% de sus desventajas. ¡ENTRA POR OTRO GOL!`;
                     color = "text-emerald-400";
                 } else {
-                    msg = `VISITA GANANDO: Capacidad de reacción del local baja (${eqL}%). NO HACER MÁS ENTRADAS.`;
+                    msg = `VISITA GANANDO: Capacidad de reacción del local baja (${eqL}%).`;
                     color = "text-red-400";
                 }
             }
-            // Caso 4: Empate con goles
             else if (scoreL === scoreV && scoreL > 0) {
-                msg = `EMPATE CON GOLES: Probabilidad de gol en 2T es de ${prob2T}%. Evalúa entrar si la cuota es > 1.70.`;
+                msg = `EMPATE CON GOLES: La proyección de gol en 2T es de ${prob2TVal}%.`;
                 color = "text-blue-400";
             }
 
@@ -657,12 +657,14 @@
         }
 
         function factorial(n) {
-            if (n < 0 || !Number.isInteger(n)) return 1;
-            return (n <= 1) ? 1 : n * factorial(n - 1);
+            if (n < 0) return 1;
+            let res = 1;
+            for (let i = 2; i <= n; i++) res *= i;
+            return res;
         }
 
         function poisson(k, lambda) {
-            if (lambda <= 0 || k < 0) return 0;
+            if (lambda <= 0 || k < 0) return k === 0 ? 1 : 0;
             return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial(k);
         }
 
@@ -671,19 +673,18 @@
             const avgLV = parseFloat(document.getElementById('avgLeagueAway').value) || 1.5;
             const gfH = parseFloat(document.getElementById('gfHome').value);
             const gaH = parseFloat(document.getElementById('gaHome').value);
-            const perH_HT = parseFloat(document.getElementById('percHTHome').value) / 100 || 0.5;
+            const perH_HT = (parseFloat(document.getElementById('percHTHome').value) || 50) / 100;
             const gfV = parseFloat(document.getElementById('gfAway').value);
             const gaV = parseFloat(document.getElementById('gaAway').value);
-            const perV_HT = parseFloat(document.getElementById('percHTAway').value) / 100 || 0.5;
+            const perV_HT = (parseFloat(document.getElementById('percHTAway').value) || 50) / 100;
             const isHybrid = document.getElementById('hybridToggle').checked;
 
-            if ([gfH, gaH, gfV, gaV].some(isNaN)) return;
+            if (isNaN(gfH) || isNaN(gaH) || isNaN(gfV) || isNaN(gaV)) return;
 
             const perH_2T = 1 - perH_HT;
             const perV_2T = 1 - perV_HT;
 
             let xG_FT_H, xG_FT_V;
-
             if (isHybrid) {
                 xG_FT_H = gfH;
                 xG_FT_V = gfV;
@@ -694,12 +695,10 @@
 
             const xG_HT_H = xG_FT_H * perH_HT;
             const xG_HT_V = xG_FT_V * perV_HT;
-
             processSection(xG_HT_H, xG_HT_V, "probO05HT", "probO15HT_Pre", "prob1HT", "probXHT", "prob2HT");
 
             const xG_2T_H = xG_FT_H * perH_2T;
             const xG_2T_V = xG_FT_V * perV_2T;
-
             processSection(xG_2T_H, xG_2T_V, "probO05_2T", "probO15_2T", "prob1_2T", "probX_2T", "prob2_2T");
 
             document.getElementById('resXgh').innerText = (xG_HT_H + xG_HT_V).toFixed(2);
@@ -707,14 +706,13 @@
             document.getElementById('xgProjectionBox').style.opacity = "1";
 
             renderRangeTables(xG_FT_H, xG_FT_V);
-            calculateStrategy(); 
+            setTimeout(calculateStrategy, 50); 
         }
 
         function renderRangeTables(xfH, xfV) {
             const table15 = document.getElementById('table15min');
             const table30 = document.getElementById('table30min');
-            table15.innerHTML = ""; 
-            table30.innerHTML = "";
+            table15.innerHTML = ""; table30.innerHTML = "";
 
             const ranges15 = ["0-15", "16-30", "31-45", "46-60", "61-75", "76-90"];
             ranges15.forEach((label, i) => {
@@ -734,10 +732,8 @@
                     pH += (currentHomeSegments[index] * r.weight[i]);
                     pV += (currentAwaySegments[index] * r.weight[i]);
                 });
-                
                 const row = createRangeRow(r.label, xfH * (pH / 100), xfV * (pV / 100));
                 table30.appendChild(row);
-                
                 if(r.label === "16-45") currentRange1645Prob = row.cells[2].innerText;
                 if(r.label === "20-45") currentRange2045Prob = row.cells[2].innerText;
             });
@@ -755,9 +751,7 @@
             for (let i = 0; i <= 5; i++) { 
                 for (let j = 0; j <= 5; j++) {
                     const prob = poisson(i, xh) * poisson(j, xv);
-                    if (i > j) pW += prob; 
-                    else if (i === j) pD += prob; 
-                    else pL += prob;
+                    if (i > j) pW += prob; else if (i === j) pD += prob; else pL += prob;
                 }
             }
 
@@ -770,24 +764,18 @@
             const lambda = xh + xv;
             const p0 = poisson(0, lambda);
             const rawProb05 = (1 - p0) * 100;
-            
             const el05 = document.getElementById(id05);
             el05.innerText = rawProb05.toFixed(1) + "%";
-            if (rawProb05 >= 60) el05.classList.add('high-prob-glow'); 
-            else el05.classList.remove('high-prob-glow');
-
+            if (rawProb05 >= 60) el05.classList.add('high-prob-glow'); else el05.classList.remove('high-prob-glow');
             document.getElementById(id15).innerText = ((1 - (p0 + poisson(1, lambda))) * 100).toFixed(1) + "%";
 
             let pW = 0, pD = 0, pL = 0;
             for (let i = 0; i <= 6; i++) { 
                 for (let j = 0; j <= 6; j++) {
                     const prob = poisson(i, xh) * poisson(j, xv);
-                    if (i > j) pW += prob; 
-                    else if (i === j) pD += prob; 
-                    else pL += prob;
+                    if (i > j) pW += prob; else if (i === j) pD += prob; else pL += prob;
                 }
             }
-
             document.getElementById(id1).innerText = (pW * 100).toFixed(1) + "%";
             document.getElementById(idX).innerText = (pD * 100).toFixed(1) + "%";
             document.getElementById(id2).innerText = (pL * 100).toFixed(1) + "%";
@@ -815,27 +803,15 @@
             if(mercado === "Over 0.5 (20-45)") prob = currentRange2045Prob;
 
             const nuevaApuesta = {
-                id: Date.now(),
-                fecha: new Date().toLocaleDateString(),
-                liga: league,
-                evento: `${home} vs ${away}`,
-                mercado: mercado,
-                prob: prob,
-                minuto: minuto || "Pre",
-                cuota: cuota,
-                estado: "Pendiente"
+                id: Date.now(), fecha: new Date().toLocaleDateString(), liga: league, evento: `${home} vs ${away}`,
+                mercado: mercado, prob: prob, minuto: minuto || "Pre", cuota: cuota, estado: "Pendiente"
             };
 
             const registro = JSON.parse(localStorage.getItem('betags_registro')) || [];
             registro.push(nuevaApuesta);
             localStorage.setItem('betags_registro', JSON.stringify(registro));
-            
             alert("Apuesta registrada con éxito.");
         }
-
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'betags_leagues_db') initLeagueSelector();
-        });
 
         window.onload = function() {
             initLeagueSelector();
