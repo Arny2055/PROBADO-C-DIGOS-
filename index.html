@@ -183,6 +183,38 @@
                         </div>
                     </div>
                 </div>
+
+                <div id="gameStateBox" class="glass-card p-6 rounded-2xl border-t-2 border-orange-500/50 hidden">
+                    <h2 class="text-sm font-semibold mb-4 flex items-center gap-2">
+                        <span class="w-1 h-4 bg-orange-500 rounded-full"></span> Game State & Leads
+                    </h2>
+                    <div class="space-y-4">
+                        <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800">
+                            <p class="text-[8px] font-bold text-slate-500 mb-2 uppercase">Tiempo Empatados (%)</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-blue-400 font-bold" id="leadDrawHome">L: -</span>
+                                <span class="text-green-400 font-bold" id="leadDrawAway">V: -</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden flex">
+                                <div id="barDrawHome" class="bg-blue-500 h-full" style="width: 50%"></div>
+                                <div id="barDrawAway" class="bg-green-500 h-full" style="width: 50%"></div>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-orange-900/10 rounded-xl border border-orange-900/30">
+                            <p class="text-[8px] font-bold text-orange-400 mb-1 uppercase">Equalizers (Capacidad Reacción)</p>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="text-center">
+                                    <p class="text-[7px] text-slate-500 uppercase">Local</p>
+                                    <p id="equalRateHome" class="text-lg font-black text-white">-</p>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-[7px] text-slate-500 uppercase">Visita</p>
+                                    <p id="equalRateAway" class="text-lg font-black text-white">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="lg:col-span-8 space-y-6">
@@ -384,6 +416,32 @@
             return { teams: data, leagueAvg: totalGp > 0 ? (totalGf / totalGp) : 1.3 };
         }
 
+        // --- NUEVA LÓGICA DE PARSEO PARA LEAD DURATIONS Y EQUALIZERS ---
+        function getLeadDuration(text, teamName) {
+            if (!text) return "0%";
+            const lines = text.split('\n');
+            for (let line of lines) {
+                const parts = line.split('\t').filter(p => p.trim() !== "");
+                if (parts.length >= 4 && parts[0].trim() === teamName) {
+                    return parts[2].trim(); // Columna de "Drawing"
+                }
+            }
+            return "0%";
+        }
+
+        function getEqualizerRate(text, teamName) {
+            if (!text) return "-";
+            const lines = text.split('\n');
+            for (let line of lines) {
+                const parts = line.split('\t').filter(p => p.trim() !== "");
+                if (parts.length >= 4 && parts[0].trim() === teamName) {
+                    return parts[3].trim(); // El porcentaje de equalizers
+                }
+            }
+            return "-";
+        }
+        // ----------------------------------------------------------------
+
         function getSegmentsArray(text, teamName) {
             if (!text) return [16.6, 16.6, 16.6, 16.6, 16.6, 16.6];
             const lines = text.split('\n');
@@ -474,11 +532,15 @@
             const homeName = document.getElementById('selectHome').value;
             const awayName = document.getElementById('selectAway').value;
             const db = JSON.parse(localStorage.getItem('betags_leagues_db')) || {};
+            
             if (!leagueHome || !homeName || !awayName || !db[leagueHome] || !db[leagueAway]) return;
+            
             const homeTableData = parseStandingsTable(db[leagueHome].local);
             const awayTableData = parseStandingsTable(db[leagueAway].away);
+            
             document.getElementById('avgLeagueHome').value = homeTableData.leagueAvg.toFixed(2);
             document.getElementById('avgLeagueAway').value = awayTableData.leagueAvg.toFixed(2);
+            
             if (homeTableData.teams[homeName]) {
                 document.getElementById('gfHome').value = homeTableData.teams[homeName].avgGf.toFixed(2);
                 document.getElementById('gaHome').value = homeTableData.teams[homeName].avgGa.toFixed(2);
@@ -487,10 +549,26 @@
                 document.getElementById('gfAway').value = awayTableData.teams[awayName].avgGf.toFixed(2);
                 document.getElementById('gaAway').value = awayTableData.teams[awayName].avgGa.toFixed(2);
             }
+            
             currentHomeSegments = getSegmentsArray(db[leagueHome].timesLocal, homeName);
             currentAwaySegments = getSegmentsArray(db[leagueAway].timesAway, awayName);
             document.getElementById('percHTHome').value = getHTPercentageFromSegments(currentHomeSegments).toFixed(0);
             document.getElementById('percHTAway').value = getHTPercentageFromSegments(currentAwaySegments).toFixed(0);
+
+            // --- RELLENAR GAME STATE DATA ---
+            const drawHome = getLeadDuration(db[leagueHome].leadHome, homeName);
+            const drawAway = getLeadDuration(db[leagueAway].leadAway, awayName);
+            const eqHome = getEqualizerRate(db[leagueHome].equalHome, homeName);
+            const eqAway = getEqualizerRate(db[leagueAway].equalAway, awayName);
+
+            document.getElementById('leadDrawHome').innerText = `L: ${drawHome}`;
+            document.getElementById('leadDrawAway').innerText = `V: ${drawAway}`;
+            document.getElementById('equalRateHome').innerText = eqHome;
+            document.getElementById('equalRateAway').innerText = eqAway;
+            
+            document.getElementById('barDrawHome').style.width = drawHome;
+            document.getElementById('barDrawAway').style.width = drawAway;
+            document.getElementById('gameStateBox').classList.remove('hidden');
         }
 
         function factorial(n) {
@@ -557,9 +635,6 @@
                 table15.appendChild(createRangeRow(label, xfH * (currentHomeSegments[i] / 100), xfV * (currentAwaySegments[i] / 100)));
             });
 
-            // Lógica para rangos dinámicos reales
-            // Segmento 16-45: 16-30 (index 1) + 31-45 (index 2)
-            // Segmento 20-45: (16-30 * 0.66) + 31-45 (index 2) -> Simulación de minutos 20-30 + 31-45
             const ranges30 = [
                 { label: "0-30", idx: [0,1], weight: [1,1] }, 
                 { label: "16-45", idx: [1,2], weight: [1,1] }, 
