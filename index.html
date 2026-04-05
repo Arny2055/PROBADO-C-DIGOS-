@@ -73,6 +73,10 @@
             background: linear-gradient(90deg, #22d3ee 0%, #3b82f6 100%);
             color: #0f172a; padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 9px; margin-right: 8px;
         }
+
+        /* Estilos para el Smart Strategy Box */
+        .strategy-pulse { border: 2px solid #22d3ee; animation: strategy-border 2s infinite; }
+        @keyframes strategy-border { 0% { border-color: rgba(34, 211, 238, 0.3); } 50% { border-color: rgba(34, 211, 238, 1); } 100% { border-color: rgba(34, 211, 238, 0.3); } }
     </style>
 </head>
 <body class="p-4 md:p-8 text-xs">
@@ -135,6 +139,34 @@
             <div>
                 <label class="text-[9px] text-green-400 font-bold uppercase block mb-1">Equipo Visitante</label>
                 <select id="selectAway" class="input-field" onchange="autoFillData()"></select>
+            </div>
+        </div>
+
+        <div class="glass-card p-6 rounded-2xl border-t-2 border-cyan-400 mb-6 strategy-pulse">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                <div class="flex-1">
+                    <h2 class="text-xs font-bold text-cyan-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <span class="badge-live w-2 h-2 rounded-full"></span> 
+                        Quantum Strategy Engine (Decisión Literal)
+                    </h2>
+                    <div id="strategyOutput" class="text-lg font-black text-white italic">
+                        Selecciona un partido y procesa para ver la recomendación...
+                    </div>
+                </div>
+                <div class="flex gap-4 bg-slate-900/50 p-4 rounded-xl border border-slate-700">
+                    <div>
+                        <label class="text-[8px] text-slate-500 uppercase block mb-1">Marcador Actual</label>
+                        <div class="flex items-center gap-2">
+                            <input id="liveScoreHome" type="number" value="0" class="w-12 bg-slate-800 border border-slate-600 rounded p-1 text-center font-bold text-blue-400" onchange="calculateStrategy()">
+                            <span class="text-slate-500">-</span>
+                            <input id="liveScoreAway" type="number" value="0" class="w-12 bg-slate-800 border border-slate-600 rounded p-1 text-center font-bold text-green-400" onchange="calculateStrategy()">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[8px] text-slate-500 uppercase block mb-1">Minuto</label>
+                        <input id="liveMinute" type="number" value="15" class="w-16 bg-slate-800 border border-slate-600 rounded p-1 text-center font-bold text-yellow-500" onchange="calculateStrategy()">
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -239,7 +271,7 @@
                                 <p id="probXHT" class="prob-value text-slate-100">-</p>
                             </div>
                             <div class="prob-pill text-center border-green-500/30">
-                                <p class="text-[8px] text-green-400 font-bold uppercase mb-1">Visita</p>
+                                <p class="text-[8px] text-green-400 font-bold uppercase mb-1">Visitante</p>
                                 <p id="prob2HT" class="prob-value text-green-100">-</p>
                             </div>
                         </div>
@@ -271,7 +303,7 @@
                                 <p id="probX_2T" class="prob-value text-slate-100">-</p>
                             </div>
                             <div class="prob-pill text-center border-green-500/30">
-                                <p class="text-[8px] text-green-400 font-bold uppercase mb-1">Visita</p>
+                                <p class="text-[8px] text-green-400 font-bold uppercase mb-1">Visitante</p>
                                 <p id="prob2_2T" class="prob-value text-green-100">-</p>
                             </div>
                         </div>
@@ -416,14 +448,13 @@
             return { teams: data, leagueAvg: totalGp > 0 ? (totalGf / totalGp) : 1.3 };
         }
 
-        // --- NUEVA LÓGICA DE PARSEO PARA LEAD DURATIONS Y EQUALIZERS ---
         function getLeadDuration(text, teamName) {
             if (!text) return "0%";
             const lines = text.split('\n');
             for (let line of lines) {
                 const parts = line.split('\t').filter(p => p.trim() !== "");
                 if (parts.length >= 4 && parts[0].trim() === teamName) {
-                    return parts[2].trim(); // Columna de "Drawing"
+                    return parts[2].trim(); 
                 }
             }
             return "0%";
@@ -435,12 +466,11 @@
             for (let line of lines) {
                 const parts = line.split('\t').filter(p => p.trim() !== "");
                 if (parts.length >= 4 && parts[0].trim() === teamName) {
-                    return parts[3].trim(); // El porcentaje de equalizers
+                    return parts[3].trim(); 
                 }
             }
             return "-";
         }
-        // ----------------------------------------------------------------
 
         function getSegmentsArray(text, teamName) {
             if (!text) return [16.6, 16.6, 16.6, 16.6, 16.6, 16.6];
@@ -555,7 +585,6 @@
             document.getElementById('percHTHome').value = getHTPercentageFromSegments(currentHomeSegments).toFixed(0);
             document.getElementById('percHTAway').value = getHTPercentageFromSegments(currentAwaySegments).toFixed(0);
 
-            // --- RELLENAR GAME STATE DATA ---
             const drawHome = getLeadDuration(db[leagueHome].leadHome, homeName);
             const drawAway = getLeadDuration(db[leagueAway].leadAway, awayName);
             const eqHome = getEqualizerRate(db[leagueHome].equalHome, homeName);
@@ -569,6 +598,62 @@
             document.getElementById('barDrawHome').style.width = drawHome;
             document.getElementById('barDrawAway').style.width = drawAway;
             document.getElementById('gameStateBox').classList.remove('hidden');
+            
+            calculateStrategy(); 
+        }
+
+        function calculateStrategy() {
+            const out = document.getElementById('strategyOutput');
+            const scoreL = parseInt(document.getElementById('liveScoreHome').value) || 0;
+            const scoreV = parseInt(document.getElementById('liveScoreAway').value) || 0;
+            const min = parseInt(document.getElementById('liveMinute').value) || 0;
+            
+            const probHT = parseFloat(document.getElementById('probO05HT').innerText) || 0;
+            const prob2T = parseFloat(document.getElementById('probO05_2T').innerText) || 0;
+            const eqL = parseFloat(document.getElementById('equalRateHome').innerText) || 0;
+            const eqV = parseFloat(document.getElementById('equalRateAway').innerText) || 0;
+
+            let msg = "Analizando condiciones...";
+            let color = "text-white";
+
+            // Caso 1: Empate 0-0 al minuto 15
+            if (scoreL === 0 && scoreV === 0 && min <= 25) {
+                if (probHT >= 70) {
+                    msg = `PARTIDO 0-0: ¡Alta probabilidad detectada! Entra al OVER 0.5 HT ahora.`;
+                    color = "text-cyan-400";
+                } else {
+                    msg = `PARTIDO 0-0: Probabilidad HT moderada (${probHT}%). Espera al minuto 25 o busca cuota 1.80.`;
+                    color = "text-yellow-400";
+                }
+            } 
+            // Caso 2: Local ganando
+            else if (scoreL > scoreV) {
+                if (eqV >= 40 || prob2T >= 75) {
+                    msg = `LOCAL GANANDO: Visita tiene un ${eqV}% de reacción. ¡ENTRA POR OTRO GOL (Over adicional)!`;
+                    color = "text-emerald-400";
+                } else {
+                    msg = `LOCAL GANANDO: El visitante no suele empatar (${eqV}%). NO HACER MÁS ENTRADAS.`;
+                    color = "text-red-400";
+                }
+            }
+            // Caso 3: Visitante ganando
+            else if (scoreV > scoreL) {
+                if (eqL >= 40 || prob2T >= 75) {
+                    msg = `VISITA GANANDO: El local empata el ${eqL}% de sus partidos en desventaja. ¡ENTRA POR OTRO GOL!`;
+                    color = "text-emerald-400";
+                } else {
+                    msg = `VISITA GANANDO: Capacidad de reacción del local baja (${eqL}%). NO HACER MÁS ENTRADAS.`;
+                    color = "text-red-400";
+                }
+            }
+            // Caso 4: Empate con goles
+            else if (scoreL === scoreV && scoreL > 0) {
+                msg = `EMPATE CON GOLES: Probabilidad de gol en 2T es de ${prob2T}%. Evalúa entrar si la cuota es > 1.70.`;
+                color = "text-blue-400";
+            }
+
+            out.innerText = msg;
+            out.className = `text-lg font-black italic ${color}`;
         }
 
         function factorial(n) {
@@ -622,6 +707,7 @@
             document.getElementById('xgProjectionBox').style.opacity = "1";
 
             renderRangeTables(xG_FT_H, xG_FT_V);
+            calculateStrategy(); 
         }
 
         function renderRangeTables(xfH, xfV) {
